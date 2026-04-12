@@ -16,8 +16,12 @@ const validators = {
    * Проверка массива ID глав
    */
   isChapterIds(values) {
-    if (!Array.isArray(values)) return false;
-    if (values.length === 0) return false;
+    if (!Array.isArray(values)) {
+      return false;
+    }
+    if (values.length === 0) {
+      return false;
+    }
     return values.every(v => this.isChapterId(v));
   },
 
@@ -33,8 +37,12 @@ const validators = {
    * Проверка токена авторизации
    */
   isValidToken(token) {
-    if (typeof token !== 'string') return false;
-    if (token.length < 20 || token.length > 100) return false;
+    if (typeof token !== 'string') {
+      return false;
+    }
+    if (token.length < 20 || token.length > 100) {
+      return false;
+    }
     return /^[a-zA-Z0-9_-]+$/.test(token);
   },
 
@@ -88,6 +96,17 @@ const validators = {
       if (duration >= 1 && duration <= 10) {
         sanitized.notificationDuration = duration;
       }
+    }
+
+    if ('batchSize' in settings) {
+      const batchSize = parseInt(settings.batchSize);
+      if (batchSize >= 1 && batchSize <= 50) {
+        sanitized.batchSize = batchSize;
+      }
+    }
+
+    if ('skipProcessed' in settings) {
+      sanitized.skipProcessed = Boolean(settings.skipProcessed);
     }
 
     return sanitized;

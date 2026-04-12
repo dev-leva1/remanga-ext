@@ -124,7 +124,7 @@ class ApiClient {
    */
   async likeChapters(chapterIds) {
     const validIds = validators.sanitizeChapterIds(chapterIds);
-    logger.debug(`Лайк глав:`, validIds);
+    logger.debug('Лайк глав:', validIds);
 
     return this.request('/api/activity/votes/', {
       method: 'POST',

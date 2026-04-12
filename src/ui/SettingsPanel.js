@@ -3,9 +3,10 @@
  */
 
 class SettingsPanel {
-  constructor(config, notifications) {
+  constructor(config, notifications, statistics) {
     this.config = config;
     this.notifications = notifications;
+    this.statistics = statistics;
     this.panel = null;
     this.observer = null;
   }
@@ -161,9 +162,14 @@ class SettingsPanel {
       padding: 32px;
       min-width: 500px;
       max-width: 600px;
+      max-height: 80vh;
+      overflow-y: auto;
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
       animation: remanga-modal-appear 0.2s ease;
     `;
+
+    const stats = this.statistics.getStats();
+    const installDate = new Date(stats.installDate).toLocaleDateString('ru-RU');
 
     modal.innerHTML = `
       <h2 style="margin: 0 0 24px 0; font-size: 24px; font-weight: bold; color: #ffffff;">
@@ -177,6 +183,15 @@ class SettingsPanel {
           <div>
             <div style="font-weight: 500; color: #ffffff;">Автолайк глав при открытии</div>
             <div style="font-size: 12px; color: #9ca3af;">Автоматически ставить лайк при открытии главы</div>
+          </div>
+        </label>
+
+        <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+          <input type="checkbox" id="skipProcessed" ${this.config.get('skipProcessed') ? 'checked' : ''}
+                 style="width: 20px; height: 20px; cursor: pointer; accent-color: #3b82f6;">
+          <div>
+            <div style="font-weight: 500; color: #ffffff;">Пропускать обработанные главы</div>
+            <div style="font-size: 12px; color: #9ca3af;">Не обрабатывать уже прочитанные/лайкнутые главы</div>
           </div>
         </label>
 
@@ -202,34 +217,102 @@ class SettingsPanel {
           </div>
         </div>
 
+        <div>
+          <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #ffffff;">
+            Размер batch для массовых операций
+          </label>
+          <input type="range" id="batchSize"
+                 min="1" max="50" step="1"
+                 value="${this.config.get('batchSize')}"
+                 style="width: 100%; accent-color: #3b82f6;">
+          <div style="text-align: center; margin-top: 4px; color: #9ca3af;">
+            <span id="batchSizeValue">${this.config.get('batchSize')}</span> глав за раз
+          </div>
+        </div>
+
         <div style="padding: 16px; background: #2a2a2a; border-radius: 8px;">
-          <div style="font-weight: 500; margin-bottom: 8px; color: #ffffff;">🚧 Горячие клавиши</div>
-          <div style="color: #6b7280; font-size: 14px;">Coming Soon...</div>
+          <div style="font-weight: 500; margin-bottom: 12px; color: #ffffff;">📊 Статистика</div>
+          <div style="display: flex; flex-direction: column; gap: 8px; color: #9ca3af; font-size: 14px;">
+            <div>Прочитано глав: <span style="color: #10b981; font-weight: 600;">${stats.chaptersRead}</span></div>
+            <div>Лайков поставлено: <span style="color: #ef4444; font-weight: 600;">${stats.chaptersLiked}</span></div>
+            <div>Дата установки: <span style="color: #ffffff;">${installDate}</span></div>
+          </div>
+          <button id="reset-stats" style="
+            margin-top: 12px;
+            padding: 8px 16px;
+            background: #374151;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            width: 100%;
+          ">Сбросить статистику</button>
+        </div>
+
+        <div style="padding: 16px; background: #2a2a2a; border-radius: 8px;">
+          <div style="font-weight: 500; margin-bottom: 12px; color: #ffffff;">💾 Экспорт/Импорт</div>
+          <div style="display: flex; gap: 8px;">
+            <button id="export-settings" style="
+              flex: 1;
+              padding: 8px 16px;
+              background: #3b82f6;
+              color: white;
+              border: none;
+              border-radius: 6px;
+              cursor: pointer;
+              font-size: 13px;
+            ">Экспорт</button>
+            <button id="import-settings" style="
+              flex: 1;
+              padding: 8px 16px;
+              background: #10b981;
+              color: white;
+              border: none;
+              border-radius: 6px;
+              cursor: pointer;
+              font-size: 13px;
+            ">Импорт</button>
+          </div>
+          <input type="file" id="import-file" accept=".json" style="display: none;">
         </div>
       </div>
 
-      <div style="display: flex; gap: 12px; margin-top: 32px; justify-content: flex-end;">
-        <button id="close-settings" style="
+      <div style="display: flex; gap: 12px; margin-top: 32px; justify-content: space-between;">
+        <button id="reset-settings" style="
           padding: 12px 24px;
-          background: #374151;
+          background: #ef4444;
           color: #ffffff;
           border: none;
           border-radius: 8px;
           cursor: pointer;
           font-weight: 500;
           font-size: 14px;
-        ">Закрыть</button>
+        ">Сбросить настройки</button>
 
-        <button id="save-settings" style="
-          padding: 12px 24px;
-          background: #3b82f6;
-          color: white;
-          border: none;
-          border-radius: 8px;
-          cursor: pointer;
-          font-weight: 500;
-          font-size: 14px;
-        ">Сохранить</button>
+        <div style="display: flex; gap: 12px;">
+          <button id="close-settings" style="
+            padding: 12px 24px;
+            background: #374151;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+          ">Закрыть</button>
+
+          <button id="save-settings" style="
+            padding: 12px 24px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+          ">Сохранить</button>
+        </div>
       </div>
     `;
 
@@ -246,9 +329,15 @@ class SettingsPanel {
   attachEventListeners(overlay, modal) {
     const durationSlider = modal.querySelector('#notificationDuration');
     const durationValue = modal.querySelector('#durationValue');
+    const batchSizeSlider = modal.querySelector('#batchSize');
+    const batchSizeValue = modal.querySelector('#batchSizeValue');
 
     durationSlider.addEventListener('input', (e) => {
       durationValue.textContent = e.target.value;
+    });
+
+    batchSizeSlider.addEventListener('input', (e) => {
+      batchSizeValue.textContent = e.target.value;
     });
 
     modal.querySelector('#save-settings').addEventListener('click', async () => {
@@ -257,6 +346,26 @@ class SettingsPanel {
 
     modal.querySelector('#close-settings').addEventListener('click', () => {
       this.hide();
+    });
+
+    modal.querySelector('#reset-settings').addEventListener('click', () => {
+      this.showResetConfirmation();
+    });
+
+    modal.querySelector('#reset-stats').addEventListener('click', () => {
+      this.showResetStatsConfirmation();
+    });
+
+    modal.querySelector('#export-settings').addEventListener('click', () => {
+      this.exportSettings();
+    });
+
+    modal.querySelector('#import-settings').addEventListener('click', () => {
+      modal.querySelector('#import-file').click();
+    });
+
+    modal.querySelector('#import-file').addEventListener('change', async (e) => {
+      await this.importSettings(e.target.files[0]);
     });
 
     overlay.addEventListener('click', (e) => {
@@ -273,8 +382,10 @@ class SettingsPanel {
     try {
       const settings = {
         autoLike: modal.querySelector('#autoLike').checked,
+        skipProcessed: modal.querySelector('#skipProcessed').checked,
         notificationsEnabled: modal.querySelector('#notificationsEnabled').checked,
-        notificationDuration: parseInt(modal.querySelector('#notificationDuration').value)
+        notificationDuration: parseInt(modal.querySelector('#notificationDuration').value),
+        batchSize: parseInt(modal.querySelector('#batchSize').value)
       };
 
       await this.config.save(settings);
@@ -301,7 +412,9 @@ class SettingsPanel {
    * Инъекция стилей для модального окна
    */
   injectModalStyles() {
-    if (document.getElementById('remanga-ext-modal-styles')) return;
+    if (document.getElementById('remanga-ext-modal-styles')) {
+      return;
+    }
 
     const style = document.createElement('style');
     style.id = 'remanga-ext-modal-styles';
@@ -360,5 +473,174 @@ class SettingsPanel {
     `;
 
     document.head.appendChild(style);
+  }
+
+  /**
+   * Экспорт настроек
+   */
+  exportSettings() {
+    try {
+      const json = this.config.export();
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `remanga-ext-settings-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      this.notifications.success('Настройки экспортированы');
+      logger.info('Настройки экспортированы');
+    } catch (error) {
+      logger.error('Ошибка экспорта настроек:', error);
+      this.notifications.error('Ошибка экспорта настроек');
+    }
+  }
+
+  /**
+   * Импорт настроек
+   */
+  async importSettings(file) {
+    if (!file) {
+      return;
+    }
+
+    if (file.type !== 'application/json' && !file.name.endsWith('.json')) {
+      this.notifications.error('Неверный тип файла. Требуется JSON');
+      return;
+    }
+
+    if (file.size > 1024 * 1024) {
+      this.notifications.error('Файл слишком большой (максимум 1MB)');
+      return;
+    }
+
+    try {
+      const text = await file.text();
+      await this.config.import(text);
+      this.notifications.success('Настройки импортированы');
+      this.hide();
+
+      setTimeout(() => {
+        this.show();
+      }, 500);
+
+      logger.info('Настройки импортированы');
+    } catch (error) {
+      logger.error('Ошибка импорта настроек:', error);
+      this.notifications.error('Ошибка импорта: невалидный файл');
+    }
+  }
+
+  /**
+   * Показать подтверждение сброса настроек
+   */
+  showResetConfirmation() {
+    this.showConfirmDialog(
+      'Сбросить настройки?',
+      'Все настройки будут сброшены к значениям по умолчанию. Это действие нельзя отменить.',
+      async () => {
+        await this.config.reset();
+        this.notifications.success('Настройки сброшены');
+        this.hide();
+        setTimeout(() => {
+          this.show();
+        }, 500);
+      }
+    );
+  }
+
+  /**
+   * Показать подтверждение сброса статистики
+   */
+  showResetStatsConfirmation() {
+    this.showConfirmDialog(
+      'Сбросить статистику?',
+      'Вся статистика будет удалена. Это действие нельзя отменить.',
+      async () => {
+        await this.statistics.reset();
+        this.notifications.success('Статистика сброшена');
+        this.hide();
+        setTimeout(() => {
+          this.show();
+        }, 500);
+      }
+    );
+  }
+
+  /**
+   * Показать диалог подтверждения
+   */
+  showConfirmDialog(title, message, onConfirm) {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 999999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+    `;
+
+    const dialog = document.createElement('div');
+    dialog.style.cssText = `
+      background: #1a1a1a;
+      color: #ffffff;
+      border-radius: 12px;
+      padding: 24px;
+      min-width: 400px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    `;
+
+    dialog.innerHTML = `
+      <h3 style="margin: 0 0 12px 0; font-size: 18px; font-weight: bold; color: #ffffff;">
+        ${title}
+      </h3>
+      <p style="margin: 0 0 24px 0; color: #9ca3af; font-size: 14px; line-height: 1.5;">
+        ${message}
+      </p>
+      <div style="display: flex; gap: 12px; justify-content: flex-end;">
+        <button id="cancel-btn" style="
+          padding: 10px 20px;
+          background: #374151;
+          color: #ffffff;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          font-weight: 500;
+          font-size: 14px;
+        ">Отмена</button>
+        <button id="confirm-btn" style="
+          padding: 10px 20px;
+          background: #ef4444;
+          color: white;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          font-weight: 500;
+          font-size: 14px;
+        ">Подтвердить</button>
+      </div>
+    `;
+
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+
+    dialog.querySelector('#cancel-btn').addEventListener('click', () => {
+      overlay.remove();
+    });
+
+    dialog.querySelector('#confirm-btn').addEventListener('click', async () => {
+      overlay.remove();
+      await onConfirm();
+    });
+
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        overlay.remove();
+      }
+    });
   }
 }

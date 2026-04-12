@@ -14,7 +14,9 @@ class Config {
     this.defaults = {
       autoLike: false,
       notificationsEnabled: true,
-      notificationDuration: 3
+      notificationDuration: 3,
+      batchSize: 10,
+      skipProcessed: true
     };
 
     this.settings = { ...this.defaults };
@@ -96,7 +98,12 @@ class Config {
    * Экспорт настроек
    */
   export() {
-    return JSON.stringify(this.settings, null, 2);
+    const exportData = {
+      version: '1.2.0',
+      exportDate: new Date().toISOString(),
+      settings: this.settings
+    };
+    return JSON.stringify(exportData, null, 2);
   }
 
   /**
@@ -104,8 +111,25 @@ class Config {
    */
   async import(jsonString) {
     try {
+      if (typeof jsonString !== 'string') {
+        throw new Error('Импорт требует строку JSON');
+      }
+
       const imported = JSON.parse(jsonString);
-      await this.save(imported);
+
+      if (typeof imported !== 'object' || imported === null || Array.isArray(imported)) {
+        throw new Error('Невалидная структура настроек');
+      }
+
+      let settingsToImport;
+      if (imported.settings && imported.version) {
+        settingsToImport = imported.settings;
+        logger.info(`Импорт настроек версии ${imported.version} от ${imported.exportDate}`);
+      } else {
+        settingsToImport = imported;
+      }
+
+      await this.save(settingsToImport);
       return true;
     } catch (error) {
       logger.error('Ошибка импорта настроек:', error);

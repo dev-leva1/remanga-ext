@@ -7,6 +7,7 @@ class RemangaExtension {
   constructor() {
     this.config = null;
     this.api = null;
+    this.statistics = null;
     this.chapterManager = null;
     this.autoLiker = null;
     this.notifications = null;
@@ -30,15 +31,18 @@ class RemangaExtension {
       this.config = new Config();
       await this.config.load();
 
+      this.statistics = new Statistics();
+      await this.statistics.load();
+
       this.api = new ApiClient();
       this.api.init();
 
       this.notifications = new Notifications(this.config);
       this.notifications.injectStyles();
 
-      this.chapterManager = new ChapterManager(this.api, this.config, this.notifications);
+      this.chapterManager = new ChapterManager(this.api, this.config, this.notifications, this.statistics);
       this.autoLiker = new AutoLiker(this.chapterManager, this.config, this.notifications);
-      this.settingsPanel = new SettingsPanel(this.config, this.notifications);
+      this.settingsPanel = new SettingsPanel(this.config, this.notifications, this.statistics);
 
       const pageType = this.detectPageType();
       logger.info(`Тип страницы: ${pageType}`);
@@ -126,6 +130,12 @@ class RemangaExtension {
   cleanup() {
     this.observers.forEach(observer => observer.disconnect());
     this.observers = [];
+    if (this.notifications) {
+      this.notifications.cleanup();
+    }
+    if (this.settingsPanel) {
+      this.settingsPanel.cleanup();
+    }
     logger.info('Ресурсы расширения очищены');
   }
 
@@ -242,7 +252,9 @@ class RemangaExtension {
    * Добавление кнопки "Прочитать все главы"
    */
   addMarkAllReadButton(container) {
-    if (document.getElementById('remanga-ext-mark-all-btn')) return;
+    if (document.getElementById('remanga-ext-mark-all-btn')) {
+      return;
+    }
 
     const button = document.createElement('button');
     button.id = 'remanga-ext-mark-all-btn';
@@ -273,7 +285,15 @@ class RemangaExtension {
     });
 
     button.addEventListener('click', async () => {
-      await this.handleMarkAllRead(button);
+      try {
+        await this.handleMarkAllRead(button);
+      } catch (error) {
+        logger.error('Ошибка обработки массовой отметки:', error);
+        this.notifications.error('Произошла ошибка при обработке');
+        button.disabled = false;
+        button.textContent = '✓ Прочитать все главы';
+        this.hideProgressModal();
+      }
     });
 
     container.insertBefore(button, container.firstChild);
@@ -284,7 +304,9 @@ class RemangaExtension {
    * Добавление кнопки "Лайкнуть все главы"
    */
   addLikeAllButton(container) {
-    if (document.getElementById('remanga-ext-like-all-btn')) return;
+    if (document.getElementById('remanga-ext-like-all-btn')) {
+      return;
+    }
 
     const button = document.createElement('button');
     button.id = 'remanga-ext-like-all-btn';
@@ -315,7 +337,15 @@ class RemangaExtension {
     });
 
     button.addEventListener('click', async () => {
-      await this.handleLikeAll(button);
+      try {
+        await this.handleLikeAll(button);
+      } catch (error) {
+        logger.error('Ошибка обработки массового лайка:', error);
+        this.notifications.error('Произошла ошибка при обработке');
+        button.disabled = false;
+        button.textContent = '❤️ Лайкнуть все главы';
+        this.hideProgressModal();
+      }
     });
 
     container.insertBefore(button, container.children[1]);
@@ -350,8 +380,8 @@ class RemangaExtension {
 
     const result = await this.chapterManager.markMultipleAsRead(
       chapterIds,
-      (current, total) => {
-        this.updateProgressModal(current, total);
+      (current, total, eta) => {
+        this.updateProgressModal(current, total, eta);
       }
     );
 
@@ -359,6 +389,10 @@ class RemangaExtension {
 
     button.disabled = false;
     button.textContent = '✓ Прочитать все главы';
+
+    if (result.skipped > 0) {
+      this.notifications.info(`Пропущено ${result.skipped} уже прочитанных глав`);
+    }
 
     if (result.failed > 0) {
       this.notifications.warning(
@@ -397,8 +431,8 @@ class RemangaExtension {
 
     const result = await this.chapterManager.likeMultiple(
       chapterIds,
-      (current, total) => {
-        this.updateProgressModal(current, total);
+      (current, total, eta) => {
+        this.updateProgressModal(current, total, eta);
       }
     );
 
@@ -406,6 +440,10 @@ class RemangaExtension {
 
     button.disabled = false;
     button.textContent = '❤️ Лайкнуть все главы';
+
+    if (result.skipped > 0) {
+      this.notifications.info(`Пропущено ${result.skipped} уже лайкнутых глав`);
+    }
 
     if (result.failed > 0) {
       this.notifications.warning(
@@ -498,7 +536,9 @@ class RemangaExtension {
    * Обновить текст в режиме загрузки
    */
   updateProgressModalLoading(text) {
-    if (!this.progressModal) return;
+    if (!this.progressModal) {
+      return;
+    }
 
     const progressText = this.progressModal.querySelector('#progress-text');
     if (progressText) {
@@ -509,8 +549,10 @@ class RemangaExtension {
   /**
    * Обновить прогресс
    */
-  updateProgressModal(current, total) {
-    if (!this.progressModal) return;
+  updateProgressModal(current, total, eta = null) {
+    if (!this.progressModal) {
+      return;
+    }
 
     const percent = Math.round((current / total) * 100);
     const progressBar = this.progressModal.querySelector('#progress-bar');
@@ -521,7 +563,13 @@ class RemangaExtension {
     }
 
     if (progressText) {
-      progressText.textContent = `${current} из ${total}`;
+      let text = `${current} из ${total}`;
+      if (eta && eta.totalSeconds > 0) {
+        const mins = eta.minutes;
+        const secs = eta.seconds;
+        text += ` • Осталось ~${mins > 0 ? `${mins} мин ` : ''}${secs} сек`;
+      }
+      progressText.textContent = text;
     }
   }
 

@@ -6,7 +6,8 @@ class Notifications {
   constructor(config) {
     this.config = config;
     this.queue = [];
-    this.activeToasts = new Set();
+    this.activeToasts = new Map();
+    this.maxToasts = 5;
   }
 
   /**
@@ -17,16 +18,48 @@ class Notifications {
       return;
     }
 
+    const validMessage = String(message);
+    const validTypes = ['info', 'success', 'warning', 'error'];
+    const validType = validTypes.includes(type) ? type : 'info';
+
+    const key = `${validType}:${validMessage}`;
     const duration = this.config.get('notificationDuration') * 1000;
-    const toast = this.createToast(message, type);
 
-    document.body.appendChild(toast);
+    if (this.activeToasts.has(key)) {
+      const existing = this.activeToasts.get(key);
+      existing.count++;
+      this.updateToastCount(existing.toast, existing.count);
 
-    const timeoutId = setTimeout(() => {
-      this.hide(toast);
-    }, duration);
+      clearTimeout(existing.timeoutId);
+      existing.timeoutId = setTimeout(() => {
+        this.hide(key);
+      }, duration);
+    } else {
+      if (this.activeToasts.size >= this.maxToasts) {
+        const oldestKey = this.activeToasts.keys().next().value;
+        this.hide(oldestKey);
+      }
 
-    this.activeToasts.add({ toast, timeoutId });
+      const toast = this.createToast(message, type);
+      document.body.appendChild(toast);
+
+      const timeoutId = setTimeout(() => {
+        this.hide(key);
+      }, duration);
+
+      this.activeToasts.set(key, { toast, timeoutId, count: 1 });
+      this.updateToastPositions();
+    }
+  }
+
+  cleanup() {
+    this.activeToasts.forEach((entry, key) => {
+      clearTimeout(entry.timeoutId);
+      if (entry.toast.parentNode) {
+        entry.toast.parentNode.removeChild(entry.toast);
+      }
+    });
+    this.activeToasts.clear();
   }
 
   /**
@@ -59,32 +92,82 @@ class Notifications {
       max-width: 400px;
       animation: remanga-toast-slide-in 0.3s ease;
       cursor: pointer;
+      transition: top 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     `;
 
-    toast.textContent = message;
+    const messageSpan = document.createElement('span');
+    messageSpan.className = 'remanga-ext-toast-message';
+    messageSpan.textContent = message;
 
+    const countBadge = document.createElement('span');
+    countBadge.className = 'remanga-ext-toast-count';
+    countBadge.style.cssText = `
+      display: none;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    `;
+
+    toast.appendChild(messageSpan);
+    toast.appendChild(countBadge);
+
+    const key = `${type}:${message}`;
     toast.addEventListener('click', () => {
-      this.hide(toast);
+      this.hide(key);
     });
 
     return toast;
   }
 
   /**
+   * Обновление счетчика в toast
+   */
+  updateToastCount(toast, count) {
+    const countBadge = toast.querySelector('.remanga-ext-toast-count');
+    if (countBadge) {
+      if (count > 1) {
+        countBadge.textContent = `x${count}`;
+        countBadge.style.display = 'block';
+      } else {
+        countBadge.style.display = 'none';
+      }
+    }
+  }
+
+  /**
+   * Обновление позиций всех тостов
+   */
+  updateToastPositions() {
+    let offset = 20;
+    this.activeToasts.forEach(({ toast }) => {
+      toast.style.top = `${offset}px`;
+      offset += toast.offsetHeight + 12;
+    });
+  }
+
+  /**
    * Скрытие уведомления
    */
-  hide(toast) {
-    const entry = Array.from(this.activeToasts).find(e => e.toast === toast);
-    if (!entry) return;
+  hide(key) {
+    const entry = this.activeToasts.get(key);
+    if (!entry) {
+      return;
+    }
 
     clearTimeout(entry.timeoutId);
-    toast.style.animation = 'remanga-toast-slide-out 0.3s ease';
+    entry.toast.style.animation = 'remanga-toast-slide-out 0.3s ease';
 
     setTimeout(() => {
-      if (toast.parentNode) {
-        toast.parentNode.removeChild(toast);
+      if (entry.toast.parentNode) {
+        entry.toast.parentNode.removeChild(entry.toast);
       }
-      this.activeToasts.delete(entry);
+      this.activeToasts.delete(key);
+      this.updateToastPositions();
     }, 300);
   }
 
@@ -92,7 +175,9 @@ class Notifications {
    * Инъекция стилей для анимаций
    */
   injectStyles() {
-    if (document.getElementById('remanga-ext-toast-styles')) return;
+    if (document.getElementById('remanga-ext-toast-styles')) {
+      return;
+    }
 
     const style = document.createElement('style');
     style.id = 'remanga-ext-toast-styles';
@@ -159,6 +244,6 @@ class Notifications {
    * Очистить все уведомления
    */
   clearAll() {
-    this.activeToasts.forEach(toast => this.hide(toast));
+    this.activeToasts.forEach((_, key) => this.hide(key));
   }
 }

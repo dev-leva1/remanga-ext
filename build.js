@@ -10,6 +10,7 @@ const files = [
   'src/utils/validators.js',
   'src/utils/dom.js',
   'src/core/Config.js',
+  'src/core/Statistics.js',
   'src/core/ApiClient.js',
   'src/ui/Notifications.js',
   'src/ui/SettingsPanel.js',

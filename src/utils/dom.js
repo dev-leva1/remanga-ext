@@ -17,7 +17,9 @@ const domUtils = {
       let observer = null;
 
       const timeoutId = setTimeout(() => {
-        if (observer) observer.disconnect();
+        if (observer) {
+          observer.disconnect();
+        }
         reject(new Error(`Таймаут ожидания элемента: ${selector}`));
       }, timeout);
 
@@ -98,7 +100,9 @@ const domUtils = {
     // Fallback: ищем в window.__NEXT_DATA__
     if (typeof window !== 'undefined' && window.__NEXT_DATA__) {
       const branchId = window.__NEXT_DATA__?.props?.pageProps?.branch?.id;
-      if (branchId) return branchId;
+      if (branchId) {
+        return branchId;
+      }
     }
 
     return null;
@@ -140,7 +144,9 @@ const domUtils = {
    */
   findNextChapterLink() {
     const header = document.querySelector('header');
-    if (!header) return null;
+    if (!header) {
+      return null;
+    }
 
     const links = header.querySelectorAll('a[href*="/manga/"]');
     const currentPath = window.location.pathname;

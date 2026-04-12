@@ -4,11 +4,13 @@
  */
 
 class ChapterManager {
-  constructor(apiClient, config, notifications) {
+  constructor(apiClient, config, notifications, statistics) {
     this.api = apiClient;
     this.config = config;
     this.notifications = notifications;
+    this.statistics = statistics;
     this.processingQueue = [];
+    this.operationTimes = [];
   }
 
   /**
@@ -30,20 +32,45 @@ class ChapterManager {
    * Массовая отметка глав как прочитанных
    */
   async markMultipleAsRead(chapterIds, onProgress = null) {
-    const total = chapterIds.length;
+    const skipProcessed = this.config.get('skipProcessed');
+    let filteredIds = chapterIds;
+
+    if (skipProcessed) {
+      filteredIds = chapterIds.filter(id => !this.isChapterRead(id));
+      const skipped = chapterIds.length - filteredIds.length;
+      if (skipped > 0) {
+        logger.info(`Пропущено ${skipped} уже прочитанных глав`);
+      }
+    }
+
+    if (filteredIds.length === 0) {
+      return { total: chapterIds.length, completed: 0, failed: 0, skipped: chapterIds.length };
+    }
+
+    const total = filteredIds.length;
     let completed = 0;
     let failed = 0;
+    this.operationTimes = [];
 
     logger.info(`Начало массовой отметки ${total} глав`);
 
-    for (const chapterId of chapterIds) {
+    for (const chapterId of filteredIds) {
+      const startTime = Date.now();
+
       try {
         await this.api.markChapterAsRead(chapterId);
         completed++;
         this.updateReadButton(chapterId);
 
+        const operationTime = Date.now() - startTime;
+        this.operationTimes.push(operationTime);
+        if (this.operationTimes.length > 10) {
+          this.operationTimes.shift();
+        }
+
         if (onProgress) {
-          onProgress(completed, total);
+          const eta = this.calculateETA(completed, total);
+          onProgress(completed, total, eta);
         }
 
         await this.delay(300);
@@ -53,12 +80,14 @@ class ChapterManager {
       }
     }
 
+    await this.statistics.incrementReads(completed);
     logger.info(`Массовая отметка завершена: ${completed} успешно, ${failed} ошибок`);
 
     return {
-      total,
+      total: chapterIds.length,
       completed,
-      failed
+      failed,
+      skipped: chapterIds.length - filteredIds.length
     };
   }
 
@@ -78,18 +107,35 @@ class ChapterManager {
   }
 
   /**
-   * Массовый лайк глав (батчами по 10)
+   * Массовый лайк глав (батчами)
    */
   async likeMultiple(chapterIds, onProgress = null) {
-    const batchSize = 10;
-    const total = chapterIds.length;
+    const skipProcessed = this.config.get('skipProcessed');
+    let filteredIds = chapterIds;
+
+    if (skipProcessed) {
+      filteredIds = chapterIds.filter(id => !this.isChapterLiked(id));
+      const skipped = chapterIds.length - filteredIds.length;
+      if (skipped > 0) {
+        logger.info(`Пропущено ${skipped} уже лайкнутых глав`);
+      }
+    }
+
+    if (filteredIds.length === 0) {
+      return { total: chapterIds.length, completed: 0, failed: 0, skipped: chapterIds.length };
+    }
+
+    const batchSize = this.config.get('batchSize');
+    const total = filteredIds.length;
     let completed = 0;
     let failed = 0;
+    this.operationTimes = [];
 
-    logger.info(`Начало массового лайка ${total} глав`);
+    logger.info(`Начало массового лайка ${total} глав (batch: ${batchSize})`);
 
-    for (let i = 0; i < chapterIds.length; i += batchSize) {
-      const batch = chapterIds.slice(i, i + batchSize);
+    for (let i = 0; i < filteredIds.length; i += batchSize) {
+      const batch = filteredIds.slice(i, i + batchSize);
+      const startTime = Date.now();
 
       try {
         await this.api.likeChapters(batch);
@@ -97,25 +143,34 @@ class ChapterManager {
 
         batch.forEach(id => this.updateLikeButton(id));
 
-        if (onProgress) {
-          onProgress(completed, total);
+        const operationTime = Date.now() - startTime;
+        this.operationTimes.push(operationTime);
+        if (this.operationTimes.length > 10) {
+          this.operationTimes.shift();
         }
 
-        if (i + batchSize < chapterIds.length) {
+        if (onProgress) {
+          const eta = this.calculateETA(completed, total);
+          onProgress(completed, total, eta);
+        }
+
+        if (i + batchSize < filteredIds.length) {
           await this.delay(500);
         }
       } catch (error) {
-        logger.error(`Ошибка лайка батча:`, error);
+        logger.error('Ошибка лайка батча:', error);
         failed += batch.length;
       }
     }
 
+    await this.statistics.incrementLikes(completed);
     logger.info(`Массовый лайк завершен: ${completed} успешно, ${failed} ошибок`);
 
     return {
-      total,
+      total: chapterIds.length,
       completed,
-      failed
+      failed,
+      skipped: chapterIds.length - filteredIds.length
     };
   }
 
@@ -227,7 +282,9 @@ class ChapterManager {
    */
   isChapterRead(chapterId) {
     const button = domUtils.findReadButton(chapterId);
-    if (!button) return false;
+    if (!button) {
+      return false;
+    }
 
     return button.classList.contains('remanga-ext-read') ||
            button.style.opacity === '0.5';
@@ -238,8 +295,28 @@ class ChapterManager {
    */
   isChapterLiked(chapterId) {
     const button = domUtils.findLikeButton(chapterId);
-    if (!button) return false;
+    if (!button) {
+      return false;
+    }
 
     return button.classList.contains('remanga-ext-liked');
+  }
+
+  /**
+   * Расчет ETA (примерное оставшееся время)
+   */
+  calculateETA(completed, total) {
+    if (this.operationTimes.length === 0 || completed === 0) {
+      return null;
+    }
+
+    const avgTime = this.operationTimes.reduce((a, b) => a + b, 0) / this.operationTimes.length;
+    const remaining = total - completed;
+    const etaMs = remaining * avgTime;
+
+    const minutes = Math.floor(etaMs / 60000);
+    const seconds = Math.floor((etaMs % 60000) / 1000);
+
+    return { minutes, seconds, totalSeconds: Math.floor(etaMs / 1000) };
   }
 }

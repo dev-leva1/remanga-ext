@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Remanga Enhanced
 // @namespace    remanga.ext
-// @version      1.1.3
+// @version      1.2.0
 // @description  Автоматизация действий на remanga.org: автолайк, массовая отметка глав
 // @author       fills
 // @match        https://remanga.org/*
@@ -89,6 +89,15 @@ const duration = parseInt(settings.notificationDuration);
 if (duration >= 1 && duration <= 10) {
 sanitized.notificationDuration = duration;
 }
+}
+if ('batchSize' in settings) {
+const batchSize = parseInt(settings.batchSize);
+if (batchSize >= 1 && batchSize <= 50) {
+sanitized.batchSize = batchSize;
+}
+}
+if ('skipProcessed' in settings) {
+sanitized.skipProcessed = Boolean(settings.skipProcessed);
 }
 return sanitized;
 }
@@ -210,7 +219,9 @@ return Config.instance;
 this.defaults = {
 autoLike: false,
 notificationsEnabled: true,
-notificationDuration: 3
+notificationDuration: 3,
+batchSize: 10,
+skipProcessed: true
 };
 this.settings = { ...this.defaults };
 Config.instance = this;
@@ -263,17 +274,117 @@ await GM.setValue('settings', JSON.stringify(this.settings));
 logger.info('Настройки сброшены к значениям по умолчанию');
 }
 export() {
-return JSON.stringify(this.settings, null, 2);
+const exportData = {
+version: '1.2.0',
+exportDate: new Date().toISOString(),
+settings: this.settings
+};
+return JSON.stringify(exportData, null, 2);
 }
 async import(jsonString) {
 try {
+if (typeof jsonString !== 'string') {
+throw new Error('Импорт требует строку JSON');
+}
 const imported = JSON.parse(jsonString);
-await this.save(imported);
+if (typeof imported !== 'object' || imported === null || Array.isArray(imported)) {
+throw new Error('Невалидная структура настроек');
+}
+let settingsToImport;
+if (imported.settings && imported.version) {
+settingsToImport = imported.settings;
+logger.info(`Импорт настроек версии ${imported.version} от ${imported.exportDate}`);
+} else {
+settingsToImport = imported;
+}
+await this.save(settingsToImport);
 return true;
 } catch (error) {
 logger.error('Ошибка импорта настроек:', error);
 throw new Error('Невалидный формат настроек');
 }
+}
+}
+
+class Statistics {
+static instance = null;
+constructor() {
+if (Statistics.instance) {
+return Statistics.instance;
+}
+this.stats = {
+chaptersRead: 0,
+chaptersLiked: 0,
+installDate: null
+};
+this.saveQueue = Promise.resolve();
+Statistics.instance = this;
+}
+async load() {
+try {
+const stored = await GM.getValue('statistics', null);
+if (stored) {
+const parsed = JSON.parse(stored);
+if (typeof parsed !== 'object' || parsed === null) {
+throw new Error('Невалидная структура статистики');
+}
+const validRead = parseInt(parsed.chaptersRead);
+const validLiked = parseInt(parsed.chaptersLiked);
+this.stats = {
+chaptersRead: (Number.isInteger(validRead) && validRead >= 0) ? validRead : 0,
+chaptersLiked: (Number.isInteger(validLiked) && validLiked >= 0) ? validLiked : 0,
+installDate: parsed.installDate || new Date().toISOString()
+};
+} else {
+this.stats.installDate = new Date().toISOString();
+await this.save();
+}
+logger.info('Статистика загружена:', this.stats);
+return this.stats;
+} catch (error) {
+logger.error('Ошибка загрузки статистики:', error);
+this.stats.installDate = new Date().toISOString();
+return this.stats;
+}
+}
+async save() {
+this.saveQueue = this.saveQueue.then(async () => {
+try {
+await GM.setValue('statistics', JSON.stringify(this.stats));
+logger.debug('Статистика сохранена');
+} catch (error) {
+logger.error('Ошибка сохранения статистики:', error);
+}
+});
+return this.saveQueue;
+}
+async incrementReads(count = 1) {
+const validCount = parseInt(count);
+if (!Number.isInteger(validCount) || validCount < 0 || validCount > 10000) {
+throw new Error(`Невалидное значение count: ${count}`);
+}
+this.stats.chaptersRead += validCount;
+await this.save();
+}
+async incrementLikes(count = 1) {
+const validCount = parseInt(count);
+if (!Number.isInteger(validCount) || validCount < 0 || validCount > 10000) {
+throw new Error(`Невалидное значение count: ${count}`);
+}
+this.stats.chaptersLiked += validCount;
+await this.save();
+}
+getStats() {
+return { ...this.stats };
+}
+async reset() {
+this.stats = {
+chaptersRead: 0,
+chaptersLiked: 0,
+installDate: new Date().toISOString()
+};
+await this.save();
+logger.info('Статистика сброшена');
 }
 }
 
@@ -398,19 +509,48 @@ class Notifications {
 constructor(config) {
 this.config = config;
 this.queue = [];
-this.activeToasts = new Set();
+this.activeToasts = new Map();
+this.maxToasts = 5;
 }
 show(message, type = 'info') {
 if (!this.config.get('notificationsEnabled')) {
 return;
 }
+const validMessage = String(message);
+const validTypes = ['info', 'success', 'warning', 'error'];
+const validType = validTypes.includes(type) ? type : 'info';
+const key = `${validType}:${validMessage}`;
 const duration = this.config.get('notificationDuration') * 1000;
+if (this.activeToasts.has(key)) {
+const existing = this.activeToasts.get(key);
+existing.count++;
+this.updateToastCount(existing.toast, existing.count);
+clearTimeout(existing.timeoutId);
+existing.timeoutId = setTimeout(() => {
+this.hide(key);
+}, duration);
+} else {
+if (this.activeToasts.size >= this.maxToasts) {
+const oldestKey = this.activeToasts.keys().next().value;
+this.hide(oldestKey);
+}
 const toast = this.createToast(message, type);
 document.body.appendChild(toast);
 const timeoutId = setTimeout(() => {
-this.hide(toast);
+this.hide(key);
 }, duration);
-this.activeToasts.add({ toast, timeoutId });
+this.activeToasts.set(key, { toast, timeoutId, count: 1 });
+this.updateToastPositions();
+}
+}
+cleanup() {
+this.activeToasts.forEach((entry, key) => {
+clearTimeout(entry.timeoutId);
+if (entry.toast.parentNode) {
+entry.toast.parentNode.removeChild(entry.toast);
+}
+});
+this.activeToasts.clear();
 }
 createToast(message, type) {
 const toast = document.createElement('div');
@@ -437,23 +577,63 @@ font-weight: 500;
 max-width: 400px;
 animation: remanga-toast-slide-in 0.3s ease;
 cursor: pointer;
+transition: top 0.3s ease;
+display: flex;
+align-items: center;
+gap: 8px;
 `;
-toast.textContent = message;
+const messageSpan = document.createElement('span');
+messageSpan.className = 'remanga-ext-toast-message';
+messageSpan.textContent = message;
+const countBadge = document.createElement('span');
+countBadge.className = 'remanga-ext-toast-count';
+countBadge.style.cssText = `
+display: none;
+background: rgba(0, 0, 0, 0.2);
+padding: 2px 8px;
+border-radius: 12px;
+font-size: 12px;
+font-weight: 600;
+`;
+toast.appendChild(messageSpan);
+toast.appendChild(countBadge);
+const key = `${type}:${message}`;
 toast.addEventListener('click', () => {
-this.hide(toast);
+this.hide(key);
 });
 return toast;
 }
-hide(toast) {
-const entry = Array.from(this.activeToasts).find(e => e.toast === toast);
-if (!entry) return;
-clearTimeout(entry.timeoutId);
-toast.style.animation = 'remanga-toast-slide-out 0.3s ease';
-setTimeout(() => {
-if (toast.parentNode) {
-toast.parentNode.removeChild(toast);
+updateToastCount(toast, count) {
+const countBadge = toast.querySelector('.remanga-ext-toast-count');
+if (countBadge) {
+if (count > 1) {
+countBadge.textContent = `x${count}`;
+countBadge.style.display = 'block';
+} else {
+countBadge.style.display = 'none';
 }
-this.activeToasts.delete(entry);
+}
+}
+updateToastPositions() {
+let offset = 20;
+this.activeToasts.forEach(({ toast }) => {
+toast.style.top = `${offset}px`;
+offset += toast.offsetHeight + 12;
+});
+}
+hide(key) {
+const entry = this.activeToasts.get(key);
+if (!entry) {
+return;
+}
+clearTimeout(entry.timeoutId);
+entry.toast.style.animation = 'remanga-toast-slide-out 0.3s ease';
+setTimeout(() => {
+if (entry.toast.parentNode) {
+entry.toast.parentNode.removeChild(entry.toast);
+}
+this.activeToasts.delete(key);
+this.updateToastPositions();
 }, 300);
 }
 injectStyles() {
@@ -500,14 +680,15 @@ info(message) {
 this.show(message, 'info');
 }
 clearAll() {
-this.activeToasts.forEach(toast => this.hide(toast));
+this.activeToasts.forEach((_, key) => this.hide(key));
 }
 }
 
 class SettingsPanel {
-constructor(config, notifications) {
+constructor(config, notifications, statistics) {
 this.config = config;
 this.notifications = notifications;
+this.statistics = statistics;
 this.panel = null;
 this.observer = null;
 }
@@ -626,9 +807,13 @@ border-radius: 12px;
 padding: 32px;
 min-width: 500px;
 max-width: 600px;
+max-height: 80vh;
+overflow-y: auto;
 box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
 animation: remanga-modal-appear 0.2s ease;
 `;
+const stats = this.statistics.getStats();
+const installDate = new Date(stats.installDate).toLocaleDateString('ru-RU');
 modal.innerHTML = `
 <h2 style="margin: 0 0 24px 0; font-size: 24px; font-weight: bold; color: #ffffff;">
 Настройки расширения
@@ -640,6 +825,14 @@ style="width: 20px; height: 20px; cursor: pointer; accent-color: #3b82f6;">
 <div>
 <div style="font-weight: 500; color: #ffffff;">Автолайк глав при открытии</div>
 <div style="font-size: 12px; color: #9ca3af;">Автоматически ставить лайк при открытии главы</div>
+</div>
+</label>
+<label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+<input type="checkbox" id="skipProcessed" ${this.config.get('skipProcessed') ? 'checked' : ''}
+style="width: 20px; height: 20px; cursor: pointer; accent-color: #3b82f6;">
+<div>
+<div style="font-weight: 500; color: #ffffff;">Пропускать обработанные главы</div>
+<div style="font-size: 12px; color: #9ca3af;">Не обрабатывать уже прочитанные/лайкнутые главы</div>
 </div>
 </label>
 <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
@@ -662,12 +855,76 @@ style="width: 100%; accent-color: #3b82f6;">
 <span id="durationValue">${this.config.get('notificationDuration')}</span> сек
 </div>
 </div>
+<div>
+<label style="display: block; margin-bottom: 8px; font-weight: 500; color: #ffffff;">
+Размер batch для массовых операций
+</label>
+<input type="range" id="batchSize"
+min="1" max="50" step="1"
+value="${this.config.get('batchSize')}"
+style="width: 100%; accent-color: #3b82f6;">
+<div style="text-align: center; margin-top: 4px; color: #9ca3af;">
+<span id="batchSizeValue">${this.config.get('batchSize')}</span> глав за раз
+</div>
+</div>
 <div style="padding: 16px; background: #2a2a2a; border-radius: 8px;">
-<div style="font-weight: 500; margin-bottom: 8px; color: #ffffff;">🚧 Горячие клавиши</div>
-<div style="color: #6b7280; font-size: 14px;">Coming Soon...</div>
+<div style="font-weight: 500; margin-bottom: 12px; color: #ffffff;">📊 Статистика</div>
+<div style="display: flex; flex-direction: column; gap: 8px; color: #9ca3af; font-size: 14px;">
+<div>Прочитано глав: <span style="color: #10b981; font-weight: 600;">${stats.chaptersRead}</span></div>
+<div>Лайков поставлено: <span style="color: #ef4444; font-weight: 600;">${stats.chaptersLiked}</span></div>
+<div>Дата установки: <span style="color: #ffffff;">${installDate}</span></div>
+</div>
+<button id="reset-stats" style="
+margin-top: 12px;
+padding: 8px 16px;
+background: #374151;
+color: #ffffff;
+border: none;
+border-radius: 6px;
+cursor: pointer;
+font-size: 13px;
+width: 100%;
+">Сбросить статистику</button>
+</div>
+<div style="padding: 16px; background: #2a2a2a; border-radius: 8px;">
+<div style="font-weight: 500; margin-bottom: 12px; color: #ffffff;">💾 Экспорт/Импорт</div>
+<div style="display: flex; gap: 8px;">
+<button id="export-settings" style="
+flex: 1;
+padding: 8px 16px;
+background: #3b82f6;
+color: white;
+border: none;
+border-radius: 6px;
+cursor: pointer;
+font-size: 13px;
+">Экспорт</button>
+<button id="import-settings" style="
+flex: 1;
+padding: 8px 16px;
+background: #10b981;
+color: white;
+border: none;
+border-radius: 6px;
+cursor: pointer;
+font-size: 13px;
+">Импорт</button>
+</div>
+<input type="file" id="import-file" accept=".json" style="display: none;">
 </div>
 </div>
-<div style="display: flex; gap: 12px; margin-top: 32px; justify-content: flex-end;">
+<div style="display: flex; gap: 12px; margin-top: 32px; justify-content: space-between;">
+<button id="reset-settings" style="
+padding: 12px 24px;
+background: #ef4444;
+color: #ffffff;
+border: none;
+border-radius: 8px;
+cursor: pointer;
+font-weight: 500;
+font-size: 14px;
+">Сбросить настройки</button>
+<div style="display: flex; gap: 12px;">
 <button id="close-settings" style="
 padding: 12px 24px;
 background: #374151;
@@ -689,6 +946,7 @@ font-weight: 500;
 font-size: 14px;
 ">Сохранить</button>
 </div>
+</div>
 `;
 overlay.appendChild(modal);
 this.attachEventListeners(overlay, modal);
@@ -698,14 +956,34 @@ return overlay;
 attachEventListeners(overlay, modal) {
 const durationSlider = modal.querySelector('#notificationDuration');
 const durationValue = modal.querySelector('#durationValue');
+const batchSizeSlider = modal.querySelector('#batchSize');
+const batchSizeValue = modal.querySelector('#batchSizeValue');
 durationSlider.addEventListener('input', (e) => {
 durationValue.textContent = e.target.value;
+});
+batchSizeSlider.addEventListener('input', (e) => {
+batchSizeValue.textContent = e.target.value;
 });
 modal.querySelector('#save-settings').addEventListener('click', async () => {
 await this.saveSettings(modal);
 });
 modal.querySelector('#close-settings').addEventListener('click', () => {
 this.hide();
+});
+modal.querySelector('#reset-settings').addEventListener('click', () => {
+this.showResetConfirmation();
+});
+modal.querySelector('#reset-stats').addEventListener('click', () => {
+this.showResetStatsConfirmation();
+});
+modal.querySelector('#export-settings').addEventListener('click', () => {
+this.exportSettings();
+});
+modal.querySelector('#import-settings').addEventListener('click', () => {
+modal.querySelector('#import-file').click();
+});
+modal.querySelector('#import-file').addEventListener('change', async (e) => {
+await this.importSettings(e.target.files[0]);
 });
 overlay.addEventListener('click', (e) => {
 if (e.target === overlay) {
@@ -717,8 +995,10 @@ async saveSettings(modal) {
 try {
 const settings = {
 autoLike: modal.querySelector('#autoLike').checked,
+skipProcessed: modal.querySelector('#skipProcessed').checked,
 notificationsEnabled: modal.querySelector('#notificationsEnabled').checked,
-notificationDuration: parseInt(modal.querySelector('#notificationDuration').value)
+notificationDuration: parseInt(modal.querySelector('#notificationDuration').value),
+batchSize: parseInt(modal.querySelector('#batchSize').value)
 };
 await this.config.save(settings);
 this.notifications.success('Настройки сохранены');
@@ -787,14 +1067,153 @@ border: none;
 `;
 document.head.appendChild(style);
 }
+exportSettings() {
+try {
+const json = this.config.export();
+const blob = new Blob([json], { type: 'application/json' });
+const url = URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url;
+a.download = `remanga-ext-settings-${new Date().toISOString().split('T')[0]}.json`;
+a.click();
+URL.revokeObjectURL(url);
+this.notifications.success('Настройки экспортированы');
+logger.info('Настройки экспортированы');
+} catch (error) {
+logger.error('Ошибка экспорта настроек:', error);
+this.notifications.error('Ошибка экспорта настроек');
+}
+}
+async importSettings(file) {
+if (!file) {
+return;
+}
+if (file.type !== 'application/json' && !file.name.endsWith('.json')) {
+this.notifications.error('Неверный тип файла. Требуется JSON');
+return;
+}
+if (file.size > 1024 * 1024) {
+this.notifications.error('Файл слишком большой (максимум 1MB)');
+return;
+}
+try {
+const text = await file.text();
+await this.config.import(text);
+this.notifications.success('Настройки импортированы');
+this.hide();
+setTimeout(() => {
+this.show();
+}, 500);
+logger.info('Настройки импортированы');
+} catch (error) {
+logger.error('Ошибка импорта настроек:', error);
+this.notifications.error('Ошибка импорта: невалидный файл');
+}
+}
+showResetConfirmation() {
+this.showConfirmDialog(
+'Сбросить настройки?',
+'Все настройки будут сброшены к значениям по умолчанию. Это действие нельзя отменить.',
+async () => {
+await this.config.reset();
+this.notifications.success('Настройки сброшены');
+this.hide();
+setTimeout(() => {
+this.show();
+}, 500);
+}
+);
+}
+showResetStatsConfirmation() {
+this.showConfirmDialog(
+'Сбросить статистику?',
+'Вся статистика будет удалена. Это действие нельзя отменить.',
+async () => {
+await this.statistics.reset();
+this.notifications.success('Статистика сброшена');
+this.hide();
+setTimeout(() => {
+this.show();
+}, 500);
+}
+);
+}
+showConfirmDialog(title, message, onConfirm) {
+const overlay = document.createElement('div');
+overlay.style.cssText = `
+position: fixed;
+inset: 0;
+background: rgba(0, 0, 0, 0.7);
+z-index: 999999;
+display: flex;
+align-items: center;
+justify-content: center;
+backdrop-filter: blur(4px);
+`;
+const dialog = document.createElement('div');
+dialog.style.cssText = `
+background: #1a1a1a;
+color: #ffffff;
+border-radius: 12px;
+padding: 24px;
+min-width: 400px;
+box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+`;
+dialog.innerHTML = `
+<h3 style="margin: 0 0 12px 0; font-size: 18px; font-weight: bold; color: #ffffff;">
+${title}
+</h3>
+<p style="margin: 0 0 24px 0; color: #9ca3af; font-size: 14px; line-height: 1.5;">
+${message}
+</p>
+<div style="display: flex; gap: 12px; justify-content: flex-end;">
+<button id="cancel-btn" style="
+padding: 10px 20px;
+background: #374151;
+color: #ffffff;
+border: none;
+border-radius: 8px;
+cursor: pointer;
+font-weight: 500;
+font-size: 14px;
+">Отмена</button>
+<button id="confirm-btn" style="
+padding: 10px 20px;
+background: #ef4444;
+color: white;
+border: none;
+border-radius: 8px;
+cursor: pointer;
+font-weight: 500;
+font-size: 14px;
+">Подтвердить</button>
+</div>
+`;
+overlay.appendChild(dialog);
+document.body.appendChild(overlay);
+dialog.querySelector('#cancel-btn').addEventListener('click', () => {
+overlay.remove();
+});
+dialog.querySelector('#confirm-btn').addEventListener('click', async () => {
+overlay.remove();
+await onConfirm();
+});
+overlay.addEventListener('click', (e) => {
+if (e.target === overlay) {
+overlay.remove();
+}
+});
+}
 }
 
 class ChapterManager {
-constructor(apiClient, config, notifications) {
+constructor(apiClient, config, notifications, statistics) {
 this.api = apiClient;
 this.config = config;
 this.notifications = notifications;
+this.statistics = statistics;
 this.processingQueue = [];
+this.operationTimes = [];
 }
 async markAsRead(chapterId) {
 try {
@@ -808,17 +1227,37 @@ return false;
 }
 }
 async markMultipleAsRead(chapterIds, onProgress = null) {
-const total = chapterIds.length;
+const skipProcessed = this.config.get('skipProcessed');
+let filteredIds = chapterIds;
+if (skipProcessed) {
+filteredIds = chapterIds.filter(id => !this.isChapterRead(id));
+const skipped = chapterIds.length - filteredIds.length;
+if (skipped > 0) {
+logger.info(`Пропущено ${skipped} уже прочитанных глав`);
+}
+}
+if (filteredIds.length === 0) {
+return { total: chapterIds.length, completed: 0, failed: 0, skipped: chapterIds.length };
+}
+const total = filteredIds.length;
 let completed = 0;
 let failed = 0;
+this.operationTimes = [];
 logger.info(`Начало массовой отметки ${total} глав`);
-for (const chapterId of chapterIds) {
+for (const chapterId of filteredIds) {
+const startTime = Date.now();
 try {
 await this.api.markChapterAsRead(chapterId);
 completed++;
 this.updateReadButton(chapterId);
+const operationTime = Date.now() - startTime;
+this.operationTimes.push(operationTime);
+if (this.operationTimes.length > 10) {
+this.operationTimes.shift();
+}
 if (onProgress) {
-onProgress(completed, total);
+const eta = this.calculateETA(completed, total);
+onProgress(completed, total, eta);
 }
 await this.delay(300);
 } catch (error) {
@@ -826,11 +1265,13 @@ logger.error(`Ошибка отметки главы ${chapterId}:`, error);
 failed++;
 }
 }
+await this.statistics.incrementReads(completed);
 logger.info(`Массовая отметка завершена: ${completed} успешно, ${failed} ошибок`);
 return {
-total,
+total: chapterIds.length,
 completed,
-failed
+failed,
+skipped: chapterIds.length - filteredIds.length
 };
 }
 async likeChapter(chapterId) {
@@ -845,21 +1286,41 @@ return false;
 }
 }
 async likeMultiple(chapterIds, onProgress = null) {
-const batchSize = 10;
-const total = chapterIds.length;
+const skipProcessed = this.config.get('skipProcessed');
+let filteredIds = chapterIds;
+if (skipProcessed) {
+filteredIds = chapterIds.filter(id => !this.isChapterLiked(id));
+const skipped = chapterIds.length - filteredIds.length;
+if (skipped > 0) {
+logger.info(`Пропущено ${skipped} уже лайкнутых глав`);
+}
+}
+if (filteredIds.length === 0) {
+return { total: chapterIds.length, completed: 0, failed: 0, skipped: chapterIds.length };
+}
+const batchSize = this.config.get('batchSize');
+const total = filteredIds.length;
 let completed = 0;
 let failed = 0;
-logger.info(`Начало массового лайка ${total} глав`);
-for (let i = 0; i < chapterIds.length; i += batchSize) {
-const batch = chapterIds.slice(i, i + batchSize);
+this.operationTimes = [];
+logger.info(`Начало массового лайка ${total} глав (batch: ${batchSize})`);
+for (let i = 0; i < filteredIds.length; i += batchSize) {
+const batch = filteredIds.slice(i, i + batchSize);
+const startTime = Date.now();
 try {
 await this.api.likeChapters(batch);
 completed += batch.length;
 batch.forEach(id => this.updateLikeButton(id));
-if (onProgress) {
-onProgress(completed, total);
+const operationTime = Date.now() - startTime;
+this.operationTimes.push(operationTime);
+if (this.operationTimes.length > 10) {
+this.operationTimes.shift();
 }
-if (i + batchSize < chapterIds.length) {
+if (onProgress) {
+const eta = this.calculateETA(completed, total);
+onProgress(completed, total, eta);
+}
+if (i + batchSize < filteredIds.length) {
 await this.delay(500);
 }
 } catch (error) {
@@ -867,11 +1328,13 @@ logger.error(`Ошибка лайка батча:`, error);
 failed += batch.length;
 }
 }
+await this.statistics.incrementLikes(completed);
 logger.info(`Массовый лайк завершен: ${completed} успешно, ${failed} ошибок`);
 return {
-total,
+total: chapterIds.length,
 completed,
-failed
+failed,
+skipped: chapterIds.length - filteredIds.length
 };
 }
 updateReadButton(chapterId) {
@@ -946,8 +1409,21 @@ button.style.opacity === '0.5';
 }
 isChapterLiked(chapterId) {
 const button = domUtils.findLikeButton(chapterId);
-if (!button) return false;
+if (!button) {
+return false;
+}
 return button.classList.contains('remanga-ext-liked');
+}
+calculateETA(completed, total) {
+if (this.operationTimes.length === 0 || completed === 0) {
+return null;
+}
+const avgTime = this.operationTimes.reduce((a, b) => a + b, 0) / this.operationTimes.length;
+const remaining = total - completed;
+const etaMs = remaining * avgTime;
+const minutes = Math.floor(etaMs / 60000);
+const seconds = Math.floor((etaMs % 60000) / 1000);
+return { minutes, seconds, totalSeconds: Math.floor(etaMs / 1000) };
 }
 }
 
@@ -1003,6 +1479,7 @@ class RemangaExtension {
 constructor() {
 this.config = null;
 this.api = null;
+this.statistics = null;
 this.chapterManager = null;
 this.autoLiker = null;
 this.notifications = null;
@@ -1019,13 +1496,15 @@ return;
 }
 this.config = new Config();
 await this.config.load();
+this.statistics = new Statistics();
+await this.statistics.load();
 this.api = new ApiClient();
 this.api.init();
 this.notifications = new Notifications(this.config);
 this.notifications.injectStyles();
-this.chapterManager = new ChapterManager(this.api, this.config, this.notifications);
+this.chapterManager = new ChapterManager(this.api, this.config, this.notifications, this.statistics);
 this.autoLiker = new AutoLiker(this.chapterManager, this.config, this.notifications);
-this.settingsPanel = new SettingsPanel(this.config, this.notifications);
+this.settingsPanel = new SettingsPanel(this.config, this.notifications, this.statistics);
 const pageType = this.detectPageType();
 logger.info(`Тип страницы: ${pageType}`);
 if (pageType === 'chapters') {
@@ -1083,6 +1562,12 @@ this.removeChapterButtons();
 cleanup() {
 this.observers.forEach(observer => observer.disconnect());
 this.observers = [];
+if (this.notifications) {
+this.notifications.cleanup();
+}
+if (this.settingsPanel) {
+this.settingsPanel.cleanup();
+}
 logger.info('Ресурсы расширения очищены');
 }
 isUserLoggedIn() {
@@ -1184,7 +1669,15 @@ button.style.background = 'transparent';
 button.style.color = '#10b981';
 });
 button.addEventListener('click', async () => {
+try {
 await this.handleMarkAllRead(button);
+} catch (error) {
+logger.error('Ошибка обработки массовой отметки:', error);
+this.notifications.error('Произошла ошибка при обработке');
+button.disabled = false;
+button.textContent = '✓ Прочитать все главы';
+this.hideProgressModal();
+}
 });
 container.insertBefore(button, container.firstChild);
 logger.info('Кнопка "Прочитать все" добавлена');
@@ -1217,7 +1710,15 @@ button.style.background = 'transparent';
 button.style.color = '#ef4444';
 });
 button.addEventListener('click', async () => {
+try {
 await this.handleLikeAll(button);
+} catch (error) {
+logger.error('Ошибка обработки массового лайка:', error);
+this.notifications.error('Произошла ошибка при обработке');
+button.disabled = false;
+button.textContent = '❤️ Лайкнуть все главы';
+this.hideProgressModal();
+}
 });
 container.insertBefore(button, container.children[1]);
 logger.info('Кнопка "Лайкнуть все" добавлена');
@@ -1240,13 +1741,16 @@ button.textContent = 'Обработка...';
 this.showProgressModal('Этап 2/2: Отметка глав как прочитанных', 0, chapterIds.length, false);
 const result = await this.chapterManager.markMultipleAsRead(
 chapterIds,
-(current, total) => {
-this.updateProgressModal(current, total);
+(current, total, eta) => {
+this.updateProgressModal(current, total, eta);
 }
 );
 this.hideProgressModal();
 button.disabled = false;
 button.textContent = '✓ Прочитать все главы';
+if (result.skipped > 0) {
+this.notifications.info(`Пропущено ${result.skipped} уже прочитанных глав`);
+}
 if (result.failed > 0) {
 this.notifications.warning(
 `Отмечено ${result.completed} из ${result.total} глав (${result.failed} ошибок)`
@@ -1273,13 +1777,16 @@ button.textContent = 'Обработка...';
 this.showProgressModal('Этап 2/2: Лайк глав', 0, chapterIds.length, false);
 const result = await this.chapterManager.likeMultiple(
 chapterIds,
-(current, total) => {
-this.updateProgressModal(current, total);
+(current, total, eta) => {
+this.updateProgressModal(current, total, eta);
 }
 );
 this.hideProgressModal();
 button.disabled = false;
 button.textContent = '❤️ Лайкнуть все главы';
+if (result.skipped > 0) {
+this.notifications.info(`Пропущено ${result.skipped} уже лайкнутых глав`);
+}
 if (result.failed > 0) {
 this.notifications.warning(
 `Лайкнуто ${result.completed} из ${result.total} глав (${result.failed} ошибок)`
@@ -1363,8 +1870,10 @@ if (progressText) {
 progressText.textContent = text;
 }
 }
-updateProgressModal(current, total) {
-if (!this.progressModal) return;
+updateProgressModal(current, total, eta = null) {
+if (!this.progressModal) {
+return;
+}
 const percent = Math.round((current / total) * 100);
 const progressBar = this.progressModal.querySelector('#progress-bar');
 const progressText = this.progressModal.querySelector('#progress-text');
@@ -1372,7 +1881,13 @@ if (progressBar) {
 progressBar.style.width = `${percent}%`;
 }
 if (progressText) {
-progressText.textContent = `${current} из ${total}`;
+let text = `${current} из ${total}`;
+if (eta && eta.totalSeconds > 0) {
+const mins = eta.minutes;
+const secs = eta.seconds;
+text += ` • Осталось ~${mins > 0 ? `${mins} мин ` : ''}${secs} сек`;
+}
+progressText.textContent = text;
 }
 }
 hideProgressModal() {
