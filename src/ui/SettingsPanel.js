@@ -9,6 +9,7 @@ class SettingsPanel {
     this.statistics = statistics;
     this.panel = null;
     this.observer = null;
+    this.currentVersion = '__VERSION__';
   }
 
   /**
@@ -262,7 +263,7 @@ class SettingsPanel {
         <div style="padding: 16px; background: #2a2a2a; border-radius: 8px;">
           <div style="font-weight: 500; margin-bottom: 12px; color: #ffffff;">🔄 Обновления</div>
           <div style="display: flex; flex-direction: column; gap: 8px; color: #9ca3af; font-size: 14px; margin-bottom: 12px;">
-            <div>Текущая версия: <span style="color: #ffffff; font-weight: 600;" id="current-version">1.2.4</span></div>
+            <div>Текущая версия: <span style="color: #ffffff; font-weight: 600;" id="current-version">${this.currentVersion}</span></div>
             <div id="last-check-info" style="font-size: 12px;">Проверка обновлений...</div>
           </div>
           <button id="check-updates" style="
