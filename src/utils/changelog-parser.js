@@ -29,7 +29,7 @@ const changelogParser = {
    * Извлечение changelog из комментариев userscript
    */
   parseChangelog(scriptText) {
-    const changelogMatch = scriptText.match(/\/\*\*\s*\n?\s*\*?\s*CHANGELOG\s*\n([\s\S]*?)\*\//);
+    const changelogMatch = scriptText.match(/\/\*\*[\s\S]*?CHANGELOG[\s\S]*?\n([\s\S]*?)\*\//);
 
     if (!changelogMatch) {
       return 'Список изменений недоступен';
