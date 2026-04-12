@@ -85,7 +85,12 @@ class UpdateChecker {
     return new Promise((resolve, reject) => {
       GM.xmlHttpRequest({
         method: 'GET',
-        url: this.updateURL,
+        url: this.updateURL + '?t=' + Date.now(),
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        },
         timeout: 10000,
         onload: (response) => {
           if (response.status === 200) {
