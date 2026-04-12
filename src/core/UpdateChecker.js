@@ -53,8 +53,8 @@ class UpdateChecker {
       const scriptText = await this.fetchRemoteScript();
       const remoteVersion = changelogParser.parseVersion(scriptText);
 
-      logger.debug('Текущая версия:', this.currentVersion);
-      logger.debug('Удаленная версия:', remoteVersion);
+      logger.info('Текущая версия:', this.currentVersion);
+      logger.info('Удаленная версия:', remoteVersion);
 
       if (!remoteVersion || !changelogParser.isValidVersion(remoteVersion)) {
         throw new Error('Не удалось определить версию удаленного скрипта');
@@ -63,7 +63,7 @@ class UpdateChecker {
       await GM.setValue('lastUpdateCheck', Date.now());
 
       const comparison = changelogParser.compareVersions(this.currentVersion, remoteVersion);
-      logger.debug('Результат сравнения:', comparison);
+      logger.info('Результат сравнения:', comparison, '(< 0 = есть обновление, 0 = одинаковые, > 0 = текущая новее)');
 
       if (comparison < 0) {
         logger.info(`Доступна новая версия: ${remoteVersion} (текущая: ${this.currentVersion})`);
