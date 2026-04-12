@@ -68,7 +68,7 @@ class UpdateChecker {
       if (comparison > 0) {
         logger.info(`Доступна новая версия: ${remoteVersion} (текущая: ${this.currentVersion})`);
         const changelog = changelogParser.parseChangelog(scriptText);
-        this.showUpdateNotification(remoteVersion, changelog);
+        this.showUpdateModal(remoteVersion, changelog);
       } else if (manual) {
         this.notifications.info('Установлена последняя версия');
       }
@@ -107,52 +107,6 @@ class UpdateChecker {
         ontimeout: () => reject(new Error('Таймаут'))
       });
     });
-  }
-
-  /**
-   * Показать уведомление об обновлении
-   */
-  showUpdateNotification(version, changelog) {
-    const toast = document.createElement('div');
-    toast.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 999999;
-      background: #3b82f6;
-      color: white;
-      padding: 16px 24px;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      font-family: system-ui, -apple-system, sans-serif;
-      font-size: 14px;
-      font-weight: 500;
-      max-width: 400px;
-      animation: remanga-toast-slide-in 0.3s ease;
-    `;
-
-    toast.innerHTML = `
-      <div style="margin-bottom: 12px; font-weight: 600; font-size: 16px;">
-        🎉 Доступно обновление ${version}
-      </div>
-      <div style="margin-bottom: 12px; font-size: 13px; opacity: 0.9;">
-        Нажмите для просмотра изменений
-      </div>
-    `;
-
-    toast.addEventListener('click', () => {
-      toast.remove();
-      this.showUpdateModal(version, changelog);
-    });
-
-    document.body.appendChild(toast);
-
-    setTimeout(() => {
-      if (toast.parentNode) {
-        toast.style.animation = 'remanga-toast-slide-out 0.3s ease';
-        setTimeout(() => toast.remove(), 300);
-      }
-    }, 10000);
   }
 
   /**

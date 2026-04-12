@@ -1,6 +1,6 @@
 {
   "name": "remanga-extension",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Tampermonkey расширение для remanga.org с автолайком и массовой отметкой глав",
   "main": "src/main.js",
   "scripts": {
