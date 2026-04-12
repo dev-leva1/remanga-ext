@@ -3,7 +3,7 @@
 // @namespace    remanga.ext
 // @version      1.2.1
 // @description  Автоматизация действий на remanga.org: автолайк, массовая отметка глав
-// @author       fills
+// @author       dev-leva1
 // @match        https://remanga.org/*
 // @grant        GM.getValue
 // @grant        GM.setValue

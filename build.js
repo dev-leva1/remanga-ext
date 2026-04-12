@@ -24,7 +24,7 @@ const header = `// ==UserScript==
 // @namespace    remanga.ext
 // @version      ${version}
 // @description  Автоматизация действий на remanga.org: автолайк, массовая отметка глав
-// @author       fills
+// @author       dev-leva1
 // @match        https://remanga.org/*
 // @grant        GM.getValue
 // @grant        GM.setValue
