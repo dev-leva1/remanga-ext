@@ -518,12 +518,8 @@ class SettingsPanel {
     try {
       const text = await file.text();
       await this.config.import(text);
-      this.notifications.success('Настройки импортированы');
+      this.notifications.success('Настройки импортированы. Перезагрузите страницу для применения.');
       this.hide();
-
-      setTimeout(() => {
-        this.show();
-      }, 500);
 
       logger.info('Настройки импортированы');
     } catch (error) {

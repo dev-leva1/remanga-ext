@@ -286,8 +286,14 @@ class ChapterManager {
       return false;
     }
 
-    return button.classList.contains('remanga-ext-read') ||
-           button.style.opacity === '0.5';
+    const isNativeRead = button.style.opacity === '0.5' ||
+                         button.disabled === true ||
+                         button.classList.contains('opacity-50') ||
+                         button.hasAttribute('disabled');
+
+    const isExtensionRead = button.classList.contains('remanga-ext-read');
+
+    return isNativeRead || isExtensionRead;
   }
 
   /**
@@ -299,7 +305,18 @@ class ChapterManager {
       return false;
     }
 
-    return button.classList.contains('remanga-ext-liked');
+    const icon = button.querySelector('svg');
+    const isNativeLiked = icon && (
+      icon.style.fill === 'rgb(239, 68, 68)' ||
+      icon.style.fill === '#ef4444' ||
+      icon.classList.contains('text-red-500') ||
+      button.classList.contains('text-red-500') ||
+      button.getAttribute('aria-pressed') === 'true'
+    );
+
+    const isExtensionLiked = button.classList.contains('remanga-ext-liked');
+
+    return isNativeLiked || isExtensionLiked;
   }
 
   /**
