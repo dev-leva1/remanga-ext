@@ -69,33 +69,15 @@ class Notifications {
     const toast = document.createElement('div');
     toast.className = `remanga-ext-toast remanga-ext-toast-${type}`;
 
-    const colors = {
-      info: '#3b82f6',
-      success: '#10b981',
+    const borderColors = {
+      info: DESIGN_TOKENS.colors.text.secondary,
+      success: DESIGN_TOKENS.colors.text.secondary,
       warning: '#f59e0b',
       error: '#ef4444'
     };
 
-    toast.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 999999;
-      background: ${colors[type] || colors.info};
-      color: white;
-      padding: 16px 24px;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      font-family: system-ui, -apple-system, sans-serif;
-      font-size: 14px;
-      font-weight: 500;
-      max-width: 400px;
-      animation: remanga-toast-slide-in 0.3s ease;
-      cursor: pointer;
-      transition: top 0.3s ease;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    toast.style.cssText = toastStyles() + `
+      border-left-color: ${borderColors[type] || borderColors.info};
     `;
 
     const messageSpan = document.createElement('span');
@@ -108,9 +90,9 @@ class Notifications {
       display: none;
       background: rgba(0, 0, 0, 0.2);
       padding: 2px 8px;
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: 600;
+      border-radius: ${DESIGN_TOKENS.radius.pill};
+      font-size: ${DESIGN_TOKENS.typography.fontSize.xs};
+      font-weight: ${DESIGN_TOKENS.typography.fontWeight.semibold};
     `;
 
     toast.appendChild(messageSpan);
@@ -205,7 +187,7 @@ class Notifications {
       }
 
       .remanga-ext-toast:hover {
-        opacity: 0.9;
+        opacity: ${DESIGN_TOKENS.colors.interactive.hover.replace('rgba(255, 255, 255, ', '').replace(')', '')};
       }
     `;
 

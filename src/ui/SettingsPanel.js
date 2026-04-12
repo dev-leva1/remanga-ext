@@ -67,19 +67,8 @@ class SettingsPanel {
     button.id = 'remanga-ext-settings-btn';
     button.className = 'remanga-ext-header-btn';
     button.setAttribute('aria-label', 'Настройки расширения');
-    button.style.cssText = `
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 40px;
-      height: 40px;
-      background: transparent;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      color: #9ca3af;
-      transition: all 0.2s;
-      margin: 0 4px;
+    button.style.cssText = buttonStyles('icon') + `
+      margin: 0 ${DESIGN_TOKENS.spacing.xs};
     `;
 
     button.innerHTML = `
@@ -89,13 +78,13 @@ class SettingsPanel {
     `;
 
     button.addEventListener('mouseenter', () => {
-      button.style.background = 'rgba(255, 255, 255, 0.1)';
-      button.style.color = '#ffffff';
+      button.style.background = DESIGN_TOKENS.colors.interactive.hover;
+      button.style.color = DESIGN_TOKENS.colors.text.primary;
     });
 
     button.addEventListener('mouseleave', () => {
       button.style.background = 'transparent';
-      button.style.color = '#9ca3af';
+      button.style.color = DESIGN_TOKENS.colors.text.muted;
     });
 
     button.addEventListener('click', (e) => {
@@ -143,30 +132,15 @@ class SettingsPanel {
   createPanel() {
     const overlay = document.createElement('div');
     overlay.className = 'remanga-ext-settings-overlay';
-    overlay.style.cssText = `
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 999998;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      backdrop-filter: blur(4px);
-    `;
+    overlay.style.cssText = overlayStyles();
 
     const modal = document.createElement('div');
     modal.className = 'remanga-ext-settings-modal';
-    modal.style.cssText = `
-      background: #1a1a1a;
-      color: #ffffff;
-      border-radius: 12px;
-      padding: 32px;
+    modal.style.cssText = modalStyles() + `
       min-width: 500px;
       max-width: 600px;
       max-height: 80vh;
       overflow-y: auto;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-      animation: remanga-modal-appear 0.2s ease;
     `;
 
     const stats = this.statistics.getStats();
@@ -180,7 +154,7 @@ class SettingsPanel {
       <div style="display: flex; flex-direction: column; gap: 20px;">
         <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
           <input type="checkbox" id="autoLike" ${this.config.get('autoLike') ? 'checked' : ''}
-                 style="width: 20px; height: 20px; cursor: pointer; accent-color: #3b82f6;">
+                 style="width: 20px; height: 20px; cursor: pointer; accent-color: ${DESIGN_TOKENS.colors.bg.secondary};">
           <div>
             <div style="font-weight: 500; color: #ffffff;">Автолайк глав при открытии</div>
             <div style="font-size: 12px; color: #9ca3af;">Автоматически ставить лайк при открытии главы</div>
@@ -189,7 +163,7 @@ class SettingsPanel {
 
         <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
           <input type="checkbox" id="skipProcessed" ${this.config.get('skipProcessed') ? 'checked' : ''}
-                 style="width: 20px; height: 20px; cursor: pointer; accent-color: #3b82f6;">
+                 style="width: 20px; height: 20px; cursor: pointer; accent-color: ${DESIGN_TOKENS.colors.bg.secondary};">
           <div>
             <div style="font-weight: 500; color: #ffffff;">Пропускать обработанные главы</div>
             <div style="font-size: 12px; color: #9ca3af;">Не обрабатывать уже прочитанные/лайкнутые главы</div>
@@ -198,7 +172,7 @@ class SettingsPanel {
 
         <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
           <input type="checkbox" id="notificationsEnabled" ${this.config.get('notificationsEnabled') ? 'checked' : ''}
-                 style="width: 20px; height: 20px; cursor: pointer; accent-color: #3b82f6;">
+                 style="width: 20px; height: 20px; cursor: pointer; accent-color: ${DESIGN_TOKENS.colors.bg.secondary};">
           <div>
             <div style="font-weight: 500; color: #ffffff;">Показывать уведомления</div>
             <div style="font-size: 12px; color: #9ca3af;">Отображать toast уведомления о действиях</div>
@@ -207,7 +181,7 @@ class SettingsPanel {
 
         <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
           <input type="checkbox" id="autoUpdateEnabled" ${this.config.get('autoUpdateEnabled') ? 'checked' : ''}
-                 style="width: 20px; height: 20px; cursor: pointer; accent-color: #3b82f6;">
+                 style="width: 20px; height: 20px; cursor: pointer; accent-color: ${DESIGN_TOKENS.colors.bg.secondary};">
           <div>
             <div style="font-weight: 500; color: #ffffff;">Автоматические обновления</div>
             <div style="font-size: 12px; color: #9ca3af;">Проверять наличие обновлений при загрузке страницы</div>
@@ -221,7 +195,7 @@ class SettingsPanel {
           <input type="range" id="notificationDuration"
                  min="1" max="10" step="1"
                  value="${this.config.get('notificationDuration')}"
-                 style="width: 100%; accent-color: #3b82f6;">
+                 style="width: 100%; accent-color: ${DESIGN_TOKENS.colors.bg.secondary};">
           <div style="text-align: center; margin-top: 4px; color: #9ca3af;">
             <span id="durationValue">${this.config.get('notificationDuration')}</span> сек
           </div>
@@ -234,7 +208,7 @@ class SettingsPanel {
           <input type="range" id="batchSize"
                  min="1" max="50" step="1"
                  value="${this.config.get('batchSize')}"
-                 style="width: 100%; accent-color: #3b82f6;">
+                 style="width: 100%; accent-color: ${DESIGN_TOKENS.colors.bg.secondary};">
           <div style="text-align: center; margin-top: 4px; color: #9ca3af;">
             <span id="batchSizeValue">${this.config.get('batchSize')}</span> глав за раз
           </div>
@@ -243,19 +217,20 @@ class SettingsPanel {
         <div style="padding: 16px; background: #2a2a2a; border-radius: 8px;">
           <div style="font-weight: 500; margin-bottom: 12px; color: #ffffff;">📊 Статистика</div>
           <div style="display: flex; flex-direction: column; gap: 8px; color: #9ca3af; font-size: 14px;">
-            <div>Прочитано глав: <span style="color: #10b981; font-weight: 600;">${stats.chaptersRead}</span></div>
-            <div>Лайков поставлено: <span style="color: #ef4444; font-weight: 600;">${stats.chaptersLiked}</span></div>
+            <div>Прочитано глав: <span style="color: ${DESIGN_TOKENS.colors.text.primary}; font-weight: 600;">${stats.chaptersRead}</span></div>
+            <div>Лайков поставлено: <span style="color: ${DESIGN_TOKENS.colors.text.primary}; font-weight: 600;">${stats.chaptersLiked}</span></div>
             <div>Дата установки: <span style="color: #ffffff;">${installDate}</span></div>
           </div>
           <button id="reset-stats" style="
-            margin-top: 12px;
-            padding: 8px 16px;
+            margin-top: ${DESIGN_TOKENS.spacing.md};
+            padding: ${DESIGN_TOKENS.spacing.sm} ${DESIGN_TOKENS.spacing.lg};
             background: #374151;
-            color: #ffffff;
+            color: ${DESIGN_TOKENS.colors.text.primary};
             border: none;
-            border-radius: 6px;
+            border-radius: ${DESIGN_TOKENS.radius.pill};
             cursor: pointer;
-            font-size: 13px;
+            font-size: ${DESIGN_TOKENS.typography.fontSize.sm};
+            font-family: ${DESIGN_TOKENS.typography.fontFamily};
             width: 100%;
           ">Сбросить статистику</button>
         </div>
@@ -267,13 +242,14 @@ class SettingsPanel {
             <div id="last-check-info" style="font-size: 12px;">Проверка обновлений...</div>
           </div>
           <button id="check-updates" style="
-            padding: 8px 16px;
-            background: #3b82f6;
-            color: white;
+            padding: ${DESIGN_TOKENS.spacing.sm} ${DESIGN_TOKENS.spacing.lg};
+            background: ${DESIGN_TOKENS.colors.bg.secondary};
+            color: ${DESIGN_TOKENS.colors.text.primary};
             border: none;
-            border-radius: 6px;
+            border-radius: ${DESIGN_TOKENS.radius.pill};
             cursor: pointer;
-            font-size: 13px;
+            font-size: ${DESIGN_TOKENS.typography.fontSize.sm};
+            font-family: ${DESIGN_TOKENS.typography.fontFamily};
             width: 100%;
           ">Проверить обновления</button>
         </div>
@@ -283,23 +259,25 @@ class SettingsPanel {
           <div style="display: flex; gap: 8px;">
             <button id="export-settings" style="
               flex: 1;
-              padding: 8px 16px;
-              background: #3b82f6;
-              color: white;
+              padding: ${DESIGN_TOKENS.spacing.sm} ${DESIGN_TOKENS.spacing.lg};
+              background: ${DESIGN_TOKENS.colors.bg.secondary};
+              color: ${DESIGN_TOKENS.colors.text.primary};
               border: none;
-              border-radius: 6px;
+              border-radius: ${DESIGN_TOKENS.radius.pill};
               cursor: pointer;
-              font-size: 13px;
+              font-size: ${DESIGN_TOKENS.typography.fontSize.sm};
+              font-family: ${DESIGN_TOKENS.typography.fontFamily};
             ">Экспорт</button>
             <button id="import-settings" style="
               flex: 1;
-              padding: 8px 16px;
-              background: #10b981;
-              color: white;
+              padding: ${DESIGN_TOKENS.spacing.sm} ${DESIGN_TOKENS.spacing.lg};
+              background: ${DESIGN_TOKENS.colors.bg.secondary};
+              color: ${DESIGN_TOKENS.colors.text.primary};
               border: none;
-              border-radius: 6px;
+              border-radius: ${DESIGN_TOKENS.radius.pill};
               cursor: pointer;
-              font-size: 13px;
+              font-size: ${DESIGN_TOKENS.typography.fontSize.sm};
+              font-family: ${DESIGN_TOKENS.typography.fontFamily};
             ">Импорт</button>
           </div>
           <input type="file" id="import-file" accept=".json" style="display: none;">
@@ -308,37 +286,40 @@ class SettingsPanel {
 
       <div style="display: flex; gap: 12px; margin-top: 32px; justify-content: space-between;">
         <button id="reset-settings" style="
-          padding: 12px 24px;
+          padding: ${DESIGN_TOKENS.spacing.md} ${DESIGN_TOKENS.spacing.xl};
           background: #ef4444;
-          color: #ffffff;
+          color: ${DESIGN_TOKENS.colors.text.primary};
           border: none;
-          border-radius: 8px;
+          border-radius: ${DESIGN_TOKENS.radius.pill};
           cursor: pointer;
-          font-weight: 500;
-          font-size: 14px;
+          font-weight: ${DESIGN_TOKENS.typography.fontWeight.medium};
+          font-size: ${DESIGN_TOKENS.typography.fontSize.md};
+          font-family: ${DESIGN_TOKENS.typography.fontFamily};
         ">Сбросить настройки</button>
 
-        <div style="display: flex; gap: 12px;">
+        <div style="display: flex; gap: ${DESIGN_TOKENS.spacing.md};">
           <button id="close-settings" style="
-            padding: 12px 24px;
+            padding: ${DESIGN_TOKENS.spacing.md} ${DESIGN_TOKENS.spacing.xl};
             background: #374151;
-            color: #ffffff;
+            color: ${DESIGN_TOKENS.colors.text.primary};
             border: none;
-            border-radius: 8px;
+            border-radius: ${DESIGN_TOKENS.radius.pill};
             cursor: pointer;
-            font-weight: 500;
-            font-size: 14px;
+            font-weight: ${DESIGN_TOKENS.typography.fontWeight.medium};
+            font-size: ${DESIGN_TOKENS.typography.fontSize.md};
+            font-family: ${DESIGN_TOKENS.typography.fontFamily};
           ">Закрыть</button>
 
           <button id="save-settings" style="
-            padding: 12px 24px;
-            background: #3b82f6;
-            color: white;
+            padding: ${DESIGN_TOKENS.spacing.md} ${DESIGN_TOKENS.spacing.xl};
+            background: ${DESIGN_TOKENS.colors.bg.secondary};
+            color: ${DESIGN_TOKENS.colors.text.primary};
             border: none;
-            border-radius: 8px;
+            border-radius: ${DESIGN_TOKENS.radius.pill};
             cursor: pointer;
-            font-weight: 500;
-            font-size: 14px;
+            font-weight: ${DESIGN_TOKENS.typography.fontWeight.medium};
+            font-size: ${DESIGN_TOKENS.typography.fontSize.md};
+            font-family: ${DESIGN_TOKENS.typography.fontFamily};
           ">Сохранить</button>
         </div>
       </div>
@@ -493,6 +474,8 @@ class SettingsPanel {
     const style = document.createElement('style');
     style.id = 'remanga-ext-modal-styles';
     style.textContent = `
+      @import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700&display=swap');
+
       @keyframes remanga-modal-appear {
         from {
           opacity: 0;
@@ -510,7 +493,7 @@ class SettingsPanel {
       }
 
       .remanga-ext-settings-modal button:active {
-        transform: translateY(0);
+        transform: translateY(0) scale(0.97);
       }
 
       .remanga-ext-settings-modal input[type="checkbox"]:hover {
@@ -531,7 +514,7 @@ class SettingsPanel {
         appearance: none;
         width: 18px;
         height: 18px;
-        background: #3b82f6;
+        background: ${DESIGN_TOKENS.colors.bg.secondary};
         border-radius: 50%;
         cursor: pointer;
       }
@@ -539,7 +522,7 @@ class SettingsPanel {
       .remanga-ext-settings-modal input[type="range"]::-moz-range-thumb {
         width: 18px;
         height: 18px;
-        background: #3b82f6;
+        background: ${DESIGN_TOKENS.colors.bg.secondary};
         border-radius: 50%;
         cursor: pointer;
         border: none;
@@ -641,54 +624,42 @@ class SettingsPanel {
    */
   showConfirmDialog(title, message, onConfirm) {
     const overlay = document.createElement('div');
-    overlay.style.cssText = `
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.7);
-      z-index: 999999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      backdrop-filter: blur(4px);
-    `;
+    overlay.style.cssText = overlayStyles();
 
     const dialog = document.createElement('div');
-    dialog.style.cssText = `
-      background: #1a1a1a;
-      color: #ffffff;
-      border-radius: 12px;
-      padding: 24px;
+    dialog.style.cssText = modalStyles() + `
       min-width: 400px;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
     `;
 
     dialog.innerHTML = `
-      <h3 style="margin: 0 0 12px 0; font-size: 18px; font-weight: bold; color: #ffffff;">
+      <h3 style="margin: 0 0 ${DESIGN_TOKENS.spacing.md} 0; font-size: ${DESIGN_TOKENS.typography.fontSize.xl}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.bold}; color: ${DESIGN_TOKENS.colors.text.primary};">
         ${title}
       </h3>
-      <p style="margin: 0 0 24px 0; color: #9ca3af; font-size: 14px; line-height: 1.5;">
+      <p style="margin: 0 0 ${DESIGN_TOKENS.spacing.xl} 0; color: ${DESIGN_TOKENS.colors.text.muted}; font-size: ${DESIGN_TOKENS.typography.fontSize.md}; line-height: 1.5;">
         ${message}
       </p>
-      <div style="display: flex; gap: 12px; justify-content: flex-end;">
+      <div style="display: flex; gap: ${DESIGN_TOKENS.spacing.md}; justify-content: flex-end;">
         <button id="cancel-btn" style="
           padding: 10px 20px;
           background: #374151;
-          color: #ffffff;
+          color: ${DESIGN_TOKENS.colors.text.primary};
           border: none;
-          border-radius: 8px;
+          border-radius: ${DESIGN_TOKENS.radius.pill};
           cursor: pointer;
-          font-weight: 500;
-          font-size: 14px;
+          font-weight: ${DESIGN_TOKENS.typography.fontWeight.medium};
+          font-size: ${DESIGN_TOKENS.typography.fontSize.md};
+          font-family: ${DESIGN_TOKENS.typography.fontFamily};
         ">Отмена</button>
         <button id="confirm-btn" style="
           padding: 10px 20px;
           background: #ef4444;
-          color: white;
+          color: ${DESIGN_TOKENS.colors.text.primary};
           border: none;
-          border-radius: 8px;
+          border-radius: ${DESIGN_TOKENS.radius.pill};
           cursor: pointer;
-          font-weight: 500;
-          font-size: 14px;
+          font-weight: ${DESIGN_TOKENS.typography.fontWeight.medium};
+          font-size: ${DESIGN_TOKENS.typography.fontSize.md};
+          font-family: ${DESIGN_TOKENS.typography.fontFamily};
         ">Подтвердить</button>
       </div>
     `;

@@ -265,29 +265,25 @@ class RemangaExtension {
     const button = document.createElement('button');
     button.id = 'remanga-ext-mark-all-btn';
     button.className = 'cs-button';
-    button.style.cssText = `
-      padding: 10px 20px;
-      background: transparent;
-      color: #10b981;
-      border: 1px solid #10b981;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 500;
-      font-size: 14px;
-      margin-bottom: 12px;
-      width: 100%;
-      transition: all 0.2s;
+    button.style.cssText = buttonStyles('fullWidth') + `
+      margin-bottom: ${DESIGN_TOKENS.spacing.md};
     `;
     button.textContent = '✓ Прочитать все главы';
 
     button.addEventListener('mouseenter', () => {
-      button.style.background = '#10b981';
-      button.style.color = 'white';
+      button.style.opacity = '0.9';
     });
 
     button.addEventListener('mouseleave', () => {
-      button.style.background = 'transparent';
-      button.style.color = '#10b981';
+      button.style.opacity = '1';
+    });
+
+    button.addEventListener('mousedown', () => {
+      button.style.transform = 'scale(0.97)';
+    });
+
+    button.addEventListener('mouseup', () => {
+      button.style.transform = 'scale(1)';
     });
 
     button.addEventListener('click', async () => {
@@ -317,29 +313,25 @@ class RemangaExtension {
     const button = document.createElement('button');
     button.id = 'remanga-ext-like-all-btn';
     button.className = 'cs-button';
-    button.style.cssText = `
-      padding: 10px 20px;
-      background: transparent;
-      color: #ef4444;
-      border: 1px solid #ef4444;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 500;
-      font-size: 14px;
-      margin-bottom: 12px;
-      width: 100%;
-      transition: all 0.2s;
+    button.style.cssText = buttonStyles('fullWidth') + `
+      margin-bottom: ${DESIGN_TOKENS.spacing.md};
     `;
     button.textContent = '❤️ Лайкнуть все главы';
 
     button.addEventListener('mouseenter', () => {
-      button.style.background = '#ef4444';
-      button.style.color = 'white';
+      button.style.opacity = '0.9';
     });
 
     button.addEventListener('mouseleave', () => {
-      button.style.background = 'transparent';
-      button.style.color = '#ef4444';
+      button.style.opacity = '1';
+    });
+
+    button.addEventListener('mousedown', () => {
+      button.style.transform = 'scale(0.97)';
+    });
+
+    button.addEventListener('mouseup', () => {
+      button.style.transform = 'scale(1)';
     });
 
     button.addEventListener('click', async () => {
@@ -469,33 +461,18 @@ class RemangaExtension {
     }
 
     const overlay = document.createElement('div');
-    overlay.style.cssText = `
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 999998;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      backdrop-filter: blur(4px);
-    `;
+    overlay.style.cssText = overlayStyles();
 
     const modal = document.createElement('div');
     modal.id = 'remanga-ext-progress-modal';
-    modal.style.cssText = `
-      background: #1a1a1a;
-      color: #ffffff;
-      padding: 32px;
-      border-radius: 12px;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    modal.style.cssText = modalStyles() + `
       min-width: 400px;
-      animation: remanga-modal-appear 0.2s ease;
     `;
 
     if (isLoading) {
       // Режим загрузки - индикатор без прогресс-бара
       modal.innerHTML = `
-        <div style="margin-bottom: 16px; font-weight: bold; font-size: 18px; color: #ffffff;">
+        <div style="margin-bottom: ${DESIGN_TOKENS.spacing.lg}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.bold}; font-size: ${DESIGN_TOKENS.typography.fontSize.xl}; color: ${DESIGN_TOKENS.colors.text.primary};">
           ${title}
         </div>
         <div style="display: flex; align-items: center; justify-content: center; padding: 20px 0;">
@@ -503,12 +480,12 @@ class RemangaExtension {
             width: 40px;
             height: 40px;
             border: 4px solid #374151;
-            border-top-color: #3b82f6;
+            border-top-color: ${DESIGN_TOKENS.colors.bg.secondary};
             border-radius: 50%;
             animation: spin 1s linear infinite;
           "></div>
         </div>
-        <div style="text-align: center; color: #9ca3af; font-size: 14px;">
+        <div style="text-align: center; color: ${DESIGN_TOKENS.colors.text.muted}; font-size: ${DESIGN_TOKENS.typography.fontSize.md};">
           <span id="progress-text">Загрузка...</span>
         </div>
         <style>
@@ -521,13 +498,13 @@ class RemangaExtension {
       // Режим прогресса - с прогресс-баром
       const percent = total > 0 ? Math.round((current / total) * 100) : 0;
       modal.innerHTML = `
-        <div style="margin-bottom: 16px; font-weight: bold; font-size: 18px; color: #ffffff;">
+        <div style="margin-bottom: ${DESIGN_TOKENS.spacing.lg}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.bold}; font-size: ${DESIGN_TOKENS.typography.fontSize.xl}; color: ${DESIGN_TOKENS.colors.text.primary};">
           ${title}
         </div>
-        <div style="background: #374151; height: 12px; border-radius: 6px; overflow: hidden; margin-bottom: 12px;">
-          <div id="progress-bar" style="background: #3b82f6; height: 100%; width: ${percent}%; transition: width 0.3s;"></div>
+        <div style="background: #374151; height: 12px; border-radius: ${DESIGN_TOKENS.radius.sm}; overflow: hidden; margin-bottom: ${DESIGN_TOKENS.spacing.md};">
+          <div id="progress-bar" style="background: ${DESIGN_TOKENS.colors.bg.secondary}; height: 100%; width: ${percent}%; transition: width ${DESIGN_TOKENS.transitions.normal};"></div>
         </div>
-        <div style="text-align: center; color: #9ca3af; font-size: 14px;">
+        <div style="text-align: center; color: ${DESIGN_TOKENS.colors.text.muted}; font-size: ${DESIGN_TOKENS.typography.fontSize.md};">
           <span id="progress-text">${current} из ${total}</span>
         </div>
       `;

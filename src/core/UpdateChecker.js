@@ -114,29 +114,14 @@ class UpdateChecker {
    */
   showUpdateModal(version, changelog) {
     const overlay = document.createElement('div');
-    overlay.style.cssText = `
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 999998;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      backdrop-filter: blur(4px);
-    `;
+    overlay.style.cssText = overlayStyles();
 
     const modal = document.createElement('div');
-    modal.style.cssText = `
-      background: #1a1a1a;
-      color: #ffffff;
-      border-radius: 12px;
-      padding: 32px;
+    modal.style.cssText = modalStyles() + `
       min-width: 500px;
       max-width: 600px;
       max-height: 80vh;
       overflow-y: auto;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-      animation: remanga-modal-appear 0.2s ease;
     `;
 
     const changelogLines = changelog.split('\n');
@@ -181,27 +166,29 @@ class UpdateChecker {
         Страница будет перезагружена.
       </div>
 
-      <div style="display: flex; gap: 12px; justify-content: flex-end;">
+      <div style="display: flex; gap: ${DESIGN_TOKENS.spacing.md}; justify-content: flex-end;">
         <button id="update-later" style="
-          padding: 12px 24px;
+          padding: ${DESIGN_TOKENS.spacing.md} ${DESIGN_TOKENS.spacing.xl};
           background: #374151;
-          color: #ffffff;
+          color: ${DESIGN_TOKENS.colors.text.primary};
           border: none;
-          border-radius: 8px;
+          border-radius: ${DESIGN_TOKENS.radius.pill};
           cursor: pointer;
-          font-weight: 500;
-          font-size: 14px;
+          font-weight: ${DESIGN_TOKENS.typography.fontWeight.medium};
+          font-size: ${DESIGN_TOKENS.typography.fontSize.md};
+          font-family: ${DESIGN_TOKENS.typography.fontFamily};
         ">Позже</button>
 
         <button id="update-now" style="
-          padding: 12px 24px;
-          background: #3b82f6;
-          color: white;
+          padding: ${DESIGN_TOKENS.spacing.md} ${DESIGN_TOKENS.spacing.xl};
+          background: ${DESIGN_TOKENS.colors.bg.secondary};
+          color: ${DESIGN_TOKENS.colors.text.primary};
           border: none;
-          border-radius: 8px;
+          border-radius: ${DESIGN_TOKENS.radius.pill};
           cursor: pointer;
-          font-weight: 500;
-          font-size: 14px;
+          font-weight: ${DESIGN_TOKENS.typography.fontWeight.medium};
+          font-size: ${DESIGN_TOKENS.typography.fontSize.md};
+          font-family: ${DESIGN_TOKENS.typography.fontFamily};
         ">Обновить</button>
       </div>
     `;

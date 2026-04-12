@@ -10,6 +10,7 @@ const files = [
   'src/utils/validators.js',
   'src/utils/dom.js',
   'src/utils/changelog-parser.js',
+  'src/ui/styles.js',
   'src/core/Config.js',
   'src/core/Statistics.js',
   'src/core/ApiClient.js',
@@ -40,6 +41,15 @@ const header = `// ==UserScript==
 
 /**
  * CHANGELOG
+ *
+ * v1.5.0 - Полное обновление UI и лендинг
+ * - Полностью переработан UI согласно DESIGN.md
+ * - Монохромная цветовая палитра (rgb(19,20,22), rgb(24,25,27))
+ * - Централизованные design tokens в styles.js
+ * - Pill-кнопки с анимациями (hover, active)
+ * - Шрифт Exo 2 во всех компонентах
+ * - Создан лендинг ext.nexee.ru с инструкцией по установке
+ * - Динамический парсинг changelog на лендинге
  *
  * v1.4.2 - Улучшен UX автообновлений
  * - При обнаружении обновления сразу открывается модальное окно
