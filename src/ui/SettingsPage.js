@@ -80,33 +80,29 @@ class SettingsPage {
     const installDate = new Date(stats.installDate).toLocaleDateString('ru-RU');
 
     return `
-      <div style="display: flex; gap: ${DESIGN_TOKENS.spacing.xxl};">
-        ${this.createSidebar()}
+      <div style="display: flex; flex-direction: column; gap: ${DESIGN_TOKENS.spacing.xl};">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: ${DESIGN_TOKENS.spacing.lg};">
+          <h1 style="margin: 0; font-size: ${DESIGN_TOKENS.typography.fontSize.xxl}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.bold}; color: ${DESIGN_TOKENS.colors.text.primary};">
+            Настройки расширения
+          </h1>
+          <a href="/" id="close-page" style="
+            padding: ${DESIGN_TOKENS.spacing.md} ${DESIGN_TOKENS.spacing.xl};
+            background: ${DESIGN_TOKENS.colors.bg.secondary};
+            color: ${DESIGN_TOKENS.colors.text.primary};
+            border: none;
+            border-radius: ${DESIGN_TOKENS.radius.pill};
+            cursor: pointer;
+            font-weight: ${DESIGN_TOKENS.typography.fontWeight.medium};
+            font-size: ${DESIGN_TOKENS.typography.fontSize.md};
+            text-decoration: none;
+            display: inline-block;
+          ">Закрыть</a>
+        </div>
 
-        <div style="flex: 1;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: ${DESIGN_TOKENS.spacing.xxl};">
-            <h1 style="margin: 0; font-size: ${DESIGN_TOKENS.typography.fontSize.xxl}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.bold}; color: ${DESIGN_TOKENS.colors.text.primary};">
-              Настройки расширения
-            </h1>
-            <a href="/" id="close-page" style="
-              padding: ${DESIGN_TOKENS.spacing.md} ${DESIGN_TOKENS.spacing.xl};
-              background: ${DESIGN_TOKENS.colors.bg.secondary};
-              color: ${DESIGN_TOKENS.colors.text.primary};
-              border: none;
-              border-radius: ${DESIGN_TOKENS.radius.pill};
-              cursor: pointer;
-              font-weight: ${DESIGN_TOKENS.typography.fontWeight.medium};
-              font-size: ${DESIGN_TOKENS.typography.fontSize.md};
-              text-decoration: none;
-              display: inline-block;
-            ">Закрыть</a>
-          </div>
-
-          <div style="display: flex; flex-direction: column; gap: ${DESIGN_TOKENS.spacing.xl};">
-            <section style="background: ${DESIGN_TOKENS.colors.bg.secondary}; padding: ${DESIGN_TOKENS.spacing.xl}; border-radius: ${DESIGN_TOKENS.radius.lg};">
-              <h2 style="margin: 0 0 ${DESIGN_TOKENS.spacing.lg} 0; font-size: ${DESIGN_TOKENS.typography.fontSize.xl}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.semibold}; color: ${DESIGN_TOKENS.colors.text.primary};">
-                Основные настройки
-              </h2>
+        <section style="background: ${DESIGN_TOKENS.colors.bg.secondary}; padding: ${DESIGN_TOKENS.spacing.xl}; border-radius: ${DESIGN_TOKENS.radius.lg};">
+          <h2 style="margin: 0 0 ${DESIGN_TOKENS.spacing.lg} 0; font-size: ${DESIGN_TOKENS.typography.fontSize.xl}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.semibold}; color: ${DESIGN_TOKENS.colors.text.primary};">
+            Основные настройки
+          </h2>
 
               <div style="display: flex; flex-direction: column; gap: ${DESIGN_TOKENS.spacing.lg};">
                 <label style="display: flex; align-items: center; gap: ${DESIGN_TOKENS.spacing.md}; cursor: pointer;">
@@ -273,51 +269,8 @@ class SettingsPage {
                 font-family: ${DESIGN_TOKENS.typography.fontFamily};
               ">Сохранить изменения</button>
             </div>
-          </div>
+          </section>
         </div>
-      </div>
-    `;
-  }
-
-  /**
-   * Создание боковой панели
-   */
-  createSidebar() {
-    return `
-      <div style="width: 250px; flex-shrink: 0;">
-        <div style="position: sticky; top: ${DESIGN_TOKENS.spacing.xxl};">
-          <h3 style="
-            margin: 0 0 ${DESIGN_TOKENS.spacing.lg} 0;
-            font-size: ${DESIGN_TOKENS.typography.fontSize.xl};
-            font-weight: ${DESIGN_TOKENS.typography.fontWeight.semibold};
-            color: ${DESIGN_TOKENS.colors.text.primary};
-          ">Разделы</h3>
-          <div style="display: flex; flex-direction: column; gap: ${DESIGN_TOKENS.spacing.xs};">
-            <div style="
-              padding: ${DESIGN_TOKENS.spacing.md};
-              color: ${DESIGN_TOKENS.colors.text.primary};
-              border-radius: ${DESIGN_TOKENS.radius.md};
-              background: ${DESIGN_TOKENS.colors.bg.secondary};
-              font-weight: ${DESIGN_TOKENS.typography.fontWeight.medium};
-            ">Основные настройки</div>
-            <div style="
-              padding: ${DESIGN_TOKENS.spacing.md};
-              color: ${DESIGN_TOKENS.colors.text.secondary};
-              border-radius: ${DESIGN_TOKENS.radius.md};
-            ">Кастомизация</div>
-            <div style="
-              padding: ${DESIGN_TOKENS.spacing.md};
-              color: ${DESIGN_TOKENS.colors.text.secondary};
-              border-radius: ${DESIGN_TOKENS.radius.md};
-            ">Статистика</div>
-            <div style="
-              padding: ${DESIGN_TOKENS.spacing.md};
-              color: ${DESIGN_TOKENS.colors.text.secondary};
-              border-radius: ${DESIGN_TOKENS.radius.md};
-            ">Обновления</div>
-          </div>
-        </div>
-      </div>
     `;
   }
 

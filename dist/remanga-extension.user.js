@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Remanga Enhanced
 // @namespace    remanga.ext
-// @version      1.6.0
+// @version      1.6.1
 // @description  Автоматизация действий на remanga.org: автолайк, массовая отметка глав
 // @author       dev-leva1
 // @match        https://remanga.org/*
@@ -17,6 +17,10 @@
 
 /**
  * CHANGELOG
+ *
+ * v1.6.1 - Улучшения UI настроек
+ * - Убрана боковая панель с категориями из окна настроек
+ * - Исправлен z-index модального окна обновлений (теперь поверх настроек)
  *
  * v1.6.0 - Кастомизация интерфейса и новая страница настроек
  * - Блокировка кастомных тем в профилях пользователей
@@ -428,7 +432,7 @@ constructor(config, notifications) {
 this.config = config;
 this.notifications = notifications;
 this.updateURL = 'https://ext.nexee.ru/remanga-extension.user.js';
-this.currentVersion = '1.6.0';
+this.currentVersion = '1.6.1';
 this.checkInterval = 12 * 60 * 60 * 1000;
 this.isChecking = false;
 }
@@ -616,7 +620,7 @@ this.config = config;
 this.notifications = notifications;
 this.statistics = statistics;
 this.container = null;
-this.currentVersion = '1.6.0';
+this.currentVersion = '1.6.1';
 }
 init() {
 this.render();
@@ -665,10 +669,8 @@ createContent() {
 const stats = this.statistics.getStats();
 const installDate = new Date(stats.installDate).toLocaleDateString('ru-RU');
 return `
-<div style="display: flex; gap: ${DESIGN_TOKENS.spacing.xxl};">
-${this.createSidebar()}
-<div style="flex: 1;">
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: ${DESIGN_TOKENS.spacing.xxl};">
+<div style="display: flex; flex-direction: column; gap: ${DESIGN_TOKENS.spacing.xl};">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: ${DESIGN_TOKENS.spacing.lg};">
 <h1 style="margin: 0; font-size: ${DESIGN_TOKENS.typography.fontSize.xxl}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.bold}; color: ${DESIGN_TOKENS.colors.text.primary};">
 Настройки расширения
 </h1>
@@ -685,7 +687,6 @@ text-decoration: none;
 display: inline-block;
 ">Закрыть</a>
 </div>
-<div style="display: flex; flex-direction: column; gap: ${DESIGN_TOKENS.spacing.xl};">
 <section style="background: ${DESIGN_TOKENS.colors.bg.secondary}; padding: ${DESIGN_TOKENS.spacing.xl}; border-radius: ${DESIGN_TOKENS.radius.lg};">
 <h2 style="margin: 0 0 ${DESIGN_TOKENS.spacing.lg} 0; font-size: ${DESIGN_TOKENS.typography.fontSize.xl}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.semibold}; color: ${DESIGN_TOKENS.colors.text.primary};">
 Основные настройки
@@ -840,46 +841,7 @@ font-size: ${DESIGN_TOKENS.typography.fontSize.md};
 font-family: ${DESIGN_TOKENS.typography.fontFamily};
 ">Сохранить изменения</button>
 </div>
-</div>
-</div>
-</div>
-`;
-}
-createSidebar() {
-return `
-<div style="width: 250px; flex-shrink: 0;">
-<div style="position: sticky; top: ${DESIGN_TOKENS.spacing.xxl};">
-<h3 style="
-margin: 0 0 ${DESIGN_TOKENS.spacing.lg} 0;
-font-size: ${DESIGN_TOKENS.typography.fontSize.xl};
-font-weight: ${DESIGN_TOKENS.typography.fontWeight.semibold};
-color: ${DESIGN_TOKENS.colors.text.primary};
-">Разделы</h3>
-<div style="display: flex; flex-direction: column; gap: ${DESIGN_TOKENS.spacing.xs};">
-<div style="
-padding: ${DESIGN_TOKENS.spacing.md};
-color: ${DESIGN_TOKENS.colors.text.primary};
-border-radius: ${DESIGN_TOKENS.radius.md};
-background: ${DESIGN_TOKENS.colors.bg.secondary};
-font-weight: ${DESIGN_TOKENS.typography.fontWeight.medium};
-">Основные настройки</div>
-<div style="
-padding: ${DESIGN_TOKENS.spacing.md};
-color: ${DESIGN_TOKENS.colors.text.secondary};
-border-radius: ${DESIGN_TOKENS.radius.md};
-">Кастомизация</div>
-<div style="
-padding: ${DESIGN_TOKENS.spacing.md};
-color: ${DESIGN_TOKENS.colors.text.secondary};
-border-radius: ${DESIGN_TOKENS.radius.md};
-">Статистика</div>
-<div style="
-padding: ${DESIGN_TOKENS.spacing.md};
-color: ${DESIGN_TOKENS.colors.text.secondary};
-border-radius: ${DESIGN_TOKENS.radius.md};
-">Обновления</div>
-</div>
-</div>
+</section>
 </div>
 `;
 }
