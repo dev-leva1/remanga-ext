@@ -537,11 +537,10 @@ class SettingsPanel {
       'Все настройки будут сброшены к значениям по умолчанию. Это действие нельзя отменить.',
       async () => {
         await this.config.reset();
-        this.notifications.success('Настройки сброшены');
-        this.hide();
+        this.notifications.success('Настройки сброшены. Перезагрузка...');
         setTimeout(() => {
-          this.show();
-        }, 500);
+          window.location.reload();
+        }, 1000);
       }
     );
   }
@@ -555,11 +554,10 @@ class SettingsPanel {
       'Вся статистика будет удалена. Это действие нельзя отменить.',
       async () => {
         await this.statistics.reset();
-        this.notifications.success('Статистика сброшена');
-        this.hide();
+        this.notifications.success('Статистика сброшена. Перезагрузка...');
         setTimeout(() => {
-          this.show();
-        }, 500);
+          window.location.reload();
+        }, 1000);
       }
     );
   }
