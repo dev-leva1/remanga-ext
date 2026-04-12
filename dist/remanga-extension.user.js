@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Remanga Enhanced
 // @namespace    remanga.ext
-// @version      1.3.0
+// @version      1.3.1
 // @description  Автоматизация действий на remanga.org: автолайк, массовая отметка глав
 // @author       dev-leva1
 // @match        https://remanga.org/*
@@ -18,6 +18,8 @@
 /**
  * CHANGELOG
  *
+ * v1.3.1 = Исправлена система автообновлений
+ * 
  * v1.3.0 - Добавлена система автообновлений
  * - Автоматическая проверка обновлений при загрузке страницы (раз в 12 часов)
  * - Уведомления о доступных обновлениях с changelog
