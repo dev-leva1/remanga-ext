@@ -113,6 +113,27 @@ const validators = {
       sanitized.autoUpdateEnabled = Boolean(settings.autoUpdateEnabled);
     }
 
+    if ('blockCustomThemes' in settings) {
+      sanitized.blockCustomThemes = Boolean(settings.blockCustomThemes);
+    }
+
+    if ('hideChatIndicator' in settings) {
+      sanitized.hideChatIndicator = Boolean(settings.hideChatIndicator);
+    }
+
+    if ('hideProfileBlocks' in settings) {
+      const blocks = settings.hideProfileBlocks;
+      if (typeof blocks === 'object' && blocks !== null && !Array.isArray(blocks)) {
+        sanitized.hideProfileBlocks = {};
+        const allowedKeys = ['statistics', 'badges', 'achievements', 'favoriteCards', 'publishers', 'guilds', 'friends', 'followers', 'comments'];
+        allowedKeys.forEach(key => {
+          if (key in blocks) {
+            sanitized.hideProfileBlocks[key] = Boolean(blocks[key]);
+          }
+        });
+      }
+    }
+
     return sanitized;
   }
 };

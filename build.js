@@ -17,6 +17,9 @@ const files = [
   'src/core/UpdateChecker.js',
   'src/ui/Notifications.js',
   'src/ui/SettingsPanel.js',
+  'src/ui/SettingsPage.js',
+  'src/features/HeaderCustomizer.js',
+  'src/features/ProfileCustomizer.js',
   'src/features/ChapterManager.js',
   'src/features/AutoLiker.js',
   'src/main.js'
@@ -41,6 +44,13 @@ const header = `// ==UserScript==
 
 /**
  * CHANGELOG
+ *
+ * v1.6.0 - Кастомизация интерфейса и новая страница настроек
+ * - Блокировка кастомных тем в профилях пользователей
+ * - Скрытие блоков профиля (статистика, бейджи, ачивки, друзья и т.д.)
+ * - Скрытие индикатора непрочитанных сообщений чата в header
+ * - Страница настроек открывается как overlay модальное окно
+ * - Стилизованная кнопка настроек в header
  *
  * v1.5.0 - Полное обновление UI и лендинг
  * - Полностью переработан UI согласно DESIGN.md

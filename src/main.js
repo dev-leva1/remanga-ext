@@ -14,6 +14,9 @@ class RemangaExtension {
     this.settingsPanel = null;
     this.updateChecker = null;
     this.progressModal = null;
+    this.headerCustomizer = null;
+    this.profileCustomizer = null;
+    this.settingsPage = null;
     this.observers = [];
   }
 
@@ -45,6 +48,9 @@ class RemangaExtension {
       this.autoLiker = new AutoLiker(this.chapterManager, this.config, this.notifications);
       this.settingsPanel = new SettingsPanel(this.config, this.notifications, this.statistics);
       this.updateChecker = new UpdateChecker(this.config, this.notifications);
+      this.headerCustomizer = new HeaderCustomizer(this.config);
+      this.profileCustomizer = new ProfileCustomizer(this.config);
+      this.settingsPage = new SettingsPage(this.config, this.notifications, this.statistics);
 
       window.remangaExtension = this;
 
@@ -55,9 +61,12 @@ class RemangaExtension {
         this.initChaptersPage();
       } else if (pageType === 'reader') {
         this.initReaderPage();
+      } else if (pageType === 'profile') {
+        this.initProfilePage();
       }
 
       this.settingsPanel.inject();
+      this.headerCustomizer.init();
 
       await this.updateChecker.init();
 
@@ -116,17 +125,20 @@ class RemangaExtension {
     logger.info(`URL изменен, новый тип страницы: ${pageType}`);
 
     if (pageType === 'chapters') {
-      // Даем время React отрендерить страницу
       setTimeout(() => {
         this.initChaptersPage();
       }, 300);
     } else if (pageType === 'reader') {
-      // Даем время React отрендерить страницу
       setTimeout(() => {
         this.initReaderPage();
       }, 300);
+    } else if (pageType === 'profile') {
+      setTimeout(() => {
+        this.initProfilePage();
+      }, 300);
     } else {
       this.removeChapterButtons();
+      this.cleanupProfilePage();
     }
   }
 
@@ -141,6 +153,15 @@ class RemangaExtension {
     }
     if (this.settingsPanel) {
       this.settingsPanel.cleanup();
+    }
+    if (this.headerCustomizer) {
+      this.headerCustomizer.cleanup();
+    }
+    if (this.profileCustomizer) {
+      this.profileCustomizer.cleanup();
+    }
+    if (this.settingsPage) {
+      this.settingsPage.cleanup();
     }
     logger.info('Ресурсы расширения очищены');
   }
@@ -157,6 +178,10 @@ class RemangaExtension {
    */
   detectPageType() {
     const path = window.location.pathname;
+
+    if (path.includes('/user/') && path.includes('/about')) {
+      return 'profile';
+    }
 
     if (path.includes('/chapters')) {
       return 'chapters';
@@ -251,6 +276,24 @@ class RemangaExtension {
 
     if (this.config.get('autoLike')) {
       await this.autoLiker.init();
+    }
+  }
+
+  /**
+   * Инициализация страницы профиля
+   */
+  initProfilePage() {
+    logger.info('Инициализация страницы профиля');
+    this.cleanupProfilePage();
+    this.profileCustomizer.init();
+  }
+
+  /**
+   * Очистка страницы профиля
+   */
+  cleanupProfilePage() {
+    if (this.profileCustomizer) {
+      this.profileCustomizer.cleanup();
     }
   }
 

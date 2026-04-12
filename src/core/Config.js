@@ -17,7 +17,20 @@ class Config {
       notificationDuration: 3,
       batchSize: 10,
       skipProcessed: true,
-      autoUpdateEnabled: true
+      autoUpdateEnabled: true,
+      blockCustomThemes: false,
+      hideChatIndicator: false,
+      hideProfileBlocks: {
+        statistics: false,
+        badges: false,
+        achievements: false,
+        favoriteCards: false,
+        publishers: false,
+        guilds: false,
+        friends: false,
+        followers: false,
+        comments: false
+      }
     };
 
     this.settings = { ...this.defaults };

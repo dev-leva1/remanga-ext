@@ -89,7 +89,7 @@ const buttonStyles = (variant = 'primary') => {
       padding: ${DESIGN_TOKENS.spacing.md} ${DESIGN_TOKENS.spacing.xl};
     `,
     icon: `
-      background: transparent;
+      background: rgba(255, 255, 255, 0.05);
       color: ${DESIGN_TOKENS.colors.text.muted};
       width: 40px;
       height: 40px;
