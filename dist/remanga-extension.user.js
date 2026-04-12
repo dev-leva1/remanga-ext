@@ -506,7 +506,9 @@ ontimeout: () => reject(new Error('Таймаут'))
 }
 showUpdateModal(version, changelog) {
 const overlay = document.createElement('div');
-overlay.style.cssText = overlayStyles();
+overlay.style.cssText = overlayStyles() + `
+z-index: 9999999;
+`;
 const modal = document.createElement('div');
 modal.style.cssText = modalStyles() + `
 min-width: 500px;
