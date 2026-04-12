@@ -12,6 +12,7 @@ class RemangaExtension {
     this.autoLiker = null;
     this.notifications = null;
     this.settingsPanel = null;
+    this.updateChecker = null;
     this.progressModal = null;
     this.observers = [];
   }
@@ -43,6 +44,9 @@ class RemangaExtension {
       this.chapterManager = new ChapterManager(this.api, this.config, this.notifications, this.statistics);
       this.autoLiker = new AutoLiker(this.chapterManager, this.config, this.notifications);
       this.settingsPanel = new SettingsPanel(this.config, this.notifications, this.statistics);
+      this.updateChecker = new UpdateChecker(this.config, this.notifications);
+
+      window.remangaExtension = this;
 
       const pageType = this.detectPageType();
       logger.info(`Тип страницы: ${pageType}`);
@@ -54,6 +58,8 @@ class RemangaExtension {
       }
 
       this.settingsPanel.inject();
+
+      await this.updateChecker.init();
 
       // Отслеживание изменений URL для SPA навигации
       this.setupNavigationListener();

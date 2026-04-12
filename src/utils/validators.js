@@ -109,6 +109,10 @@ const validators = {
       sanitized.skipProcessed = Boolean(settings.skipProcessed);
     }
 
+    if ('autoUpdateEnabled' in settings) {
+      sanitized.autoUpdateEnabled = Boolean(settings.autoUpdateEnabled);
+    }
+
     return sanitized;
   }
 };

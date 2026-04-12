@@ -16,7 +16,8 @@ class Config {
       notificationsEnabled: true,
       notificationDuration: 3,
       batchSize: 10,
-      skipProcessed: true
+      skipProcessed: true,
+      autoUpdateEnabled: true
     };
 
     this.settings = { ...this.defaults };

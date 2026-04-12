@@ -204,6 +204,15 @@ class SettingsPanel {
           </div>
         </label>
 
+        <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+          <input type="checkbox" id="autoUpdateEnabled" ${this.config.get('autoUpdateEnabled') ? 'checked' : ''}
+                 style="width: 20px; height: 20px; cursor: pointer; accent-color: #3b82f6;">
+          <div>
+            <div style="font-weight: 500; color: #ffffff;">Автоматические обновления</div>
+            <div style="font-size: 12px; color: #9ca3af;">Проверять наличие обновлений при загрузке страницы</div>
+          </div>
+        </label>
+
         <div>
           <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #ffffff;">
             Время показа уведомлений (секунды)
@@ -248,6 +257,24 @@ class SettingsPanel {
             font-size: 13px;
             width: 100%;
           ">Сбросить статистику</button>
+        </div>
+
+        <div style="padding: 16px; background: #2a2a2a; border-radius: 8px;">
+          <div style="font-weight: 500; margin-bottom: 12px; color: #ffffff;">🔄 Обновления</div>
+          <div style="display: flex; flex-direction: column; gap: 8px; color: #9ca3af; font-size: 14px; margin-bottom: 12px;">
+            <div>Текущая версия: <span style="color: #ffffff; font-weight: 600;" id="current-version">1.2.4</span></div>
+            <div id="last-check-info" style="font-size: 12px;">Проверка обновлений...</div>
+          </div>
+          <button id="check-updates" style="
+            padding: 8px 16px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            width: 100%;
+          ">Проверить обновления</button>
         </div>
 
         <div style="padding: 16px; background: #2a2a2a; border-radius: 8px;">
@@ -356,6 +383,19 @@ class SettingsPanel {
       this.showResetStatsConfirmation();
     });
 
+    modal.querySelector('#check-updates').addEventListener('click', async () => {
+      const btn = modal.querySelector('#check-updates');
+      btn.disabled = true;
+      btn.textContent = 'Проверка...';
+
+      if (window.remangaExtension && window.remangaExtension.updateChecker) {
+        await window.remangaExtension.updateChecker.checkForUpdates(true);
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Проверить обновления';
+    });
+
     modal.querySelector('#export-settings').addEventListener('click', () => {
       this.exportSettings();
     });
@@ -373,6 +413,8 @@ class SettingsPanel {
         this.hide();
       }
     });
+
+    this.updateLastCheckInfo(modal);
   }
 
   /**
@@ -384,6 +426,7 @@ class SettingsPanel {
         autoLike: modal.querySelector('#autoLike').checked,
         skipProcessed: modal.querySelector('#skipProcessed').checked,
         notificationsEnabled: modal.querySelector('#notificationsEnabled').checked,
+        autoUpdateEnabled: modal.querySelector('#autoUpdateEnabled').checked,
         notificationDuration: parseInt(modal.querySelector('#notificationDuration').value),
         batchSize: parseInt(modal.querySelector('#batchSize').value)
       };
@@ -405,6 +448,36 @@ class SettingsPanel {
   hide() {
     if (this.panel) {
       this.panel.style.display = 'none';
+    }
+  }
+
+  /**
+   * Обновление информации о последней проверке обновлений
+   */
+  async updateLastCheckInfo(modal) {
+    const lastCheckInfo = modal.querySelector('#last-check-info');
+
+    if (window.remangaExtension && window.remangaExtension.updateChecker) {
+      const lastCheck = await window.remangaExtension.updateChecker.getLastCheckTime();
+
+      if (lastCheck > 0) {
+        const date = new Date(lastCheck);
+        const now = Date.now();
+        const diff = now - lastCheck;
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+
+        if (hours < 1) {
+          lastCheckInfo.textContent = 'Последняя проверка: только что';
+        } else if (hours < 24) {
+          lastCheckInfo.textContent = `Последняя проверка: ${hours} ч. назад`;
+        } else {
+          lastCheckInfo.textContent = `Последняя проверка: ${date.toLocaleDateString('ru-RU')}`;
+        }
+      } else {
+        lastCheckInfo.textContent = 'Обновления еще не проверялись';
+      }
+    } else {
+      lastCheckInfo.textContent = 'Информация недоступна';
     }
   }
 

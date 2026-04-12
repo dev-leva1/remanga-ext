@@ -9,9 +9,11 @@ const files = [
   'src/utils/logger.js',
   'src/utils/validators.js',
   'src/utils/dom.js',
+  'src/utils/changelog-parser.js',
   'src/core/Config.js',
   'src/core/Statistics.js',
   'src/core/ApiClient.js',
+  'src/core/UpdateChecker.js',
   'src/ui/Notifications.js',
   'src/ui/SettingsPanel.js',
   'src/features/ChapterManager.js',
@@ -30,8 +32,22 @@ const header = `// ==UserScript==
 // @grant        GM.setValue
 // @grant        GM.xmlHttpRequest
 // @connect      api.remanga.org
+// @connect      ext.nexee.ru
+// @updateURL    https://ext.nexee.ru/remanga-extension.user.js
+// @downloadURL  https://ext.nexee.ru/remanga-extension.user.js
 // @run-at       document-idle
 // ==/UserScript==
+
+/**
+ * CHANGELOG
+ *
+ * v1.2.4 - Добавлена система автообновлений
+ * - Автоматическая проверка обновлений при загрузке страницы (раз в 12 часов)
+ * - Уведомления о доступных обновлениях с changelog
+ * - Ручная проверка обновлений через настройки
+ * - Настройка включения/отключения автообновлений
+ * - Интеграция с Tampermonkey для надежного обновления
+ */
 
 `;
 
