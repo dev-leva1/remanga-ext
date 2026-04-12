@@ -76,6 +76,9 @@ files.forEach(file => {
     .replace(/^export .+$/gm, '')
     .replace(/^export default .+$/gm, '');
 
+  // Заменяем __VERSION__ на реальную версию
+  content = content.replace(/__VERSION__/g, version);
+
   // Удаляем многострочные комментарии /** ... */
   content = content.replace(/\/\*\*[\s\S]*?\*\//g, '');
 

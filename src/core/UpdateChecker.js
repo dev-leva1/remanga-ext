@@ -7,7 +7,7 @@ class UpdateChecker {
     this.config = config;
     this.notifications = notifications;
     this.updateURL = 'https://ext.nexee.ru/remanga-extension.user.js';
-    this.currentVersion = '1.2.4';
+    this.currentVersion = '__VERSION__';
     this.checkInterval = 12 * 60 * 60 * 1000;
     this.isChecking = false;
   }
