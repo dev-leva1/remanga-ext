@@ -63,9 +63,9 @@ class UpdateChecker {
       await GM.setValue('lastUpdateCheck', Date.now());
 
       const comparison = changelogParser.compareVersions(this.currentVersion, remoteVersion);
-      logger.info('Результат сравнения:', comparison, '(< 0 = есть обновление, 0 = одинаковые, > 0 = текущая новее)');
+      logger.info('Результат сравнения:', comparison, '(> 0 = есть обновление, 0 = одинаковые, < 0 = текущая новее)');
 
-      if (comparison < 0) {
+      if (comparison > 0) {
         logger.info(`Доступна новая версия: ${remoteVersion} (текущая: ${this.currentVersion})`);
         const changelog = changelogParser.parseChangelog(scriptText);
         this.showUpdateNotification(remoteVersion, changelog);
