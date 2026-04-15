@@ -17,6 +17,7 @@ class RemangaExtension {
     this.headerCustomizer = null;
     this.profileCustomizer = null;
     this.settingsPage = null;
+    this.guildHighlighter = null;
     this.observers = [];
   }
 
@@ -51,6 +52,7 @@ class RemangaExtension {
       this.headerCustomizer = new HeaderCustomizer(this.config);
       this.profileCustomizer = new ProfileCustomizer(this.config);
       this.settingsPage = new SettingsPage(this.config, this.notifications, this.statistics);
+      this.guildHighlighter = new GuildHighlighter(this.config);
 
       window.remangaExtension = this;
 
@@ -63,6 +65,8 @@ class RemangaExtension {
         this.initReaderPage();
       } else if (pageType === 'profile') {
         this.initProfilePage();
+      } else if (pageType === 'forum' || pageType === 'guild-top') {
+        this.initGuildPages(pageType);
       }
 
       this.settingsPanel.inject();
@@ -136,9 +140,14 @@ class RemangaExtension {
       setTimeout(() => {
         this.initProfilePage();
       }, 300);
+    } else if (pageType === 'forum' || pageType === 'guild-top') {
+      setTimeout(() => {
+        this.initGuildPages(pageType);
+      }, 300);
     } else {
       this.removeChapterButtons();
       this.cleanupProfilePage();
+      this.cleanupGuildPages();
     }
   }
 
@@ -162,6 +171,9 @@ class RemangaExtension {
     }
     if (this.settingsPage) {
       this.settingsPage.cleanup();
+    }
+    if (this.guildHighlighter) {
+      this.guildHighlighter.cleanup();
     }
     logger.info('Ресурсы расширения очищены');
   }
@@ -189,6 +201,14 @@ class RemangaExtension {
 
     if (path.match(/\/manga\/[^/]+\/\d+/)) {
       return 'reader';
+    }
+
+    if (path.includes('/forum')) {
+      return 'forum';
+    }
+
+    if (path.includes('/guild/top')) {
+      return 'guild-top';
     }
 
     return 'other';
@@ -294,6 +314,26 @@ class RemangaExtension {
   cleanupProfilePage() {
     if (this.profileCustomizer) {
       this.profileCustomizer.cleanup();
+    }
+  }
+
+  /**
+   * Инициализация страниц форума и топа гильдий
+   */
+  initGuildPages(pageType) {
+    logger.info(`Инициализация страницы гильдий: ${pageType}`);
+    this.cleanupGuildPages();
+    if (this.guildHighlighter) {
+      this.guildHighlighter.init(pageType);
+    }
+  }
+
+  /**
+   * Очистка страниц гильдий
+   */
+  cleanupGuildPages() {
+    if (this.guildHighlighter) {
+      this.guildHighlighter.cleanup();
     }
   }
 

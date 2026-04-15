@@ -74,6 +74,23 @@ const validators = {
   },
 
   /**
+   * Санитизация названия гильдии
+   */
+  sanitizeGuildName(name) {
+    if (typeof name !== 'string') {
+      throw new Error('Название гильдии должно быть строкой');
+    }
+
+    const trimmed = name.trim();
+
+    if (trimmed.length === 0 || trimmed.length > 100) {
+      throw new Error('Невалидная длина названия гильдии');
+    }
+
+    return trimmed;
+  },
+
+  /**
    * Санитизация настроек
    */
   sanitizeSettings(settings) {
@@ -132,6 +149,10 @@ const validators = {
           }
         });
       }
+    }
+
+    if ('highlightGuilds' in settings) {
+      sanitized.highlightGuilds = Boolean(settings.highlightGuilds);
     }
 
     return sanitized;

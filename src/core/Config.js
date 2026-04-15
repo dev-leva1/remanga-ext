@@ -30,7 +30,8 @@ class Config {
         friends: false,
         followers: false,
         comments: false
-      }
+      },
+      highlightGuilds: true
     };
 
     this.settings = { ...this.defaults };

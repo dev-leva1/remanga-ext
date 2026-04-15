@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Remanga Enhanced
 // @namespace    remanga.ext
-// @version      1.6.1
+// @version      1.6.2
 // @description  Автоматизация действий на remanga.org: автолайк, массовая отметка глав
 // @author       dev-leva1
 // @match        https://remanga.org/*
@@ -17,6 +17,12 @@
 
 /**
  * CHANGELOG
+ *
+ * v1.6.2 - Выделение гильдий на форуме и в топе
+ * - Автоматическое выделение постов от определенных гильдий на /forum
+ * - Выделение гильдий в топе на /guild/top
+ * - Эффект свечения для лучшей видимости выделенных элементов
+ * - Оптимизация производительности через IntersectionObserver
  *
  * v1.6.1 - Улучшения UI настроек
  * - Убрана боковая панель с категориями из окна настроек
@@ -37,25 +43,12 @@
  * - Шрифт Exo 2 во всех компонентах
  * - Создан лендинг ext.nexee.ru с инструкцией по установке
  * - Динамический парсинг changelog на лендинге
- *
- * v1.4.2 - Улучшен UX автообновлений
- * - При обнаружении обновления сразу открывается модальное окно
- * - Убрано промежуточное toast уведомление
- *
- * v1.4.1 - Упрощен regex для парсинга changelog
- *
- * v1.3.0 - Добавлена система автообновлений
- * - Автоматическая проверка обновлений при загрузке страницы (раз в 12 часов)
- * - Уведомления о доступных обновлениях с changelog
- * - Ручная проверка обновлений через настройки
- * - Настройка включения/отключения автообновлений
- * - Интеграция с Tampermonkey для надежного обновления
  */
 
 (function(){
 'use strict';
 const logger = {prefix: '[RemangaExt]',info(message, ...args) {console.log(`${this.prefix} ${message}`, ...args);},warn(message, ...args) {console.warn(`${this.prefix} ${message}`, ...args);},error(message, ...args) {console.error(`${this.prefix} ${message}`, ...args);},debug(message, ...args) {if (this.isDebugEnabled()) {console.debug(`${this.prefix} [DEBUG] ${message}`, ...args);}},isDebugEnabled() {return localStorage.getItem('remanga_ext_debug') === 'true';}};
-const validators = {isChapterId(value) {const num = parseInt(value);return Number.isInteger(num) && num > 0 && num < Number.MAX_SAFE_INTEGER;},isChapterIds(values) {if (!Array.isArray(values)) {return false;}if (values.length === 0) {return false;}return values.every(v => this.isChapterId(v));},isDelay(value) {const num = parseInt(value);return Number.isInteger(num) && num >= 1000 && num <= 60000;},isValidToken(token) {if (typeof token !== 'string') {return false;}if (token.length < 20 || token.length > 100) {return false;}return /^[a-zA-Z0-9_-]+$/.test(token);},sanitizeChapterId(value) {const num = parseInt(value);if (!this.isChapterId(num)) {throw new Error(`Невалидный ID главы: ${value}`);}return num;},sanitizeChapterIds(values) {if (!Array.isArray(values)) {throw new Error('ID глав должны быть массивом');}if (values.length === 0) {throw new Error('Массив ID глав не может быть пустым');}if (values.length > 1000) {throw new Error('Слишком много ID глав (максимум 1000)');}return values.map(v => this.sanitizeChapterId(v));},sanitizeSettings(settings) {const sanitized = {};if ('autoLike' in settings) {sanitized.autoLike = Boolean(settings.autoLike);}if ('autoMarkAsRead' in settings) {sanitized.autoMarkAsRead = Boolean(settings.autoMarkAsRead);}if ('notificationsEnabled' in settings) {sanitized.notificationsEnabled = Boolean(settings.notificationsEnabled);}if ('notificationDuration' in settings) {const duration = parseInt(settings.notificationDuration);if (duration >= 1 && duration <= 10) {sanitized.notificationDuration = duration;}}if ('batchSize' in settings) {const batchSize = parseInt(settings.batchSize);if (batchSize >= 1 && batchSize <= 50) {sanitized.batchSize = batchSize;}}if ('skipProcessed' in settings) {sanitized.skipProcessed = Boolean(settings.skipProcessed);}if ('autoUpdateEnabled' in settings) {sanitized.autoUpdateEnabled = Boolean(settings.autoUpdateEnabled);}if ('blockCustomThemes' in settings) {sanitized.blockCustomThemes = Boolean(settings.blockCustomThemes);}if ('hideChatIndicator' in settings) {sanitized.hideChatIndicator = Boolean(settings.hideChatIndicator);}if ('hideProfileBlocks' in settings) {const blocks = settings.hideProfileBlocks;if (typeof blocks === 'object' && blocks !== null && !Array.isArray(blocks)) {sanitized.hideProfileBlocks = {};const allowedKeys = ['statistics', 'badges', 'achievements', 'favoriteCards', 'publishers', 'guilds', 'friends', 'followers', 'comments'];allowedKeys.forEach(key => {if (key in blocks) {sanitized.hideProfileBlocks[key] = Boolean(blocks[key]);}});}}return sanitized;}};
+const validators = {isChapterId(value) {const num = parseInt(value);return Number.isInteger(num) && num > 0 && num < Number.MAX_SAFE_INTEGER;},isChapterIds(values) {if (!Array.isArray(values)) {return false;}if (values.length === 0) {return false;}return values.every(v => this.isChapterId(v));},isDelay(value) {const num = parseInt(value);return Number.isInteger(num) && num >= 1000 && num <= 60000;},isValidToken(token) {if (typeof token !== 'string') {return false;}if (token.length < 20 || token.length > 100) {return false;}return /^[a-zA-Z0-9_-]+$/.test(token);},sanitizeChapterId(value) {const num = parseInt(value);if (!this.isChapterId(num)) {throw new Error(`Невалидный ID главы: ${value}`);}return num;},sanitizeChapterIds(values) {if (!Array.isArray(values)) {throw new Error('ID глав должны быть массивом');}if (values.length === 0) {throw new Error('Массив ID глав не может быть пустым');}if (values.length > 1000) {throw new Error('Слишком много ID глав (максимум 1000)');}return values.map(v => this.sanitizeChapterId(v));},sanitizeGuildName(name) {if (typeof name !== 'string') {throw new Error('Название гильдии должно быть строкой');}const trimmed = name.trim();if (trimmed.length === 0 || trimmed.length > 100) {throw new Error('Невалидная длина названия гильдии');}return trimmed;},sanitizeSettings(settings) {const sanitized = {};if ('autoLike' in settings) {sanitized.autoLike = Boolean(settings.autoLike);}if ('autoMarkAsRead' in settings) {sanitized.autoMarkAsRead = Boolean(settings.autoMarkAsRead);}if ('notificationsEnabled' in settings) {sanitized.notificationsEnabled = Boolean(settings.notificationsEnabled);}if ('notificationDuration' in settings) {const duration = parseInt(settings.notificationDuration);if (duration >= 1 && duration <= 10) {sanitized.notificationDuration = duration;}}if ('batchSize' in settings) {const batchSize = parseInt(settings.batchSize);if (batchSize >= 1 && batchSize <= 50) {sanitized.batchSize = batchSize;}}if ('skipProcessed' in settings) {sanitized.skipProcessed = Boolean(settings.skipProcessed);}if ('autoUpdateEnabled' in settings) {sanitized.autoUpdateEnabled = Boolean(settings.autoUpdateEnabled);}if ('blockCustomThemes' in settings) {sanitized.blockCustomThemes = Boolean(settings.blockCustomThemes);}if ('hideChatIndicator' in settings) {sanitized.hideChatIndicator = Boolean(settings.hideChatIndicator);}if ('hideProfileBlocks' in settings) {const blocks = settings.hideProfileBlocks;if (typeof blocks === 'object' && blocks !== null && !Array.isArray(blocks)) {sanitized.hideProfileBlocks = {};const allowedKeys = ['statistics', 'badges', 'achievements', 'favoriteCards', 'publishers', 'guilds', 'friends', 'followers', 'comments'];allowedKeys.forEach(key => {if (key in blocks) {sanitized.hideProfileBlocks[key] = Boolean(blocks[key]);}});}}if ('highlightGuilds' in settings) {sanitized.highlightGuilds = Boolean(settings.highlightGuilds);}return sanitized;}};
 const domUtils = {waitForElement(selector, timeout = 10000) {return new Promise((resolve, reject) => {const existing = document.querySelector(selector);if (existing) {resolve(existing);return;}let observer = null;const timeoutId = setTimeout(() => {if (observer) {observer.disconnect();}reject(new Error(`Таймаут ожидания элемента: ${selector}`));}, timeout);observer = new MutationObserver(() => {const element = document.querySelector(selector);if (element) {clearTimeout(timeoutId);observer.disconnect();resolve(element);}});observer.observe(document.body, {childList: true,subtree: true});});},observeElement(selector, callback, options = {}) {const element = document.querySelector(selector);if (!element) {logger.warn(`Элемент не найден: ${selector}`);return null;}const defaultOptions = {childList: true,subtree: true,attributes: false};const observer = new MutationObserver((mutations) => {callback(mutations, element);});observer.observe(element, { ...defaultOptions, ...options });return observer;},extractChapterIdFromUrl() {const match = window.location.pathname.match(/\/manga\/[^/]+\/(\d+)/);return match ? parseInt(match[1]) : null;},extractMangaSlug() {const match = window.location.pathname.match(/\/manga\/([^/]+)/);return match ? match[1] : null;},extractBranchId() {const scripts = document.querySelectorAll('script[type="application/json"]');for (const script of scripts) {try {const data = JSON.parse(script.textContent);if (data.props?.pageProps?.branch?.id) {return data.props.pageProps.branch.id;}} catch (e) {}}if (typeof window !== 'undefined' && window.__NEXT_DATA__) {const branchId = window.__NEXT_DATA__?.props?.pageProps?.branch?.id;if (branchId) {return branchId;}}return null;},extractChapterIdsFromPage() {const elements = document.querySelectorAll('[data-testid^="chapter_"]');const ids = [];elements.forEach(el => {const match = el.dataset.testid.match(/chapter_(\d+)/);if (match) {ids.push(parseInt(match[1]));}});return ids;},findReadButton(chapterId) {return document.querySelector(`[data-testid="update_view_${chapterId}"]`);},findLikeButton(chapterId) {return document.querySelector(`[data-testid="like_btn_${chapterId}"]`);},findNextChapterLink() {const header = document.querySelector('header');if (!header) {return null;}const links = header.querySelectorAll('a[href*="/manga/"]');const currentPath = window.location.pathname;for (const link of links) {const href = link.getAttribute('href');if (href && href !== currentPath && href.match(/\/manga\/[^/]+\/\d+$/)) {return link;}}return null;},isAtPageBottom(threshold = 100) {const scrollTop = window.pageYOffset || document.documentElement.scrollTop;const scrollHeight = document.documentElement.scrollHeight;const clientHeight = document.documentElement.clientHeight;return scrollTop + clientHeight >= scrollHeight - threshold;}};
 const changelogParser = {
 parseVersion(scriptText) {
@@ -259,7 +252,8 @@ guilds: false,
 friends: false,
 followers: false,
 comments: false
-}
+},
+highlightGuilds: true
 };
 this.settings = { ...this.defaults };
 Config.instance = this;
@@ -432,7 +426,7 @@ constructor(config, notifications) {
 this.config = config;
 this.notifications = notifications;
 this.updateURL = 'https://ext.nexee.ru/remanga-extension.user.js';
-this.currentVersion = '1.6.1';
+this.currentVersion = '1.6.2';
 this.checkInterval = 12 * 60 * 60 * 1000;
 this.isChecking = false;
 }
@@ -620,7 +614,7 @@ this.config = config;
 this.notifications = notifications;
 this.statistics = statistics;
 this.container = null;
-this.currentVersion = '1.6.1';
+this.currentVersion = '1.6.2';
 }
 init() {
 this.render();
@@ -1265,7 +1259,182 @@ el.removeAttribute('data-hidden-by-remanga');
 }
 }
 
+class GuildHighlighter {
+constructor(config) {
+this.config = config;
+this.intersectionObserver = null;
+this.mutationObserver = null;
+this.debounceTimer = null;
+this.processedElements = new WeakSet();
+this.targetGuilds = new Set([
+'Демоны Дракмортуса',
+'Святой Культ Крыс',
+'Семь Смертных Грехов DS',
+'И г г д р а с и л ь',
+'Р К Н',
+'Diavol Satori Филиал',
+'Diavol Satori',
+'Шаббат'
+]);
+}
+init(pageType) {
+const enabled = this.config.get('highlightGuilds');
+if (!enabled) {
+logger.info('Выделение гильдий отключено в настройках');
+return;
+}
+this.cleanup();
+logger.info(`Инициализация GuildHighlighter для типа страницы: ${pageType}`);
+this.setupIntersectionObserver();
+if (pageType === 'forum') {
+this.initForumPage();
+} else if (pageType === 'guild-top') {
+this.initGuildTopPage();
+}
+}
+setupIntersectionObserver() {
+if (this.intersectionObserver) {
+return;
+}
+this.intersectionObserver = new IntersectionObserver(
+(entries) => {
+entries.forEach(entry => {
+if (entry.isIntersecting && !this.processedElements.has(entry.target)) {
+this.processElement(entry.target);
+}
+});
+},
+{
+root: null,
+rootMargin: '500px',
+threshold: 0
+}
+);
+logger.debug('IntersectionObserver настроен');
+}
+initForumPage() {
+logger.info('Инициализация страницы форума');
+this.highlightForumPosts();
+this.startMutationObserver('forum');
+}
+initGuildTopPage() {
+logger.info('Инициализация страницы топа гильдий');
+this.highlightGuildTopItems();
+this.startMutationObserver('guild-top');
+}
+highlightForumPosts() {
+const posts = document.querySelectorAll('article.cs-post-item');
+posts.forEach(post => {
+if (!this.processedElements.has(post)) {
+this.intersectionObserver.observe(post);
+}
+});
+logger.info(`[GuildHighlighter] Найдено ${posts.length} постов на форуме`);
+}
+highlightGuildTopItems() {
+const items = document.querySelectorAll('a[href*="/guild/"][href*="/about"]');
+items.forEach(item => {
+if (!this.processedElements.has(item)) {
+this.intersectionObserver.observe(item);
+}
+});
+logger.info(`[GuildHighlighter] Найдено ${items.length} элементов в топе гильдий`);
+}
+processElement(element) {
+const guildName = this.extractGuildName(element);
+logger.info(`[GuildHighlighter] Извлечено название гильдии: "${guildName}"`);
+if (guildName && this.targetGuilds.has(guildName)) {
+this.applyHighlight(element);
+logger.info(`[GuildHighlighter] ✓ Выделен элемент от гильдии: ${guildName}`);
+} else if (guildName) {
+logger.info(`[GuildHighlighter] ✗ Гильдия не в списке целевых: ${guildName}`);
+}
+this.processedElements.add(element);
+this.intersectionObserver.unobserve(element);
+}
+extractGuildName(element) {
+if (element.tagName === 'A' && element.href.includes('/guild/')) {
+const img = element.querySelector('img[alt]');
+if (img && img.alt) {
+try {
+return validators.sanitizeGuildName(img.alt);
+} catch (error) {
+logger.warn('Невалидное название гильдии:', error);
+return null;
+}
+}
+}
+const guildLink = element.querySelector('a[href*="/guild/"]');
+if (!guildLink) {
+return null;
+}
+const img = guildLink.querySelector('img[alt]');
+if (!img || !img.alt) {
+return null;
+}
+try {
+return validators.sanitizeGuildName(img.alt);
+} catch (error) {
+logger.warn('Невалидное название гильдии:', error);
+return null;
+}
+}
+applyHighlight(element) {
+if (!(element instanceof HTMLElement)) {
+logger.warn('Попытка применить стили к невалидному элементу');
+return;
+}
+element.style.borderLeft = '3px solid rgba(255, 255, 255, 0.3)';
+element.style.background = 'rgba(255, 255, 255, 0.05)';
+element.style.boxShadow = '0 0 12px rgba(255, 255, 255, 0.2)';
+element.setAttribute('data-guild-highlighted', 'true');
+}
+startMutationObserver(pageType) {
+if (this.mutationObserver) {
+return;
+}
+this.mutationObserver = new MutationObserver(() => {
+clearTimeout(this.debounceTimer);
+this.debounceTimer = setTimeout(() => {
+if (pageType === 'forum') {
+this.highlightForumPosts();
+} else if (pageType === 'guild-top') {
+this.highlightGuildTopItems();
+}
+}, 100);
+});
+this.mutationObserver.observe(document.body, {
+childList: true,
+subtree: true
+});
+logger.debug('MutationObserver запущен');
+}
+cleanup() {
+clearTimeout(this.debounceTimer);
+this.debounceTimer = null;
+if (this.intersectionObserver) {
+this.intersectionObserver.disconnect();
+this.intersectionObserver = null;
+logger.debug('IntersectionObserver отключен');
+}
+if (this.mutationObserver) {
+this.mutationObserver.disconnect();
+this.mutationObserver = null;
+logger.debug('MutationObserver отключен');
+}
+this.processedElements = new WeakSet();
+const highlightedElements = document.querySelectorAll('[data-guild-highlighted]');
+highlightedElements.forEach(el => {
+el.style.borderLeft = '';
+el.style.background = '';
+el.style.boxShadow = '';
+el.removeAttribute('data-guild-highlighted');
+});
+logger.info('GuildHighlighter очищен');
+}
+}
+
 class ChapterManager {constructor(apiClient, config, notifications, statistics) {this.api = apiClient;this.config = config;this.notifications = notifications;this.statistics = statistics;this.processingQueue = [];this.operationTimes = [];}async markAsRead(chapterId) {try {await this.api.markChapterAsRead(chapterId);logger.debug(`Глава ${chapterId} отмечена как прочитанная`);this.updateReadButton(chapterId);return true;} catch (error) {logger.error(`Ошибка отметки главы ${chapterId}:`, error);return false;}}async markMultipleAsRead(chapterIds, onProgress = null) {const skipProcessed = this.config.get('skipProcessed');let filteredIds = chapterIds;if (skipProcessed) {filteredIds = chapterIds.filter(id => !this.isChapterRead(id));const skipped = chapterIds.length - filteredIds.length;if (skipped > 0) {logger.info(`Пропущено ${skipped} уже прочитанных глав`);}}if (filteredIds.length === 0) {return { total: chapterIds.length, completed: 0, failed: 0, skipped: chapterIds.length };}const total = filteredIds.length;let completed = 0;let failed = 0;this.operationTimes = [];logger.info(`Начало массовой отметки ${total} глав`);for (const chapterId of filteredIds) {const startTime = Date.now();try {await this.api.markChapterAsRead(chapterId);completed++;this.updateReadButton(chapterId);const operationTime = Date.now() - startTime;this.operationTimes.push(operationTime);if (this.operationTimes.length > 10) {this.operationTimes.shift();}if (onProgress) {const eta = this.calculateETA(completed, total);onProgress(completed, total, eta);}await this.delay(300);} catch (error) {logger.error(`Ошибка отметки главы ${chapterId}:`, error);failed++;}}await this.statistics.incrementReads(completed);logger.info(`Массовая отметка завершена: ${completed} успешно, ${failed} ошибок`);return {total: chapterIds.length,completed,failed,skipped: chapterIds.length - filteredIds.length};}async likeChapter(chapterId) {try {await this.api.likeChapters([chapterId]);logger.debug(`Глава ${chapterId} лайкнута`);this.updateLikeButton(chapterId);return true;} catch (error) {logger.error(`Ошибка лайка главы ${chapterId}:`, error);return false;}}async likeMultiple(chapterIds, onProgress = null) {const skipProcessed = this.config.get('skipProcessed');let filteredIds = chapterIds;if (skipProcessed) {filteredIds = chapterIds.filter(id => !this.isChapterLiked(id));const skipped = chapterIds.length - filteredIds.length;if (skipped > 0) {logger.info(`Пропущено ${skipped} уже лайкнутых глав`);}}if (filteredIds.length === 0) {return { total: chapterIds.length, completed: 0, failed: 0, skipped: chapterIds.length };}const batchSize = this.config.get('batchSize');const total = filteredIds.length;let completed = 0;let failed = 0;this.operationTimes = [];logger.info(`Начало массового лайка ${total} глав (batch: ${batchSize})`);for (let i = 0; i < filteredIds.length; i += batchSize) {const batch = filteredIds.slice(i, i + batchSize);const startTime = Date.now();try {await this.api.likeChapters(batch);completed += batch.length;batch.forEach(id => this.updateLikeButton(id));const operationTime = Date.now() - startTime;this.operationTimes.push(operationTime);if (this.operationTimes.length > 10) {this.operationTimes.shift();}if (onProgress) {const eta = this.calculateETA(completed, total);onProgress(completed, total, eta);}if (i + batchSize < filteredIds.length) {await this.delay(500);}} catch (error) {logger.error('Ошибка лайка батча:', error);failed += batch.length;}}await this.statistics.incrementLikes(completed);logger.info(`Массовый лайк завершен: ${completed} успешно, ${failed} ошибок`);return {total: chapterIds.length,completed,failed,skipped: chapterIds.length - filteredIds.length};}updateReadButton(chapterId) {const button = domUtils.findReadButton(chapterId);if (button) {button.classList.add('remanga-ext-read');button.style.opacity = '0.5';}}updateLikeButton(chapterId) {const button = domUtils.findLikeButton(chapterId);if (button) {button.classList.add('remanga-ext-liked');const icon = button.querySelector('svg');if (icon) {icon.style.fill = '#ef4444';}}}async loadAllChaptersByScroll(onProgress = null) {logger.info('Начало загрузки глав через скролл');let previousCount = 0;let stableCount = 0;let scrollAttempts = 0;const maxScrollAttempts = 100;while (scrollAttempts < maxScrollAttempts) {const currentIds = this.getChapterIdsFromPage();const currentCount = currentIds.length;if (onProgress) {onProgress(currentCount);}if (currentCount === previousCount) {stableCount++;if (stableCount >= 3) {logger.info(`Загрузка завершена: ${currentCount} глав`);break;}} else {stableCount = 0;}previousCount = currentCount;window.scrollTo({top: document.documentElement.scrollHeight,behavior: 'smooth'});await this.delay(500);scrollAttempts++;}window.scrollTo({top: 0,behavior: 'smooth'});await this.delay(300);const finalIds = this.getChapterIdsFromPage();logger.info(`Итого загружено глав: ${finalIds.length}`);return finalIds;}getChapterIdsFromPage() {return domUtils.extractChapterIdsFromPage();}getCurrentChapterId() {return domUtils.extractChapterIdFromUrl();}delay(ms) {return new Promise(resolve => setTimeout(resolve, ms));}isChapterRead(chapterId) {const button = domUtils.findReadButton(chapterId);if (!button) {return false;}const isNativeRead = button.style.opacity === '0.5' ||button.disabled === true ||button.classList.contains('opacity-50') ||button.hasAttribute('disabled');const isExtensionRead = button.classList.contains('remanga-ext-read');return isNativeRead || isExtensionRead;}isChapterLiked(chapterId) {const button = domUtils.findLikeButton(chapterId);if (!button) {return false;}const icon = button.querySelector('svg');const isNativeLiked = icon && (icon.style.fill === 'rgb(239, 68, 68)' ||icon.style.fill === '#ef4444' ||icon.classList.contains('text-red-500') ||button.classList.contains('text-red-500') ||button.getAttribute('aria-pressed') === 'true');const isExtensionLiked = button.classList.contains('remanga-ext-liked');return isNativeLiked || isExtensionLiked;}calculateETA(completed, total) {if (this.operationTimes.length === 0 || completed === 0) {return null;}const avgTime = this.operationTimes.reduce((a, b) => a + b, 0) / this.operationTimes.length;const remaining = total - completed;const etaMs = remaining * avgTime;const minutes = Math.floor(etaMs / 60000);const seconds = Math.floor((etaMs % 60000) / 1000);return { minutes, seconds, totalSeconds: Math.floor(etaMs / 1000) };}}
 class AutoLiker {constructor(chapterManager, config, notifications) {this.chapterManager = chapterManager;this.config = config;this.notifications = notifications;this.likedChapters = new Set();}async init() {if (!this.config.get('autoLike')) {logger.debug('Автолайк отключен');return;}const chapterId = this.chapterManager.getCurrentChapterId();if (!chapterId) {logger.warn('Не удалось определить ID главы');return;}if (this.likedChapters.has(chapterId)) {logger.debug(`Глава ${chapterId} уже была лайкнута в этой сессии`);return;}await this.likeCurrentChapter(chapterId);}async likeCurrentChapter(chapterId) {try {logger.info(`Автолайк главы ${chapterId}`);if (this.chapterManager.isChapterLiked(chapterId)) {logger.debug(`Глава ${chapterId} уже лайкнута, пропускаем`);return;}const success = await this.chapterManager.likeChapter(chapterId);if (success) {this.likedChapters.add(chapterId);this.notifications.success('Глава автоматически лайкнута');logger.debug(`Глава ${chapterId} успешно лайкнута`);}} catch (error) {logger.error('Ошибка автолайка:', error);}}wasLikedInSession(chapterId) {return this.likedChapters.has(chapterId);}clearHistory() {this.likedChapters.clear();}}
-class RemangaExtension {constructor() {this.config = null;this.api = null;this.statistics = null;this.chapterManager = null;this.autoLiker = null;this.notifications = null;this.settingsPanel = null;this.updateChecker = null;this.progressModal = null;this.headerCustomizer = null;this.profileCustomizer = null;this.settingsPage = null;this.observers = [];}async init() {try {logger.info('Инициализация расширения...');if (!this.isUserLoggedIn()) {logger.info('Пользователь не авторизован');return;}this.config = new Config();await this.config.load();this.statistics = new Statistics();await this.statistics.load();this.api = new ApiClient();this.api.init();this.notifications = new Notifications(this.config);this.notifications.injectStyles();this.chapterManager = new ChapterManager(this.api, this.config, this.notifications, this.statistics);this.autoLiker = new AutoLiker(this.chapterManager, this.config, this.notifications);this.settingsPanel = new SettingsPanel(this.config, this.notifications, this.statistics);this.updateChecker = new UpdateChecker(this.config, this.notifications);this.headerCustomizer = new HeaderCustomizer(this.config);this.profileCustomizer = new ProfileCustomizer(this.config);this.settingsPage = new SettingsPage(this.config, this.notifications, this.statistics);window.remangaExtension = this;const pageType = this.detectPageType();logger.info(`Тип страницы: ${pageType}`);if (pageType === 'chapters') {this.initChaptersPage();} else if (pageType === 'reader') {this.initReaderPage();} else if (pageType === 'profile') {this.initProfilePage();}this.settingsPanel.inject();this.headerCustomizer.init();await this.updateChecker.init();this.setupNavigationListener();logger.info('Расширение успешно инициализировано');window.addEventListener('beforeunload', () => {this.cleanup();});} catch (error) {logger.error('Ошибка инициализации:', error);}}setupNavigationListener() {let lastUrl = location.href;const checkUrlChange = () => {const currentUrl = location.href;if (currentUrl !== lastUrl) {lastUrl = currentUrl;this.handleUrlChange();}};const originalPushState = history.pushState;const originalReplaceState = history.replaceState;history.pushState = function(...args) {originalPushState.apply(this, args);checkUrlChange();};history.replaceState = function(...args) {originalReplaceState.apply(this, args);checkUrlChange();};window.addEventListener('popstate', checkUrlChange);logger.info('Navigation listener активирован');}handleUrlChange() {const pageType = this.detectPageType();logger.info(`URL изменен, новый тип страницы: ${pageType}`);if (pageType === 'chapters') {setTimeout(() => {this.initChaptersPage();}, 300);} else if (pageType === 'reader') {setTimeout(() => {this.initReaderPage();}, 300);} else if (pageType === 'profile') {setTimeout(() => {this.initProfilePage();}, 300);} else {this.removeChapterButtons();this.cleanupProfilePage();}}cleanup() {this.observers.forEach(observer => observer.disconnect());this.observers = [];if (this.notifications) {this.notifications.cleanup();}if (this.settingsPanel) {this.settingsPanel.cleanup();}if (this.headerCustomizer) {this.headerCustomizer.cleanup();}if (this.profileCustomizer) {this.profileCustomizer.cleanup();}if (this.settingsPage) {this.settingsPage.cleanup();}logger.info('Ресурсы расширения очищены');}isUserLoggedIn() {return document.cookie.includes('token=');}detectPageType() {const path = window.location.pathname;if (path.includes('/user/') && path.includes('/about')) {return 'profile';}if (path.includes('/chapters')) {return 'chapters';}if (path.match(/\/manga\/[^/]+\/\d+/)) {return 'reader';}return 'other';}initChaptersPage() {logger.info('Инициализация страницы глав');let debounceTimer = null;const containerSelector = '.relative.flex.flex-col.gap-2';const reinjectButtons = () => {clearTimeout(debounceTimer);debounceTimer = setTimeout(() => {if (!window.location.pathname.includes('/chapters')) {this.removeChapterButtons();return;}const container = document.querySelector(containerSelector);if (container) {this.ensureButtonsExist(container);}}, 100);};const observer = new MutationObserver(reinjectButtons);domUtils.waitForElement(containerSelector, 5000).then(container => {this.ensureButtonsExist(container);observer.observe(document.body, {childList: true,subtree: true});this.observers.push(observer);logger.info('MutationObserver для кнопок активирован');}).catch(error => {logger.warn('Контейнер глав не найден:', error);});}removeChapterButtons() {const markAllBtn = document.getElementById('remanga-ext-mark-all-btn');const likeAllBtn = document.getElementById('remanga-ext-like-all-btn');if (markAllBtn) {markAllBtn.remove();logger.debug('Кнопка "Прочитать все" удалена');}if (likeAllBtn) {likeAllBtn.remove();logger.debug('Кнопка "Лайкнуть все" удалена');}}ensureButtonsExist(container) {if (!document.getElementById('remanga-ext-mark-all-btn')) {this.addMarkAllReadButton(container);}if (!document.getElementById('remanga-ext-like-all-btn')) {this.addLikeAllButton(container);}}async initReaderPage() {logger.info('Инициализация страницы чтения');if (this.config.get('autoLike')) {await this.autoLiker.init();}}initProfilePage() {logger.info('Инициализация страницы профиля');this.cleanupProfilePage();this.profileCustomizer.init();}cleanupProfilePage() {if (this.profileCustomizer) {this.profileCustomizer.cleanup();}}addMarkAllReadButton(container) {if (document.getElementById('remanga-ext-mark-all-btn')) {return;}const button = document.createElement('button');button.id = 'remanga-ext-mark-all-btn';button.className = 'cs-button';button.style.cssText = buttonStyles('fullWidth') + `margin-bottom: ${DESIGN_TOKENS.spacing.md};`;button.textContent = '✓ Прочитать все главы';button.addEventListener('mouseenter', () => {button.style.opacity = '0.9';});button.addEventListener('mouseleave', () => {button.style.opacity = '1';});button.addEventListener('mousedown', () => {button.style.transform = 'scale(0.97)';});button.addEventListener('mouseup', () => {button.style.transform = 'scale(1)';});button.addEventListener('click', async () => {try {await this.handleMarkAllRead(button);} catch (error) {logger.error('Ошибка обработки массовой отметки:', error);this.notifications.error('Произошла ошибка при обработке');button.disabled = false;button.textContent = '✓ Прочитать все главы';this.hideProgressModal();}});container.insertBefore(button, container.firstChild);logger.info('Кнопка "Прочитать все" добавлена');}addLikeAllButton(container) {if (document.getElementById('remanga-ext-like-all-btn')) {return;}const button = document.createElement('button');button.id = 'remanga-ext-like-all-btn';button.className = 'cs-button';button.style.cssText = buttonStyles('fullWidth') + `margin-bottom: ${DESIGN_TOKENS.spacing.md};`;button.textContent = '❤️ Лайкнуть все главы';button.addEventListener('mouseenter', () => {button.style.opacity = '0.9';});button.addEventListener('mouseleave', () => {button.style.opacity = '1';});button.addEventListener('mousedown', () => {button.style.transform = 'scale(0.97)';});button.addEventListener('mouseup', () => {button.style.transform = 'scale(1)';});button.addEventListener('click', async () => {try {await this.handleLikeAll(button);} catch (error) {logger.error('Ошибка обработки массового лайка:', error);this.notifications.error('Произошла ошибка при обработке');button.disabled = false;button.textContent = '❤️ Лайкнуть все главы';this.hideProgressModal();}});container.insertBefore(button, container.children[1]);logger.info('Кнопка "Лайкнуть все" добавлена');}async handleMarkAllRead(button) {button.disabled = true;button.textContent = 'Подготовка...';this.showProgressModal('Этап 1/2: Загрузка глав', 0, 0, true);const chapterIds = await this.chapterManager.loadAllChaptersByScroll((count) => {this.updateProgressModalLoading(`Этап 1/2: Загрузка глав (${count})`);});if (chapterIds.length === 0) {this.hideProgressModal();this.notifications.warning('Главы не найдены');button.disabled = false;button.textContent = '✓ Прочитать все главы';return;}button.textContent = 'Обработка...';this.showProgressModal('Этап 2/2: Отметка глав как прочитанных', 0, chapterIds.length, false);const result = await this.chapterManager.markMultipleAsRead(chapterIds,(current, total, eta) => {this.updateProgressModal(current, total, eta);});this.hideProgressModal();button.disabled = false;button.textContent = '✓ Прочитать все главы';if (result.skipped > 0) {this.notifications.info(`Пропущено ${result.skipped} уже прочитанных глав`);}if (result.failed > 0) {this.notifications.warning(`Отмечено ${result.completed} из ${result.total} глав (${result.failed} ошибок)`);} else {this.notifications.success(`Отмечено ${result.completed} глав. Обновите страницу для отображения изменений.`);}}async handleLikeAll(button) {button.disabled = true;button.textContent = 'Подготовка...';this.showProgressModal('Этап 1/2: Загрузка глав', 0, 0, true);const chapterIds = await this.chapterManager.loadAllChaptersByScroll((count) => {this.updateProgressModalLoading(`Этап 1/2: Загрузка глав (${count})`);});if (chapterIds.length === 0) {this.hideProgressModal();this.notifications.warning('Главы не найдены');button.disabled = false;button.textContent = '❤️ Лайкнуть все главы';return;}button.textContent = 'Обработка...';this.showProgressModal('Этап 2/2: Лайк глав', 0, chapterIds.length, false);const result = await this.chapterManager.likeMultiple(chapterIds,(current, total, eta) => {this.updateProgressModal(current, total, eta);});this.hideProgressModal();button.disabled = false;button.textContent = '❤️ Лайкнуть все главы';if (result.skipped > 0) {this.notifications.info(`Пропущено ${result.skipped} уже лайкнутых глав`);}if (result.failed > 0) {this.notifications.warning(`Лайкнуто ${result.completed} из ${result.total} глав (${result.failed} ошибок)`);} else {this.notifications.success(`Лайкнуто ${result.completed} глав`);}}showProgressModal(title, current, total, isLoading = false) {if (this.progressModal) {this.progressModal.remove();}const overlay = document.createElement('div');overlay.style.cssText = overlayStyles();const modal = document.createElement('div');modal.id = 'remanga-ext-progress-modal';modal.style.cssText = modalStyles() + `min-width: 400px;`;if (isLoading) {modal.innerHTML = `<div style="margin-bottom: ${DESIGN_TOKENS.spacing.lg}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.bold}; font-size: ${DESIGN_TOKENS.typography.fontSize.xl}; color: ${DESIGN_TOKENS.colors.text.primary};">${title}</div><div style="display: flex; align-items: center; justify-content: center; padding: 20px 0;"><div style="width: 40px;height: 40px;border: 4px solid #374151;border-top-color: ${DESIGN_TOKENS.colors.bg.secondary};border-radius: 50%;animation: spin 1s linear infinite;"></div></div><div style="text-align: center; color: ${DESIGN_TOKENS.colors.text.muted}; font-size: ${DESIGN_TOKENS.typography.fontSize.md};"><span id="progress-text">Загрузка...</span></div><style>@keyframes spin {to { transform: rotate(360deg); }}</style>`;} else {const percent = total > 0 ? Math.round((current / total) * 100) : 0;modal.innerHTML = `<div style="margin-bottom: ${DESIGN_TOKENS.spacing.lg}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.bold}; font-size: ${DESIGN_TOKENS.typography.fontSize.xl}; color: ${DESIGN_TOKENS.colors.text.primary};">${title}</div><div style="background: #374151; height: 12px; border-radius: ${DESIGN_TOKENS.radius.sm}; overflow: hidden; margin-bottom: ${DESIGN_TOKENS.spacing.md};"><div id="progress-bar" style="background: ${DESIGN_TOKENS.colors.bg.secondary}; height: 100%; width: ${percent}%; transition: width ${DESIGN_TOKENS.transitions.normal};"></div></div><div style="text-align: center; color: ${DESIGN_TOKENS.colors.text.muted}; font-size: ${DESIGN_TOKENS.typography.fontSize.md};"><span id="progress-text">${current} из ${total}</span></div>`;}overlay.appendChild(modal);document.body.appendChild(overlay);this.progressModal = overlay;}updateProgressModalLoading(text) {if (!this.progressModal) {return;}const progressText = this.progressModal.querySelector('#progress-text');if (progressText) {progressText.textContent = text;}}updateProgressModal(current, total, eta = null) {if (!this.progressModal) {return;}const percent = Math.round((current / total) * 100);const progressBar = this.progressModal.querySelector('#progress-bar');const progressText = this.progressModal.querySelector('#progress-text');if (progressBar) {progressBar.style.width = `${percent}%`;}if (progressText) {let text = `${current} из ${total}`;if (eta && eta.totalSeconds > 0) {const mins = eta.minutes;const secs = eta.seconds;text += ` • Осталось ~${mins > 0 ? `${mins} мин ` : ''}${secs} сек`;}progressText.textContent = text;}}hideProgressModal() {if (this.progressModal) {setTimeout(() => {if (this.progressModal) {this.progressModal.remove();this.progressModal = null;}}, 500);}}}(function() {'use strict';const extension = new RemangaExtension();if (document.readyState === 'loading') {document.addEventListener('DOMContentLoaded', () => extension.init());} else {extension.init();}})();
+class RemangaExtension {constructor() {this.config = null;this.api = null;this.statistics = null;this.chapterManager = null;this.autoLiker = null;this.notifications = null;this.settingsPanel = null;this.updateChecker = null;this.progressModal = null;this.headerCustomizer = null;this.profileCustomizer = null;this.settingsPage = null;this.guildHighlighter = null;this.observers = [];}async init() {try {logger.info('Инициализация расширения...');if (!this.isUserLoggedIn()) {logger.info('Пользователь не авторизован');return;}this.config = new Config();await this.config.load();this.statistics = new Statistics();await this.statistics.load();this.api = new ApiClient();this.api.init();this.notifications = new Notifications(this.config);this.notifications.injectStyles();this.chapterManager = new ChapterManager(this.api, this.config, this.notifications, this.statistics);this.autoLiker = new AutoLiker(this.chapterManager, this.config, this.notifications);this.settingsPanel = new SettingsPanel(this.config, this.notifications, this.statistics);this.updateChecker = new UpdateChecker(this.config, this.notifications);this.headerCustomizer = new HeaderCustomizer(this.config);this.profileCustomizer = new ProfileCustomizer(this.config);this.settingsPage = new SettingsPage(this.config, this.notifications, this.statistics);this.guildHighlighter = new GuildHighlighter(this.config);window.remangaExtension = this;const pageType = this.detectPageType();logger.info(`Тип страницы: ${pageType}`);if (pageType === 'chapters') {this.initChaptersPage();} else if (pageType === 'reader') {this.initReaderPage();} else if (pageType === 'profile') {this.initProfilePage();} else if (pageType === 'forum' || pageType === 'guild-top') {this.initGuildPages(pageType);}this.settingsPanel.inject();this.headerCustomizer.init();await this.updateChecker.init();this.setupNavigationListener();logger.info('Расширение успешно инициализировано');window.addEventListener('beforeunload', () => {this.cleanup();});} catch (error) {logger.error('Ошибка инициализации:', error);}}setupNavigationListener() {let lastUrl = location.href;const checkUrlChange = () => {const currentUrl = location.href;if (currentUrl !== lastUrl) {lastUrl = currentUrl;this.handleUrlChange();}};const originalPushState = history.pushState;const originalReplaceState = history.replaceState;history.pushState = function(...args) {originalPushState.apply(this, args);checkUrlChange();};history.replaceState = function(...args) {originalReplaceState.apply(this, args);checkUrlChange();};window.addEventListener('popstate', checkUrlChange);logger.info('Navigation listener активирован');}handleUrlChange() {const pageType = this.detectPageType();logger.info(`URL изменен, новый тип страницы: ${pageType}`);if (pageType === 'chapters') {setTimeout(() => {this.initChaptersPage();}, 300);} else if (pageType === 'reader') {setTimeout(() => {this.initReaderPage();}, 300);} else if (pageType === 'profile') {setTimeout(() => {this.initProfilePage();}, 300);} else if (pageType === 'forum' || pageType === 'guild-top') {setTimeout(() => {this.initGuildPages(pageType);}, 300);} else {this.removeChapterButtons();this.cleanupProfilePage();this.cleanupGuildPages();}}cleanup() {this.observers.forEach(observer => observer.disconnect());this.observers = [];if (this.notifications) {this.notifications.cleanup();}if (this.settingsPanel) {this.settingsPanel.cleanup();}if (this.headerCustomizer) {this.headerCustomizer.cleanup();}if (this.profileCustomizer) {this.profileCustomizer.cleanup();}if (this.settingsPage) {this.settingsPage.cleanup();}if (this.guildHighlighter) {this.guildHighlighter.cleanup();}logger.info('Ресурсы расширения очищены');}isUserLoggedIn() {return document.cookie.includes('token=');}detectPageType() {const path = window.location.pathname;if (path.includes('/user/') && path.includes('/about')) {return 'profile';}if (path.includes('/chapters')) {return 'chapters';}if (path.match(/\/manga\/[^/]+\/\d+/)) {return 'reader';}if (path.includes('/forum')) {return 'forum';}if (path.includes('/guild/top')) {return 'guild-top';}return 'other';}initChaptersPage() {logger.info('Инициализация страницы глав');let debounceTimer = null;const containerSelector = '.relative.flex.flex-col.gap-2';const reinjectButtons = () => {clearTimeout(debounceTimer);debounceTimer = setTimeout(() => {if (!window.location.pathname.includes('/chapters')) {this.removeChapterButtons();return;}const container = document.querySelector(containerSelector);if (container) {this.ensureButtonsExist(container);}}, 100);};const observer = new MutationObserver(reinjectButtons);domUtils.waitForElement(containerSelector, 5000).then(container => {this.ensureButtonsExist(container);observer.observe(document.body, {childList: true,subtree: true});this.observers.push(observer);logger.info('MutationObserver для кнопок активирован');}).catch(error => {logger.warn('Контейнер глав не найден:', error);});}removeChapterButtons() {const markAllBtn = document.getElementById('remanga-ext-mark-all-btn');const likeAllBtn = document.getElementById('remanga-ext-like-all-btn');if (markAllBtn) {markAllBtn.remove();logger.debug('Кнопка "Прочитать все" удалена');}if (likeAllBtn) {likeAllBtn.remove();logger.debug('Кнопка "Лайкнуть все" удалена');}}ensureButtonsExist(container) {if (!document.getElementById('remanga-ext-mark-all-btn')) {this.addMarkAllReadButton(container);}if (!document.getElementById('remanga-ext-like-all-btn')) {this.addLikeAllButton(container);}}async initReaderPage() {logger.info('Инициализация страницы чтения');if (this.config.get('autoLike')) {await this.autoLiker.init();}}initProfilePage() {logger.info('Инициализация страницы профиля');this.cleanupProfilePage();this.profileCustomizer.init();}cleanupProfilePage() {if (this.profileCustomizer) {this.profileCustomizer.cleanup();}}initGuildPages(pageType) {logger.info(`Инициализация страницы гильдий: ${pageType}`);this.cleanupGuildPages();if (this.guildHighlighter) {this.guildHighlighter.init(pageType);}}cleanupGuildPages() {if (this.guildHighlighter) {this.guildHighlighter.cleanup();}}addMarkAllReadButton(container) {if (document.getElementById('remanga-ext-mark-all-btn')) {return;}const button = document.createElement('button');button.id = 'remanga-ext-mark-all-btn';button.className = 'cs-button';button.style.cssText = buttonStyles('fullWidth') + `margin-bottom: ${DESIGN_TOKENS.spacing.md};`;button.textContent = '✓ Прочитать все главы';button.addEventListener('mouseenter', () => {button.style.opacity = '0.9';});button.addEventListener('mouseleave', () => {button.style.opacity = '1';});button.addEventListener('mousedown', () => {button.style.transform = 'scale(0.97)';});button.addEventListener('mouseup', () => {button.style.transform = 'scale(1)';});button.addEventListener('click', async () => {try {await this.handleMarkAllRead(button);} catch (error) {logger.error('Ошибка обработки массовой отметки:', error);this.notifications.error('Произошла ошибка при обработке');button.disabled = false;button.textContent = '✓ Прочитать все главы';this.hideProgressModal();}});container.insertBefore(button, container.firstChild);logger.info('Кнопка "Прочитать все" добавлена');}addLikeAllButton(container) {if (document.getElementById('remanga-ext-like-all-btn')) {return;}const button = document.createElement('button');button.id = 'remanga-ext-like-all-btn';button.className = 'cs-button';button.style.cssText = buttonStyles('fullWidth') + `margin-bottom: ${DESIGN_TOKENS.spacing.md};`;button.textContent = '❤️ Лайкнуть все главы';button.addEventListener('mouseenter', () => {button.style.opacity = '0.9';});button.addEventListener('mouseleave', () => {button.style.opacity = '1';});button.addEventListener('mousedown', () => {button.style.transform = 'scale(0.97)';});button.addEventListener('mouseup', () => {button.style.transform = 'scale(1)';});button.addEventListener('click', async () => {try {await this.handleLikeAll(button);} catch (error) {logger.error('Ошибка обработки массового лайка:', error);this.notifications.error('Произошла ошибка при обработке');button.disabled = false;button.textContent = '❤️ Лайкнуть все главы';this.hideProgressModal();}});container.insertBefore(button, container.children[1]);logger.info('Кнопка "Лайкнуть все" добавлена');}async handleMarkAllRead(button) {button.disabled = true;button.textContent = 'Подготовка...';this.showProgressModal('Этап 1/2: Загрузка глав', 0, 0, true);const chapterIds = await this.chapterManager.loadAllChaptersByScroll((count) => {this.updateProgressModalLoading(`Этап 1/2: Загрузка глав (${count})`);});if (chapterIds.length === 0) {this.hideProgressModal();this.notifications.warning('Главы не найдены');button.disabled = false;button.textContent = '✓ Прочитать все главы';return;}button.textContent = 'Обработка...';this.showProgressModal('Этап 2/2: Отметка глав как прочитанных', 0, chapterIds.length, false);const result = await this.chapterManager.markMultipleAsRead(chapterIds,(current, total, eta) => {this.updateProgressModal(current, total, eta);});this.hideProgressModal();button.disabled = false;button.textContent = '✓ Прочитать все главы';if (result.skipped > 0) {this.notifications.info(`Пропущено ${result.skipped} уже прочитанных глав`);}if (result.failed > 0) {this.notifications.warning(`Отмечено ${result.completed} из ${result.total} глав (${result.failed} ошибок)`);} else {this.notifications.success(`Отмечено ${result.completed} глав. Обновите страницу для отображения изменений.`);}}async handleLikeAll(button) {button.disabled = true;button.textContent = 'Подготовка...';this.showProgressModal('Этап 1/2: Загрузка глав', 0, 0, true);const chapterIds = await this.chapterManager.loadAllChaptersByScroll((count) => {this.updateProgressModalLoading(`Этап 1/2: Загрузка глав (${count})`);});if (chapterIds.length === 0) {this.hideProgressModal();this.notifications.warning('Главы не найдены');button.disabled = false;button.textContent = '❤️ Лайкнуть все главы';return;}button.textContent = 'Обработка...';this.showProgressModal('Этап 2/2: Лайк глав', 0, chapterIds.length, false);const result = await this.chapterManager.likeMultiple(chapterIds,(current, total, eta) => {this.updateProgressModal(current, total, eta);});this.hideProgressModal();button.disabled = false;button.textContent = '❤️ Лайкнуть все главы';if (result.skipped > 0) {this.notifications.info(`Пропущено ${result.skipped} уже лайкнутых глав`);}if (result.failed > 0) {this.notifications.warning(`Лайкнуто ${result.completed} из ${result.total} глав (${result.failed} ошибок)`);} else {this.notifications.success(`Лайкнуто ${result.completed} глав`);}}showProgressModal(title, current, total, isLoading = false) {if (this.progressModal) {this.progressModal.remove();}const overlay = document.createElement('div');overlay.style.cssText = overlayStyles();const modal = document.createElement('div');modal.id = 'remanga-ext-progress-modal';modal.style.cssText = modalStyles() + `min-width: 400px;`;if (isLoading) {modal.innerHTML = `<div style="margin-bottom: ${DESIGN_TOKENS.spacing.lg}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.bold}; font-size: ${DESIGN_TOKENS.typography.fontSize.xl}; color: ${DESIGN_TOKENS.colors.text.primary};">${title}</div><div style="display: flex; align-items: center; justify-content: center; padding: 20px 0;"><div style="width: 40px;height: 40px;border: 4px solid #374151;border-top-color: ${DESIGN_TOKENS.colors.bg.secondary};border-radius: 50%;animation: spin 1s linear infinite;"></div></div><div style="text-align: center; color: ${DESIGN_TOKENS.colors.text.muted}; font-size: ${DESIGN_TOKENS.typography.fontSize.md};"><span id="progress-text">Загрузка...</span></div><style>@keyframes spin {to { transform: rotate(360deg); }}</style>`;} else {const percent = total > 0 ? Math.round((current / total) * 100) : 0;modal.innerHTML = `<div style="margin-bottom: ${DESIGN_TOKENS.spacing.lg}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.bold}; font-size: ${DESIGN_TOKENS.typography.fontSize.xl}; color: ${DESIGN_TOKENS.colors.text.primary};">${title}</div><div style="background: #374151; height: 12px; border-radius: ${DESIGN_TOKENS.radius.sm}; overflow: hidden; margin-bottom: ${DESIGN_TOKENS.spacing.md};"><div id="progress-bar" style="background: ${DESIGN_TOKENS.colors.bg.secondary}; height: 100%; width: ${percent}%; transition: width ${DESIGN_TOKENS.transitions.normal};"></div></div><div style="text-align: center; color: ${DESIGN_TOKENS.colors.text.muted}; font-size: ${DESIGN_TOKENS.typography.fontSize.md};"><span id="progress-text">${current} из ${total}</span></div>`;}overlay.appendChild(modal);document.body.appendChild(overlay);this.progressModal = overlay;}updateProgressModalLoading(text) {if (!this.progressModal) {return;}const progressText = this.progressModal.querySelector('#progress-text');if (progressText) {progressText.textContent = text;}}updateProgressModal(current, total, eta = null) {if (!this.progressModal) {return;}const percent = Math.round((current / total) * 100);const progressBar = this.progressModal.querySelector('#progress-bar');const progressText = this.progressModal.querySelector('#progress-text');if (progressBar) {progressBar.style.width = `${percent}%`;}if (progressText) {let text = `${current} из ${total}`;if (eta && eta.totalSeconds > 0) {const mins = eta.minutes;const secs = eta.seconds;text += ` • Осталось ~${mins > 0 ? `${mins} мин ` : ''}${secs} сек`;}progressText.textContent = text;}}hideProgressModal() {if (this.progressModal) {setTimeout(() => {if (this.progressModal) {this.progressModal.remove();this.progressModal = null;}}, 500);}}}(function() {'use strict';const extension = new RemangaExtension();if (document.readyState === 'loading') {document.addEventListener('DOMContentLoaded', () => extension.init());} else {extension.init();}})();
 })();
