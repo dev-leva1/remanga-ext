@@ -19,6 +19,7 @@ class RemangaExtension {
     this.settingsPage = null;
     this.guildHighlighter = null;
     this.feedbackButton = null;
+    this.userTooltip = null;
     this.observers = [];
   }
 
@@ -55,6 +56,10 @@ class RemangaExtension {
       this.settingsPage = new SettingsPage(this.config, this.notifications, this.statistics);
       this.guildHighlighter = new GuildHighlighter(this.config);
       this.feedbackButton = new FeedbackButton(this.config, this.notifications);
+
+      const tooltipRenderer = new TooltipRenderer();
+      this.userTooltip = new UserTooltip(this.api, this.config, tooltipRenderer);
+      this.userTooltip.init();
 
       window.remangaExtension = this;
 
@@ -176,6 +181,9 @@ class RemangaExtension {
     }
     if (this.guildHighlighter) {
       this.guildHighlighter.cleanup();
+    }
+    if (this.userTooltip) {
+      this.userTooltip.cleanup();
     }
     logger.info('Ресурсы расширения очищены');
   }

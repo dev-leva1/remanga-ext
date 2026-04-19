@@ -16,12 +16,14 @@ const files = [
   'src/core/ApiClient.js',
   'src/core/UpdateChecker.js',
   'src/ui/Notifications.js',
+  'src/ui/TooltipRenderer.js',
   'src/ui/SettingsPanel.js',
   'src/ui/SettingsPage.js',
   'src/ui/FeedbackButton.js',
   'src/features/HeaderCustomizer.js',
   'src/features/ProfileCustomizer.js',
   'src/features/GuildHighlighter.js',
+  'src/features/UserTooltip.js',
   'src/features/ChapterManager.js',
   'src/features/AutoLiker.js',
   'src/main.js'
@@ -47,6 +49,10 @@ const header = `// ==UserScript==
 /**
  * CHANGELOG
  *
+ * v1.6.5 - Тултипы профилей
+ * - Добавлены тултипы пользователей, отображающие краткую информацию о пользователе при наведении на аватар
+ * - Добавлена настройка для включения/выключения тултипов пользователей
+ * 
  * v1.6.4 - Telegram бот обратной связи
  * - Добавлен Telegram бот для сообщений об ошибках и предложений
  * - Кнопка "Обратная связь" в настройках (вкладка "Общее")

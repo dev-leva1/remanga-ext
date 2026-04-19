@@ -32,7 +32,8 @@ class Config {
         comments: false
       },
       highlightGuilds: true,
-      feedbackBotUsername: 'remanga_extension_bot'
+      feedbackBotUsername: 'remanga_extension_bot',
+      userTooltipEnabled: true
     };
 
     this.settings = { ...this.defaults };

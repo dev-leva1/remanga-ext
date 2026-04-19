@@ -293,6 +293,15 @@ class SettingsPage {
             </div>
           </label>
 
+          <label style="display: flex; align-items: center; gap: ${DESIGN_TOKENS.spacing.md}; cursor: pointer;">
+            <input type="checkbox" id="userTooltipEnabled" ${this.config.get('userTooltipEnabled') ? 'checked' : ''}
+                   style="width: 20px; height: 20px; cursor: pointer;">
+            <div>
+              <div style="font-weight: ${DESIGN_TOKENS.typography.fontWeight.medium}; color: ${DESIGN_TOKENS.colors.text.primary};">Тултипы профилей</div>
+              <div style="font-size: ${DESIGN_TOKENS.typography.fontSize.sm}; color: ${DESIGN_TOKENS.colors.text.muted};">Показывать краткую информацию о пользователе при наведении на аватар</div>
+            </div>
+          </label>
+
           <div>
             <div style="font-weight: ${DESIGN_TOKENS.typography.fontWeight.medium}; color: ${DESIGN_TOKENS.colors.text.primary}; margin-bottom: ${DESIGN_TOKENS.spacing.md};">
               Скрыть блоки в профилях
@@ -583,6 +592,7 @@ class SettingsPage {
         blockCustomThemes: this.container.querySelector('#blockCustomThemes')?.checked ?? this.config.get('blockCustomThemes'),
         hideChatIndicator: this.container.querySelector('#hideChatIndicator')?.checked ?? this.config.get('hideChatIndicator'),
         highlightGuilds: this.container.querySelector('#highlightGuilds')?.checked ?? this.config.get('highlightGuilds'),
+        userTooltipEnabled: this.container.querySelector('#userTooltipEnabled')?.checked ?? this.config.get('userTooltipEnabled'),
         hideProfileBlocks
       };
 
