@@ -53,6 +53,7 @@ bot.catch((err, ctx) => {
 
 // Команды
 bot.start((ctx) => userHandler.handleStart(ctx));
+bot.command('feedback', (ctx) => userHandler.handleStart(ctx));
 bot.command('admin', (ctx) => adminHandler.handleAdminPanel(ctx));
 
 // Callback queries

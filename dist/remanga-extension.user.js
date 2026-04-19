@@ -1322,10 +1322,15 @@ b: includeBrowser ? this.detectBrowser() : null,
 u: includeUrl ? window.location.href : null
 };
 const deepLink = this.generateDeepLink(type, context);
-window.open(deepLink, '_blank');
+const command = `/start ${deepLink.split('?start=')[1]}`;
+navigator.clipboard.writeText(command).then(() => {
+this.notifications.success('Команда скопирована! Вставьте её в бота.');
+}).catch(() => {
+this.notifications.info('Скопируйте команду вручную из бота');
+});
+window.open(`https://t.me/${this.botUsername}`, '_blank');
 this.modal.remove();
 this.modal = null;
-this.notifications.success('Открываем бота обратной связи...');
 logger.info('Feedback deep link generated', { type, context });
 } catch (error) {
 logger.error('Error submitting feedback', { error: error.message });
