@@ -211,13 +211,17 @@ class UserHandler {
       if (session.step === 'context_input') {
         // Парсинг контекста из текста
         const text = ctx.message.text;
-        const versionMatch = text.match(/версия[:\s]+([0-9.]+)/i);
-        const browserMatch = text.match(/браузер[:\s]+(\w+)/i);
-        const urlMatch = text.match(/(https?:\/\/[^\s]+)/i);
+        const lines = text.split('\n');
 
-        if (versionMatch) session.data.extension_version = versionMatch[1];
-        if (browserMatch) session.data.browser = browserMatch[1].toLowerCase();
-        if (urlMatch) session.data.page_url = urlMatch[1];
+        for (const line of lines) {
+          const versionMatch = line.match(/версия[:\s]+([0-9.]+)/i);
+          const browserMatch = line.match(/браузер[:\s]+(\w+)/i);
+          const urlMatch = line.match(/(https?:\/\/[^\s]+)/i);
+
+          if (versionMatch) session.data.extension_version = versionMatch[1];
+          if (browserMatch) session.data.browser = browserMatch[1].toLowerCase();
+          if (urlMatch) session.data.page_url = urlMatch[1];
+        }
 
         session.step = 'message';
         this.sessions.set(userId, session);
