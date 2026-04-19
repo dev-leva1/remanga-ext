@@ -102,6 +102,8 @@ class UserHandler {
       if (data.startsWith('feedback_type_')) {
         const type = data.replace('feedback_type_', '');
         await this.handleTypeSelection(ctx, type);
+      } else if (data === 'feedback_add_context') {
+        await this.handleAddContext(ctx);
       } else if (data === 'feedback_skip_context') {
         await this.handleSkipContext(ctx);
       }
@@ -168,6 +170,32 @@ class UserHandler {
   }
 
   /**
+   * Добавление контекста вручную
+   */
+  async handleAddContext(ctx) {
+    const userId = ctx.from.id;
+    const session = this.sessions.get(userId);
+
+    if (!session) {
+      await ctx.answerCbQuery('Сессия истекла. Начните заново с /start');
+      return;
+    }
+
+    await ctx.editMessageText(
+      'Отправьте технические данные в формате:\n\n' +
+      'Версия: 1.6.4\n' +
+      'Браузер: Chrome\n' +
+      'Страница: https://remanga.org/manga/...\n\n' +
+      'Или отправьте только те данные, которые хотите указать.'
+    );
+
+    session.step = 'context_input';
+    this.sessions.set(userId, session);
+
+    await ctx.answerCbQuery();
+  }
+
+  /**
    * Обработка текстового сообщения
    */
   async handleText(ctx) {
@@ -180,7 +208,22 @@ class UserHandler {
         return;
       }
 
-      if (session.step === 'message') {
+      if (session.step === 'context_input') {
+        // Парсинг контекста из текста
+        const text = ctx.message.text;
+        const versionMatch = text.match(/версия[:\s]+([0-9.]+)/i);
+        const browserMatch = text.match(/браузер[:\s]+(\w+)/i);
+        const urlMatch = text.match(/(https?:\/\/[^\s]+)/i);
+
+        if (versionMatch) session.data.extension_version = versionMatch[1];
+        if (browserMatch) session.data.browser = browserMatch[1].toLowerCase();
+        if (urlMatch) session.data.page_url = urlMatch[1];
+
+        session.step = 'message';
+        this.sessions.set(userId, session);
+
+        await ctx.reply('Опишите вашу проблему или предложение:');
+      } else if (session.step === 'message') {
         session.data.message = ctx.message.text;
 
         // Создание обращения
