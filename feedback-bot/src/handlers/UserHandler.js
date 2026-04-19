@@ -5,6 +5,7 @@
 import FeedbackService from '../services/FeedbackService.js';
 import NotificationService from '../services/NotificationService.js';
 import { logger } from '../utils/logger.js';
+import { validators } from '../utils/validators.js';
 
 class UserHandler {
   constructor(bot) {
