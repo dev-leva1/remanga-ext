@@ -89,7 +89,7 @@ class AdminHandler {
           await ctx.answerCbQuery('Невалидный ID');
           return;
         }
-        const status = parts[3];
+        const status = parts.slice(3).join('_');
         await this.handleStatusChange(ctx, id, status);
       } else if (data.startsWith('admin_back')) {
         await this.handleAdminPanel(ctx);
