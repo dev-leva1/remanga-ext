@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Remanga Enhanced
 // @namespace    remanga.ext
-// @version      1.6.4
+// @version      1.6.5
 // @description  Автоматизация действий на remanga.org: автолайк, массовая отметка глав
 // @author       dev-leva1
 // @match        https://remanga.org/*
@@ -18,6 +18,10 @@
 /**
  * CHANGELOG
  *
+ * v1.6.5 - Тултипы профилей
+ * - Добавлены тултипы пользователей, отображающие краткую информацию о пользователе при наведении на аватар
+ * - Добавлена настройка для включения/выключения тултипов пользователей
+ * 
  * v1.6.4 - Telegram бот обратной связи
  * - Добавлен Telegram бот для сообщений об ошибках и предложений
  * - Кнопка "Обратная связь" в настройках (вкладка "Общее")
@@ -439,7 +443,7 @@ constructor(config, notifications) {
 this.config = config;
 this.notifications = notifications;
 this.updateURL = 'https://ext.nexee.ru/remanga-extension.user.js';
-this.currentVersion = '1.6.4';
+this.currentVersion = '1.6.5';
 this.checkInterval = 12 * 60 * 60 * 1000;
 this.isChecking = false;
 }
@@ -836,7 +840,7 @@ this.config = config;
 this.notifications = notifications;
 this.statistics = statistics;
 this.container = null;
-this.currentVersion = '1.6.4';
+this.currentVersion = '1.6.5';
 this.activeTab = 'automation';
 }
 init() {
@@ -1577,7 +1581,7 @@ const base64url = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '
 return `https://t.me/${this.botUsername}?start=${base64url}`;
 }
 getVersion() {
-return '1.6.4'; // Заменяется при сборке
+return '1.6.5'; // Заменяется при сборке
 }
 detectBrowser() {
 const ua = navigator.userAgent;
