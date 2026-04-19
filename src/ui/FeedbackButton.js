@@ -88,6 +88,17 @@ class FeedbackButton {
         </label>
       </div>
 
+      <div style="margin-bottom: ${DESIGN_TOKENS.spacing.lg}; padding: ${DESIGN_TOKENS.spacing.md}; background: ${DESIGN_TOKENS.colors.bg.surface}; border-radius: ${DESIGN_TOKENS.radius.md}; border-left: 3px solid ${DESIGN_TOKENS.colors.text.secondary};">
+        <div style="color: ${DESIGN_TOKENS.colors.text.primary}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.medium}; margin-bottom: ${DESIGN_TOKENS.spacing.sm};">
+          ℹКак отправить обращение:
+        </div>
+        <div style="color: ${DESIGN_TOKENS.colors.text.muted}; font-size: ${DESIGN_TOKENS.typography.fontSize.sm};">
+          1. Нажмите "Открыть бота"<br>
+          2. Команда скопируется автоматически<br>
+          3. Вставьте её в чат с ботом (Ctrl+V)
+        </div>
+      </div>
+
       <div style="display: flex; gap: ${DESIGN_TOKENS.spacing.md}; justify-content: flex-end;">
         <button id="feedback-cancel" style="${buttonStyles('secondary')}">
           Отмена

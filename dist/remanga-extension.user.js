@@ -896,7 +896,7 @@ font-weight: ${DESIGN_TOKENS.typography.fontWeight.medium};
 font-size: ${DESIGN_TOKENS.typography.fontSize.md};
 font-family: ${DESIGN_TOKENS.typography.fontFamily};
 width: 100%;
-">📱 Открыть бот обратной связи</button>
+">Открыть бот обратной связи</button>
 </section>
 <section style="background: ${DESIGN_TOKENS.colors.bg.secondary}; padding: ${DESIGN_TOKENS.spacing.xl}; border-radius: ${DESIGN_TOKENS.radius.lg};">
 <h2 style="margin: 0 0 ${DESIGN_TOKENS.spacing.lg} 0; font-size: ${DESIGN_TOKENS.typography.fontSize.xl}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.semibold}; color: ${DESIGN_TOKENS.colors.text.primary};">
@@ -1282,6 +1282,16 @@ cursor: pointer;
 <div style="font-size: ${DESIGN_TOKENS.typography.fontSize.sm}; color: ${DESIGN_TOKENS.colors.text.muted}; word-break: break-all;">${this.truncateUrl(window.location.href)}</div>
 </div>
 </label>
+</div>
+<div style="margin-bottom: ${DESIGN_TOKENS.spacing.lg}; padding: ${DESIGN_TOKENS.spacing.md}; background: ${DESIGN_TOKENS.colors.bg.surface}; border-radius: ${DESIGN_TOKENS.radius.md}; border-left: 3px solid ${DESIGN_TOKENS.colors.text.secondary};">
+<div style="color: ${DESIGN_TOKENS.colors.text.primary}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.medium}; margin-bottom: ${DESIGN_TOKENS.spacing.sm};">
+ℹКак отправить обращение:
+</div>
+<div style="color: ${DESIGN_TOKENS.colors.text.muted}; font-size: ${DESIGN_TOKENS.typography.fontSize.sm};">
+1. Нажмите "Открыть бота"<br>
+2. Команда скопируется автоматически<br>
+3. Вставьте её в чат с ботом (Ctrl+V)
+</div>
 </div>
 <div style="display: flex; gap: ${DESIGN_TOKENS.spacing.md}; justify-content: flex-end;">
 <button id="feedback-cancel" style="${buttonStyles('secondary')}">

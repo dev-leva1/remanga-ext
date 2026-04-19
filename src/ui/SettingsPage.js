@@ -335,7 +335,7 @@ class SettingsPage {
             font-size: ${DESIGN_TOKENS.typography.fontSize.md};
             font-family: ${DESIGN_TOKENS.typography.fontFamily};
             width: 100%;
-          ">📱 Открыть бот обратной связи</button>
+          ">Открыть бот обратной связи</button>
         </section>
 
         <section style="background: ${DESIGN_TOKENS.colors.bg.secondary}; padding: ${DESIGN_TOKENS.spacing.xl}; border-radius: ${DESIGN_TOKENS.radius.lg};">
