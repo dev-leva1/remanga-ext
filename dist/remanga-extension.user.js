@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Remanga Enhanced
 // @namespace    remanga.ext
-// @version      1.6.3
+// @version      1.6.4
 // @description  Автоматизация действий на remanga.org: автолайк, массовая отметка глав
 // @author       dev-leva1
 // @match        https://remanga.org/*
@@ -17,6 +17,13 @@
 
 /**
  * CHANGELOG
+ *
+ * v1.6.4 - Telegram бот обратной связи
+ * - Добавлен Telegram бот для сообщений об ошибках и предложений
+ * - Кнопка "Обратная связь" в настройках (вкладка "Общее")
+ * - Модальное окно выбора контекста (версия, браузер, URL страницы)
+ * - Deep link интеграция с ботом для автоматической передачи данных
+ * - Обновлен лендинг: секция "Обратная связь" вместо контактов
  *
  * v1.6.3 - Вкладки в окне настроек
  * - Окно настроек разбито на 3 вкладки: Автоматизация, Интерфейс, Общее
@@ -257,7 +264,8 @@ friends: false,
 followers: false,
 comments: false
 },
-highlightGuilds: true
+highlightGuilds: true,
+feedbackBotUsername: 'remanga_extension_bot'
 };
 this.settings = { ...this.defaults };
 Config.instance = this;
@@ -430,7 +438,7 @@ constructor(config, notifications) {
 this.config = config;
 this.notifications = notifications;
 this.updateURL = 'https://ext.nexee.ru/remanga-extension.user.js';
-this.currentVersion = '1.6.3';
+this.currentVersion = '1.6.4';
 this.checkInterval = 12 * 60 * 60 * 1000;
 this.isChecking = false;
 }
@@ -618,7 +626,7 @@ this.config = config;
 this.notifications = notifications;
 this.statistics = statistics;
 this.container = null;
-this.currentVersion = '1.6.3';
+this.currentVersion = '1.6.4';
 this.activeTab = 'automation';
 }
 init() {
@@ -872,6 +880,26 @@ return `
 <div style="display: flex; flex-direction: column; gap: ${DESIGN_TOKENS.spacing.lg};">
 <section style="background: ${DESIGN_TOKENS.colors.bg.secondary}; padding: ${DESIGN_TOKENS.spacing.xl}; border-radius: ${DESIGN_TOKENS.radius.lg};">
 <h2 style="margin: 0 0 ${DESIGN_TOKENS.spacing.lg} 0; font-size: ${DESIGN_TOKENS.typography.fontSize.xl}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.semibold}; color: ${DESIGN_TOKENS.colors.text.primary};">
+Обратная связь
+</h2>
+<p style="color: ${DESIGN_TOKENS.colors.text.muted}; margin-bottom: ${DESIGN_TOKENS.spacing.lg};">
+Нашли баг или есть предложение? Напишите нам в Telegram бот!
+</p>
+<button id="open-feedback-modal" style="
+padding: ${DESIGN_TOKENS.spacing.md} ${DESIGN_TOKENS.spacing.xl};
+background: ${DESIGN_TOKENS.colors.bg.surface};
+color: ${DESIGN_TOKENS.colors.text.primary};
+border: none;
+border-radius: ${DESIGN_TOKENS.radius.pill};
+cursor: pointer;
+font-weight: ${DESIGN_TOKENS.typography.fontWeight.medium};
+font-size: ${DESIGN_TOKENS.typography.fontSize.md};
+font-family: ${DESIGN_TOKENS.typography.fontFamily};
+width: 100%;
+">📱 Открыть бот обратной связи</button>
+</section>
+<section style="background: ${DESIGN_TOKENS.colors.bg.secondary}; padding: ${DESIGN_TOKENS.spacing.xl}; border-radius: ${DESIGN_TOKENS.radius.lg};">
+<h2 style="margin: 0 0 ${DESIGN_TOKENS.spacing.lg} 0; font-size: ${DESIGN_TOKENS.typography.fontSize.xl}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.semibold}; color: ${DESIGN_TOKENS.colors.text.primary};">
 Уведомления и обновления
 </h2>
 <div style="display: flex; flex-direction: column; gap: ${DESIGN_TOKENS.spacing.lg};">
@@ -1037,6 +1065,14 @@ batchSizeSlider.addEventListener('input', (e) => {
 batchSizeValue.textContent = e.target.value;
 });
 }
+const feedbackBtn = this.container.querySelector('#open-feedback-modal');
+if (feedbackBtn) {
+feedbackBtn.addEventListener('click', () => {
+if (window.remangaExtension && window.remangaExtension.feedbackButton) {
+window.remangaExtension.feedbackButton.openContextModal();
+}
+});
+}
 if (this.activeTab === 'general') {
 this.updateLastCheckInfo();
 }
@@ -1171,6 +1207,162 @@ logger.info('SettingsPage удалена');
 const styles = document.getElementById('remanga-ext-settings-page-styles');
 if (styles && styles.parentNode) {
 styles.parentNode.removeChild(styles);
+}
+}
+}
+
+class FeedbackButton {
+constructor(config, notifications) {
+this.config = config;
+this.notifications = notifications;
+this.botUsername = 'remanga_extension_bot'; // TODO: заменить на реальное имя бота
+this.modal = null;
+}
+openContextModal() {
+if (this.modal) {
+this.modal.remove();
+}
+const overlay = document.createElement('div');
+overlay.style.cssText = overlayStyles();
+const modal = document.createElement('div');
+modal.style.cssText = modalStyles() + `
+min-width: 500px;
+max-width: 600px;
+`;
+modal.innerHTML = `
+<h2 style="margin: 0 0 ${DESIGN_TOKENS.spacing.lg} 0; font-size: ${DESIGN_TOKENS.typography.fontSize.xxl}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.bold}; color: ${DESIGN_TOKENS.colors.text.primary};">
+Обратная связь
+</h2>
+<p style="margin-bottom: ${DESIGN_TOKENS.spacing.lg}; color: ${DESIGN_TOKENS.colors.text.secondary};">
+Выберите тип обращения и технические данные для отправки:
+</p>
+<div style="margin-bottom: ${DESIGN_TOKENS.spacing.lg};">
+<label style="display: block; margin-bottom: ${DESIGN_TOKENS.spacing.sm}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.medium}; color: ${DESIGN_TOKENS.colors.text.primary};">
+Тип обращения
+</label>
+<select id="feedback-type" style="
+width: 100%;
+padding: ${DESIGN_TOKENS.spacing.md};
+background: ${DESIGN_TOKENS.colors.bg.surface};
+color: ${DESIGN_TOKENS.colors.text.primary};
+border: 1px solid #374151;
+border-radius: ${DESIGN_TOKENS.radius.md};
+font-family: ${DESIGN_TOKENS.typography.fontFamily};
+font-size: ${DESIGN_TOKENS.typography.fontSize.md};
+cursor: pointer;
+">
+<option value="bug">🐛 Сообщить о баге</option>
+<option value="feature">💡 Предложить функцию</option>
+<option value="question">❓ Задать вопрос</option>
+<option value="other">📝 Другое</option>
+</select>
+</div>
+<div style="margin-bottom: ${DESIGN_TOKENS.spacing.lg};">
+<div style="font-weight: ${DESIGN_TOKENS.typography.fontWeight.medium}; color: ${DESIGN_TOKENS.colors.text.primary}; margin-bottom: ${DESIGN_TOKENS.spacing.md};">
+Включить технические данные:
+</div>
+<label style="display: flex; align-items: center; gap: ${DESIGN_TOKENS.spacing.md}; margin-bottom: ${DESIGN_TOKENS.spacing.sm}; cursor: pointer;">
+<input type="checkbox" id="include-version" checked style="width: 20px; height: 20px; cursor: pointer;">
+<div>
+<div style="color: ${DESIGN_TOKENS.colors.text.primary};">Версия расширения</div>
+<div style="font-size: ${DESIGN_TOKENS.typography.fontSize.sm}; color: ${DESIGN_TOKENS.colors.text.muted};">Текущая версия: ${this.getVersion()}</div>
+</div>
+</label>
+<label style="display: flex; align-items: center; gap: ${DESIGN_TOKENS.spacing.md}; margin-bottom: ${DESIGN_TOKENS.spacing.sm}; cursor: pointer;">
+<input type="checkbox" id="include-browser" checked style="width: 20px; height: 20px; cursor: pointer;">
+<div>
+<div style="color: ${DESIGN_TOKENS.colors.text.primary};">Браузер</div>
+<div style="font-size: ${DESIGN_TOKENS.typography.fontSize.sm}; color: ${DESIGN_TOKENS.colors.text.muted};">${this.detectBrowser()}</div>
+</div>
+</label>
+<label style="display: flex; align-items: center; gap: ${DESIGN_TOKENS.spacing.md}; cursor: pointer;">
+<input type="checkbox" id="include-url" checked style="width: 20px; height: 20px; cursor: pointer;">
+<div>
+<div style="color: ${DESIGN_TOKENS.colors.text.primary};">Текущая страница</div>
+<div style="font-size: ${DESIGN_TOKENS.typography.fontSize.sm}; color: ${DESIGN_TOKENS.colors.text.muted}; word-break: break-all;">${this.truncateUrl(window.location.href)}</div>
+</div>
+</label>
+</div>
+<div style="display: flex; gap: ${DESIGN_TOKENS.spacing.md}; justify-content: flex-end;">
+<button id="feedback-cancel" style="${buttonStyles('secondary')}">
+Отмена
+</button>
+<button id="feedback-submit" style="${buttonStyles('primary')}">
+Открыть бота
+</button>
+</div>
+`;
+overlay.appendChild(modal);
+document.body.appendChild(overlay);
+this.modal = overlay;
+modal.querySelector('#feedback-cancel').addEventListener('click', () => {
+overlay.remove();
+this.modal = null;
+});
+modal.querySelector('#feedback-submit').addEventListener('click', () => {
+this.submitFeedback(modal);
+});
+overlay.addEventListener('click', (e) => {
+if (e.target === overlay) {
+overlay.remove();
+this.modal = null;
+}
+});
+logger.info('Feedback modal opened');
+}
+submitFeedback(modal) {
+try {
+const type = modal.querySelector('#feedback-type').value;
+const includeVersion = modal.querySelector('#include-version').checked;
+const includeBrowser = modal.querySelector('#include-browser').checked;
+const includeUrl = modal.querySelector('#include-url').checked;
+const context = {
+v: includeVersion ? this.getVersion() : null,
+b: includeBrowser ? this.detectBrowser() : null,
+u: includeUrl ? window.location.href : null
+};
+const deepLink = this.generateDeepLink(type, context);
+window.open(deepLink, '_blank');
+this.modal.remove();
+this.modal = null;
+this.notifications.success('Открываем бота обратной связи...');
+logger.info('Feedback deep link generated', { type, context });
+} catch (error) {
+logger.error('Error submitting feedback', { error: error.message });
+this.notifications.error('Ошибка при открытии бота');
+}
+}
+generateDeepLink(type, context) {
+const payload = {
+type,
+...context
+};
+const json = JSON.stringify(payload);
+const base64 = btoa(json);
+const base64url = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+return `https://t.me/${this.botUsername}?start=${base64url}`;
+}
+getVersion() {
+return '1.6.4'; // Заменяется при сборке
+}
+detectBrowser() {
+const ua = navigator.userAgent;
+if (ua.includes('Firefox')) return 'Firefox';
+if (ua.includes('Edg')) return 'Edge';
+if (ua.includes('Chrome')) return 'Chrome';
+if (ua.includes('Safari')) return 'Safari';
+return 'Unknown';
+}
+truncateUrl(url, maxLength = 60) {
+if (url.length <= maxLength) {
+return url;
+}
+return url.substring(0, maxLength) + '...';
+}
+cleanup() {
+if (this.modal) {
+this.modal.remove();
+this.modal = null;
 }
 }
 }
@@ -1587,5 +1779,5 @@ logger.info('GuildHighlighter очищен');
 
 class ChapterManager {constructor(apiClient, config, notifications, statistics) {this.api = apiClient;this.config = config;this.notifications = notifications;this.statistics = statistics;this.processingQueue = [];this.operationTimes = [];}async markAsRead(chapterId) {try {await this.api.markChapterAsRead(chapterId);logger.debug(`Глава ${chapterId} отмечена как прочитанная`);this.updateReadButton(chapterId);return true;} catch (error) {logger.error(`Ошибка отметки главы ${chapterId}:`, error);return false;}}async markMultipleAsRead(chapterIds, onProgress = null) {const skipProcessed = this.config.get('skipProcessed');let filteredIds = chapterIds;if (skipProcessed) {filteredIds = chapterIds.filter(id => !this.isChapterRead(id));const skipped = chapterIds.length - filteredIds.length;if (skipped > 0) {logger.info(`Пропущено ${skipped} уже прочитанных глав`);}}if (filteredIds.length === 0) {return { total: chapterIds.length, completed: 0, failed: 0, skipped: chapterIds.length };}const total = filteredIds.length;let completed = 0;let failed = 0;this.operationTimes = [];logger.info(`Начало массовой отметки ${total} глав`);for (const chapterId of filteredIds) {const startTime = Date.now();try {await this.api.markChapterAsRead(chapterId);completed++;this.updateReadButton(chapterId);const operationTime = Date.now() - startTime;this.operationTimes.push(operationTime);if (this.operationTimes.length > 10) {this.operationTimes.shift();}if (onProgress) {const eta = this.calculateETA(completed, total);onProgress(completed, total, eta);}await this.delay(300);} catch (error) {logger.error(`Ошибка отметки главы ${chapterId}:`, error);failed++;}}await this.statistics.incrementReads(completed);logger.info(`Массовая отметка завершена: ${completed} успешно, ${failed} ошибок`);return {total: chapterIds.length,completed,failed,skipped: chapterIds.length - filteredIds.length};}async likeChapter(chapterId) {try {await this.api.likeChapters([chapterId]);logger.debug(`Глава ${chapterId} лайкнута`);this.updateLikeButton(chapterId);return true;} catch (error) {logger.error(`Ошибка лайка главы ${chapterId}:`, error);return false;}}async likeMultiple(chapterIds, onProgress = null) {const skipProcessed = this.config.get('skipProcessed');let filteredIds = chapterIds;if (skipProcessed) {filteredIds = chapterIds.filter(id => !this.isChapterLiked(id));const skipped = chapterIds.length - filteredIds.length;if (skipped > 0) {logger.info(`Пропущено ${skipped} уже лайкнутых глав`);}}if (filteredIds.length === 0) {return { total: chapterIds.length, completed: 0, failed: 0, skipped: chapterIds.length };}const batchSize = this.config.get('batchSize');const total = filteredIds.length;let completed = 0;let failed = 0;this.operationTimes = [];logger.info(`Начало массового лайка ${total} глав (batch: ${batchSize})`);for (let i = 0; i < filteredIds.length; i += batchSize) {const batch = filteredIds.slice(i, i + batchSize);const startTime = Date.now();try {await this.api.likeChapters(batch);completed += batch.length;batch.forEach(id => this.updateLikeButton(id));const operationTime = Date.now() - startTime;this.operationTimes.push(operationTime);if (this.operationTimes.length > 10) {this.operationTimes.shift();}if (onProgress) {const eta = this.calculateETA(completed, total);onProgress(completed, total, eta);}if (i + batchSize < filteredIds.length) {await this.delay(500);}} catch (error) {logger.error('Ошибка лайка батча:', error);failed += batch.length;}}await this.statistics.incrementLikes(completed);logger.info(`Массовый лайк завершен: ${completed} успешно, ${failed} ошибок`);return {total: chapterIds.length,completed,failed,skipped: chapterIds.length - filteredIds.length};}updateReadButton(chapterId) {const button = domUtils.findReadButton(chapterId);if (button) {button.classList.add('remanga-ext-read');button.style.opacity = '0.5';}}updateLikeButton(chapterId) {const button = domUtils.findLikeButton(chapterId);if (button) {button.classList.add('remanga-ext-liked');const icon = button.querySelector('svg');if (icon) {icon.style.fill = '#ef4444';}}}async loadAllChaptersByScroll(onProgress = null) {logger.info('Начало загрузки глав через скролл');let previousCount = 0;let stableCount = 0;let scrollAttempts = 0;const maxScrollAttempts = 100;while (scrollAttempts < maxScrollAttempts) {const currentIds = this.getChapterIdsFromPage();const currentCount = currentIds.length;if (onProgress) {onProgress(currentCount);}if (currentCount === previousCount) {stableCount++;if (stableCount >= 3) {logger.info(`Загрузка завершена: ${currentCount} глав`);break;}} else {stableCount = 0;}previousCount = currentCount;window.scrollTo({top: document.documentElement.scrollHeight,behavior: 'smooth'});await this.delay(500);scrollAttempts++;}window.scrollTo({top: 0,behavior: 'smooth'});await this.delay(300);const finalIds = this.getChapterIdsFromPage();logger.info(`Итого загружено глав: ${finalIds.length}`);return finalIds;}getChapterIdsFromPage() {return domUtils.extractChapterIdsFromPage();}getCurrentChapterId() {return domUtils.extractChapterIdFromUrl();}delay(ms) {return new Promise(resolve => setTimeout(resolve, ms));}isChapterRead(chapterId) {const button = domUtils.findReadButton(chapterId);if (!button) {return false;}const isNativeRead = button.style.opacity === '0.5' ||button.disabled === true ||button.classList.contains('opacity-50') ||button.hasAttribute('disabled');const isExtensionRead = button.classList.contains('remanga-ext-read');return isNativeRead || isExtensionRead;}isChapterLiked(chapterId) {const button = domUtils.findLikeButton(chapterId);if (!button) {return false;}const icon = button.querySelector('svg');const isNativeLiked = icon && (icon.style.fill === 'rgb(239, 68, 68)' ||icon.style.fill === '#ef4444' ||icon.classList.contains('text-red-500') ||button.classList.contains('text-red-500') ||button.getAttribute('aria-pressed') === 'true');const isExtensionLiked = button.classList.contains('remanga-ext-liked');return isNativeLiked || isExtensionLiked;}calculateETA(completed, total) {if (this.operationTimes.length === 0 || completed === 0) {return null;}const avgTime = this.operationTimes.reduce((a, b) => a + b, 0) / this.operationTimes.length;const remaining = total - completed;const etaMs = remaining * avgTime;const minutes = Math.floor(etaMs / 60000);const seconds = Math.floor((etaMs % 60000) / 1000);return { minutes, seconds, totalSeconds: Math.floor(etaMs / 1000) };}}
 class AutoLiker {constructor(chapterManager, config, notifications) {this.chapterManager = chapterManager;this.config = config;this.notifications = notifications;this.likedChapters = new Set();}async init() {if (!this.config.get('autoLike')) {logger.debug('Автолайк отключен');return;}const chapterId = this.chapterManager.getCurrentChapterId();if (!chapterId) {logger.warn('Не удалось определить ID главы');return;}if (this.likedChapters.has(chapterId)) {logger.debug(`Глава ${chapterId} уже была лайкнута в этой сессии`);return;}await this.likeCurrentChapter(chapterId);}async likeCurrentChapter(chapterId) {try {logger.info(`Автолайк главы ${chapterId}`);if (this.chapterManager.isChapterLiked(chapterId)) {logger.debug(`Глава ${chapterId} уже лайкнута, пропускаем`);return;}const success = await this.chapterManager.likeChapter(chapterId);if (success) {this.likedChapters.add(chapterId);this.notifications.success('Глава автоматически лайкнута');logger.debug(`Глава ${chapterId} успешно лайкнута`);}} catch (error) {logger.error('Ошибка автолайка:', error);}}wasLikedInSession(chapterId) {return this.likedChapters.has(chapterId);}clearHistory() {this.likedChapters.clear();}}
-class RemangaExtension {constructor() {this.config = null;this.api = null;this.statistics = null;this.chapterManager = null;this.autoLiker = null;this.notifications = null;this.settingsPanel = null;this.updateChecker = null;this.progressModal = null;this.headerCustomizer = null;this.profileCustomizer = null;this.settingsPage = null;this.guildHighlighter = null;this.observers = [];}async init() {try {logger.info('Инициализация расширения...');if (!this.isUserLoggedIn()) {logger.info('Пользователь не авторизован');return;}this.config = new Config();await this.config.load();this.statistics = new Statistics();await this.statistics.load();this.api = new ApiClient();this.api.init();this.notifications = new Notifications(this.config);this.notifications.injectStyles();this.chapterManager = new ChapterManager(this.api, this.config, this.notifications, this.statistics);this.autoLiker = new AutoLiker(this.chapterManager, this.config, this.notifications);this.settingsPanel = new SettingsPanel(this.config, this.notifications, this.statistics);this.updateChecker = new UpdateChecker(this.config, this.notifications);this.headerCustomizer = new HeaderCustomizer(this.config);this.profileCustomizer = new ProfileCustomizer(this.config);this.settingsPage = new SettingsPage(this.config, this.notifications, this.statistics);this.guildHighlighter = new GuildHighlighter(this.config);window.remangaExtension = this;const pageType = this.detectPageType();logger.info(`Тип страницы: ${pageType}`);if (pageType === 'chapters') {this.initChaptersPage();} else if (pageType === 'reader') {this.initReaderPage();} else if (pageType === 'profile') {this.initProfilePage();} else if (pageType === 'forum' || pageType === 'guild-top') {this.initGuildPages(pageType);}this.settingsPanel.inject();this.headerCustomizer.init();await this.updateChecker.init();this.setupNavigationListener();logger.info('Расширение успешно инициализировано');window.addEventListener('beforeunload', () => {this.cleanup();});} catch (error) {logger.error('Ошибка инициализации:', error);}}setupNavigationListener() {let lastUrl = location.href;const checkUrlChange = () => {const currentUrl = location.href;if (currentUrl !== lastUrl) {lastUrl = currentUrl;this.handleUrlChange();}};const originalPushState = history.pushState;const originalReplaceState = history.replaceState;history.pushState = function(...args) {originalPushState.apply(this, args);checkUrlChange();};history.replaceState = function(...args) {originalReplaceState.apply(this, args);checkUrlChange();};window.addEventListener('popstate', checkUrlChange);logger.info('Navigation listener активирован');}handleUrlChange() {const pageType = this.detectPageType();logger.info(`URL изменен, новый тип страницы: ${pageType}`);if (pageType === 'chapters') {setTimeout(() => {this.initChaptersPage();}, 300);} else if (pageType === 'reader') {setTimeout(() => {this.initReaderPage();}, 300);} else if (pageType === 'profile') {setTimeout(() => {this.initProfilePage();}, 300);} else if (pageType === 'forum' || pageType === 'guild-top') {setTimeout(() => {this.initGuildPages(pageType);}, 300);} else {this.removeChapterButtons();this.cleanupProfilePage();this.cleanupGuildPages();}}cleanup() {this.observers.forEach(observer => observer.disconnect());this.observers = [];if (this.notifications) {this.notifications.cleanup();}if (this.settingsPanel) {this.settingsPanel.cleanup();}if (this.headerCustomizer) {this.headerCustomizer.cleanup();}if (this.profileCustomizer) {this.profileCustomizer.cleanup();}if (this.settingsPage) {this.settingsPage.cleanup();}if (this.guildHighlighter) {this.guildHighlighter.cleanup();}logger.info('Ресурсы расширения очищены');}isUserLoggedIn() {return document.cookie.includes('token=');}detectPageType() {const path = window.location.pathname;if (path.includes('/user/') && path.includes('/about')) {return 'profile';}if (path.includes('/chapters')) {return 'chapters';}if (path.match(/\/manga\/[^/]+\/\d+/)) {return 'reader';}if (path.includes('/forum')) {return 'forum';}if (path.includes('/guild/top')) {return 'guild-top';}return 'other';}initChaptersPage() {logger.info('Инициализация страницы глав');let debounceTimer = null;const containerSelector = '.relative.flex.flex-col.gap-2';const reinjectButtons = () => {clearTimeout(debounceTimer);debounceTimer = setTimeout(() => {if (!window.location.pathname.includes('/chapters')) {this.removeChapterButtons();return;}const container = document.querySelector(containerSelector);if (container) {this.ensureButtonsExist(container);}}, 100);};const observer = new MutationObserver(reinjectButtons);domUtils.waitForElement(containerSelector, 5000).then(container => {this.ensureButtonsExist(container);observer.observe(document.body, {childList: true,subtree: true});this.observers.push(observer);logger.info('MutationObserver для кнопок активирован');}).catch(error => {logger.warn('Контейнер глав не найден:', error);});}removeChapterButtons() {const markAllBtn = document.getElementById('remanga-ext-mark-all-btn');const likeAllBtn = document.getElementById('remanga-ext-like-all-btn');if (markAllBtn) {markAllBtn.remove();logger.debug('Кнопка "Прочитать все" удалена');}if (likeAllBtn) {likeAllBtn.remove();logger.debug('Кнопка "Лайкнуть все" удалена');}}ensureButtonsExist(container) {if (!document.getElementById('remanga-ext-mark-all-btn')) {this.addMarkAllReadButton(container);}if (!document.getElementById('remanga-ext-like-all-btn')) {this.addLikeAllButton(container);}}async initReaderPage() {logger.info('Инициализация страницы чтения');if (this.config.get('autoLike')) {await this.autoLiker.init();}}initProfilePage() {logger.info('Инициализация страницы профиля');this.cleanupProfilePage();this.profileCustomizer.init();}cleanupProfilePage() {if (this.profileCustomizer) {this.profileCustomizer.cleanup();}}initGuildPages(pageType) {logger.info(`Инициализация страницы гильдий: ${pageType}`);this.cleanupGuildPages();if (this.guildHighlighter) {this.guildHighlighter.init(pageType);}}cleanupGuildPages() {if (this.guildHighlighter) {this.guildHighlighter.cleanup();}}addMarkAllReadButton(container) {if (document.getElementById('remanga-ext-mark-all-btn')) {return;}const button = document.createElement('button');button.id = 'remanga-ext-mark-all-btn';button.className = 'cs-button';button.style.cssText = buttonStyles('fullWidth') + `margin-bottom: ${DESIGN_TOKENS.spacing.md};`;button.textContent = '✓ Прочитать все главы';button.addEventListener('mouseenter', () => {button.style.opacity = '0.9';});button.addEventListener('mouseleave', () => {button.style.opacity = '1';});button.addEventListener('mousedown', () => {button.style.transform = 'scale(0.97)';});button.addEventListener('mouseup', () => {button.style.transform = 'scale(1)';});button.addEventListener('click', async () => {try {await this.handleMarkAllRead(button);} catch (error) {logger.error('Ошибка обработки массовой отметки:', error);this.notifications.error('Произошла ошибка при обработке');button.disabled = false;button.textContent = '✓ Прочитать все главы';this.hideProgressModal();}});container.insertBefore(button, container.firstChild);logger.info('Кнопка "Прочитать все" добавлена');}addLikeAllButton(container) {if (document.getElementById('remanga-ext-like-all-btn')) {return;}const button = document.createElement('button');button.id = 'remanga-ext-like-all-btn';button.className = 'cs-button';button.style.cssText = buttonStyles('fullWidth') + `margin-bottom: ${DESIGN_TOKENS.spacing.md};`;button.textContent = '❤️ Лайкнуть все главы';button.addEventListener('mouseenter', () => {button.style.opacity = '0.9';});button.addEventListener('mouseleave', () => {button.style.opacity = '1';});button.addEventListener('mousedown', () => {button.style.transform = 'scale(0.97)';});button.addEventListener('mouseup', () => {button.style.transform = 'scale(1)';});button.addEventListener('click', async () => {try {await this.handleLikeAll(button);} catch (error) {logger.error('Ошибка обработки массового лайка:', error);this.notifications.error('Произошла ошибка при обработке');button.disabled = false;button.textContent = '❤️ Лайкнуть все главы';this.hideProgressModal();}});container.insertBefore(button, container.children[1]);logger.info('Кнопка "Лайкнуть все" добавлена');}async handleMarkAllRead(button) {button.disabled = true;button.textContent = 'Подготовка...';this.showProgressModal('Этап 1/2: Загрузка глав', 0, 0, true);const chapterIds = await this.chapterManager.loadAllChaptersByScroll((count) => {this.updateProgressModalLoading(`Этап 1/2: Загрузка глав (${count})`);});if (chapterIds.length === 0) {this.hideProgressModal();this.notifications.warning('Главы не найдены');button.disabled = false;button.textContent = '✓ Прочитать все главы';return;}button.textContent = 'Обработка...';this.showProgressModal('Этап 2/2: Отметка глав как прочитанных', 0, chapterIds.length, false);const result = await this.chapterManager.markMultipleAsRead(chapterIds,(current, total, eta) => {this.updateProgressModal(current, total, eta);});this.hideProgressModal();button.disabled = false;button.textContent = '✓ Прочитать все главы';if (result.skipped > 0) {this.notifications.info(`Пропущено ${result.skipped} уже прочитанных глав`);}if (result.failed > 0) {this.notifications.warning(`Отмечено ${result.completed} из ${result.total} глав (${result.failed} ошибок)`);} else {this.notifications.success(`Отмечено ${result.completed} глав. Обновите страницу для отображения изменений.`);}}async handleLikeAll(button) {button.disabled = true;button.textContent = 'Подготовка...';this.showProgressModal('Этап 1/2: Загрузка глав', 0, 0, true);const chapterIds = await this.chapterManager.loadAllChaptersByScroll((count) => {this.updateProgressModalLoading(`Этап 1/2: Загрузка глав (${count})`);});if (chapterIds.length === 0) {this.hideProgressModal();this.notifications.warning('Главы не найдены');button.disabled = false;button.textContent = '❤️ Лайкнуть все главы';return;}button.textContent = 'Обработка...';this.showProgressModal('Этап 2/2: Лайк глав', 0, chapterIds.length, false);const result = await this.chapterManager.likeMultiple(chapterIds,(current, total, eta) => {this.updateProgressModal(current, total, eta);});this.hideProgressModal();button.disabled = false;button.textContent = '❤️ Лайкнуть все главы';if (result.skipped > 0) {this.notifications.info(`Пропущено ${result.skipped} уже лайкнутых глав`);}if (result.failed > 0) {this.notifications.warning(`Лайкнуто ${result.completed} из ${result.total} глав (${result.failed} ошибок)`);} else {this.notifications.success(`Лайкнуто ${result.completed} глав`);}}showProgressModal(title, current, total, isLoading = false) {if (this.progressModal) {this.progressModal.remove();}const overlay = document.createElement('div');overlay.style.cssText = overlayStyles();const modal = document.createElement('div');modal.id = 'remanga-ext-progress-modal';modal.style.cssText = modalStyles() + `min-width: 400px;`;if (isLoading) {modal.innerHTML = `<div style="margin-bottom: ${DESIGN_TOKENS.spacing.lg}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.bold}; font-size: ${DESIGN_TOKENS.typography.fontSize.xl}; color: ${DESIGN_TOKENS.colors.text.primary};">${title}</div><div style="display: flex; align-items: center; justify-content: center; padding: 20px 0;"><div style="width: 40px;height: 40px;border: 4px solid #374151;border-top-color: ${DESIGN_TOKENS.colors.bg.secondary};border-radius: 50%;animation: spin 1s linear infinite;"></div></div><div style="text-align: center; color: ${DESIGN_TOKENS.colors.text.muted}; font-size: ${DESIGN_TOKENS.typography.fontSize.md};"><span id="progress-text">Загрузка...</span></div><style>@keyframes spin {to { transform: rotate(360deg); }}</style>`;} else {const percent = total > 0 ? Math.round((current / total) * 100) : 0;modal.innerHTML = `<div style="margin-bottom: ${DESIGN_TOKENS.spacing.lg}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.bold}; font-size: ${DESIGN_TOKENS.typography.fontSize.xl}; color: ${DESIGN_TOKENS.colors.text.primary};">${title}</div><div style="background: #374151; height: 12px; border-radius: ${DESIGN_TOKENS.radius.sm}; overflow: hidden; margin-bottom: ${DESIGN_TOKENS.spacing.md};"><div id="progress-bar" style="background: ${DESIGN_TOKENS.colors.bg.secondary}; height: 100%; width: ${percent}%; transition: width ${DESIGN_TOKENS.transitions.normal};"></div></div><div style="text-align: center; color: ${DESIGN_TOKENS.colors.text.muted}; font-size: ${DESIGN_TOKENS.typography.fontSize.md};"><span id="progress-text">${current} из ${total}</span></div>`;}overlay.appendChild(modal);document.body.appendChild(overlay);this.progressModal = overlay;}updateProgressModalLoading(text) {if (!this.progressModal) {return;}const progressText = this.progressModal.querySelector('#progress-text');if (progressText) {progressText.textContent = text;}}updateProgressModal(current, total, eta = null) {if (!this.progressModal) {return;}const percent = Math.round((current / total) * 100);const progressBar = this.progressModal.querySelector('#progress-bar');const progressText = this.progressModal.querySelector('#progress-text');if (progressBar) {progressBar.style.width = `${percent}%`;}if (progressText) {let text = `${current} из ${total}`;if (eta && eta.totalSeconds > 0) {const mins = eta.minutes;const secs = eta.seconds;text += ` • Осталось ~${mins > 0 ? `${mins} мин ` : ''}${secs} сек`;}progressText.textContent = text;}}hideProgressModal() {if (this.progressModal) {setTimeout(() => {if (this.progressModal) {this.progressModal.remove();this.progressModal = null;}}, 500);}}}(function() {'use strict';const extension = new RemangaExtension();if (document.readyState === 'loading') {document.addEventListener('DOMContentLoaded', () => extension.init());} else {extension.init();}})();
+class RemangaExtension {constructor() {this.config = null;this.api = null;this.statistics = null;this.chapterManager = null;this.autoLiker = null;this.notifications = null;this.settingsPanel = null;this.updateChecker = null;this.progressModal = null;this.headerCustomizer = null;this.profileCustomizer = null;this.settingsPage = null;this.guildHighlighter = null;this.feedbackButton = null;this.observers = [];}async init() {try {logger.info('Инициализация расширения...');if (!this.isUserLoggedIn()) {logger.info('Пользователь не авторизован');return;}this.config = new Config();await this.config.load();this.statistics = new Statistics();await this.statistics.load();this.api = new ApiClient();this.api.init();this.notifications = new Notifications(this.config);this.notifications.injectStyles();this.chapterManager = new ChapterManager(this.api, this.config, this.notifications, this.statistics);this.autoLiker = new AutoLiker(this.chapterManager, this.config, this.notifications);this.settingsPanel = new SettingsPanel(this.config, this.notifications, this.statistics);this.updateChecker = new UpdateChecker(this.config, this.notifications);this.headerCustomizer = new HeaderCustomizer(this.config);this.profileCustomizer = new ProfileCustomizer(this.config);this.settingsPage = new SettingsPage(this.config, this.notifications, this.statistics);this.guildHighlighter = new GuildHighlighter(this.config);this.feedbackButton = new FeedbackButton(this.config, this.notifications);window.remangaExtension = this;const pageType = this.detectPageType();logger.info(`Тип страницы: ${pageType}`);if (pageType === 'chapters') {this.initChaptersPage();} else if (pageType === 'reader') {this.initReaderPage();} else if (pageType === 'profile') {this.initProfilePage();} else if (pageType === 'forum' || pageType === 'guild-top') {this.initGuildPages(pageType);}this.settingsPanel.inject();this.headerCustomizer.init();await this.updateChecker.init();this.setupNavigationListener();logger.info('Расширение успешно инициализировано');window.addEventListener('beforeunload', () => {this.cleanup();});} catch (error) {logger.error('Ошибка инициализации:', error);}}setupNavigationListener() {let lastUrl = location.href;const checkUrlChange = () => {const currentUrl = location.href;if (currentUrl !== lastUrl) {lastUrl = currentUrl;this.handleUrlChange();}};const originalPushState = history.pushState;const originalReplaceState = history.replaceState;history.pushState = function(...args) {originalPushState.apply(this, args);checkUrlChange();};history.replaceState = function(...args) {originalReplaceState.apply(this, args);checkUrlChange();};window.addEventListener('popstate', checkUrlChange);logger.info('Navigation listener активирован');}handleUrlChange() {const pageType = this.detectPageType();logger.info(`URL изменен, новый тип страницы: ${pageType}`);if (pageType === 'chapters') {setTimeout(() => {this.initChaptersPage();}, 300);} else if (pageType === 'reader') {setTimeout(() => {this.initReaderPage();}, 300);} else if (pageType === 'profile') {setTimeout(() => {this.initProfilePage();}, 300);} else if (pageType === 'forum' || pageType === 'guild-top') {setTimeout(() => {this.initGuildPages(pageType);}, 300);} else {this.removeChapterButtons();this.cleanupProfilePage();this.cleanupGuildPages();}}cleanup() {this.observers.forEach(observer => observer.disconnect());this.observers = [];if (this.notifications) {this.notifications.cleanup();}if (this.settingsPanel) {this.settingsPanel.cleanup();}if (this.headerCustomizer) {this.headerCustomizer.cleanup();}if (this.profileCustomizer) {this.profileCustomizer.cleanup();}if (this.settingsPage) {this.settingsPage.cleanup();}if (this.guildHighlighter) {this.guildHighlighter.cleanup();}logger.info('Ресурсы расширения очищены');}isUserLoggedIn() {return document.cookie.includes('token=');}detectPageType() {const path = window.location.pathname;if (path.includes('/user/') && path.includes('/about')) {return 'profile';}if (path.includes('/chapters')) {return 'chapters';}if (path.match(/\/manga\/[^/]+\/\d+/)) {return 'reader';}if (path.includes('/forum')) {return 'forum';}if (path.includes('/guild/top')) {return 'guild-top';}return 'other';}initChaptersPage() {logger.info('Инициализация страницы глав');let debounceTimer = null;const containerSelector = '.relative.flex.flex-col.gap-2';const reinjectButtons = () => {clearTimeout(debounceTimer);debounceTimer = setTimeout(() => {if (!window.location.pathname.includes('/chapters')) {this.removeChapterButtons();return;}const container = document.querySelector(containerSelector);if (container) {this.ensureButtonsExist(container);}}, 100);};const observer = new MutationObserver(reinjectButtons);domUtils.waitForElement(containerSelector, 5000).then(container => {this.ensureButtonsExist(container);observer.observe(document.body, {childList: true,subtree: true});this.observers.push(observer);logger.info('MutationObserver для кнопок активирован');}).catch(error => {logger.warn('Контейнер глав не найден:', error);});}removeChapterButtons() {const markAllBtn = document.getElementById('remanga-ext-mark-all-btn');const likeAllBtn = document.getElementById('remanga-ext-like-all-btn');if (markAllBtn) {markAllBtn.remove();logger.debug('Кнопка "Прочитать все" удалена');}if (likeAllBtn) {likeAllBtn.remove();logger.debug('Кнопка "Лайкнуть все" удалена');}}ensureButtonsExist(container) {if (!document.getElementById('remanga-ext-mark-all-btn')) {this.addMarkAllReadButton(container);}if (!document.getElementById('remanga-ext-like-all-btn')) {this.addLikeAllButton(container);}}async initReaderPage() {logger.info('Инициализация страницы чтения');if (this.config.get('autoLike')) {await this.autoLiker.init();}}initProfilePage() {logger.info('Инициализация страницы профиля');this.cleanupProfilePage();this.profileCustomizer.init();}cleanupProfilePage() {if (this.profileCustomizer) {this.profileCustomizer.cleanup();}}initGuildPages(pageType) {logger.info(`Инициализация страницы гильдий: ${pageType}`);this.cleanupGuildPages();if (this.guildHighlighter) {this.guildHighlighter.init(pageType);}}cleanupGuildPages() {if (this.guildHighlighter) {this.guildHighlighter.cleanup();}}addMarkAllReadButton(container) {if (document.getElementById('remanga-ext-mark-all-btn')) {return;}const button = document.createElement('button');button.id = 'remanga-ext-mark-all-btn';button.className = 'cs-button';button.style.cssText = buttonStyles('fullWidth') + `margin-bottom: ${DESIGN_TOKENS.spacing.md};`;button.textContent = '✓ Прочитать все главы';button.addEventListener('mouseenter', () => {button.style.opacity = '0.9';});button.addEventListener('mouseleave', () => {button.style.opacity = '1';});button.addEventListener('mousedown', () => {button.style.transform = 'scale(0.97)';});button.addEventListener('mouseup', () => {button.style.transform = 'scale(1)';});button.addEventListener('click', async () => {try {await this.handleMarkAllRead(button);} catch (error) {logger.error('Ошибка обработки массовой отметки:', error);this.notifications.error('Произошла ошибка при обработке');button.disabled = false;button.textContent = '✓ Прочитать все главы';this.hideProgressModal();}});container.insertBefore(button, container.firstChild);logger.info('Кнопка "Прочитать все" добавлена');}addLikeAllButton(container) {if (document.getElementById('remanga-ext-like-all-btn')) {return;}const button = document.createElement('button');button.id = 'remanga-ext-like-all-btn';button.className = 'cs-button';button.style.cssText = buttonStyles('fullWidth') + `margin-bottom: ${DESIGN_TOKENS.spacing.md};`;button.textContent = '❤️ Лайкнуть все главы';button.addEventListener('mouseenter', () => {button.style.opacity = '0.9';});button.addEventListener('mouseleave', () => {button.style.opacity = '1';});button.addEventListener('mousedown', () => {button.style.transform = 'scale(0.97)';});button.addEventListener('mouseup', () => {button.style.transform = 'scale(1)';});button.addEventListener('click', async () => {try {await this.handleLikeAll(button);} catch (error) {logger.error('Ошибка обработки массового лайка:', error);this.notifications.error('Произошла ошибка при обработке');button.disabled = false;button.textContent = '❤️ Лайкнуть все главы';this.hideProgressModal();}});container.insertBefore(button, container.children[1]);logger.info('Кнопка "Лайкнуть все" добавлена');}async handleMarkAllRead(button) {button.disabled = true;button.textContent = 'Подготовка...';this.showProgressModal('Этап 1/2: Загрузка глав', 0, 0, true);const chapterIds = await this.chapterManager.loadAllChaptersByScroll((count) => {this.updateProgressModalLoading(`Этап 1/2: Загрузка глав (${count})`);});if (chapterIds.length === 0) {this.hideProgressModal();this.notifications.warning('Главы не найдены');button.disabled = false;button.textContent = '✓ Прочитать все главы';return;}button.textContent = 'Обработка...';this.showProgressModal('Этап 2/2: Отметка глав как прочитанных', 0, chapterIds.length, false);const result = await this.chapterManager.markMultipleAsRead(chapterIds,(current, total, eta) => {this.updateProgressModal(current, total, eta);});this.hideProgressModal();button.disabled = false;button.textContent = '✓ Прочитать все главы';if (result.skipped > 0) {this.notifications.info(`Пропущено ${result.skipped} уже прочитанных глав`);}if (result.failed > 0) {this.notifications.warning(`Отмечено ${result.completed} из ${result.total} глав (${result.failed} ошибок)`);} else {this.notifications.success(`Отмечено ${result.completed} глав. Обновите страницу для отображения изменений.`);}}async handleLikeAll(button) {button.disabled = true;button.textContent = 'Подготовка...';this.showProgressModal('Этап 1/2: Загрузка глав', 0, 0, true);const chapterIds = await this.chapterManager.loadAllChaptersByScroll((count) => {this.updateProgressModalLoading(`Этап 1/2: Загрузка глав (${count})`);});if (chapterIds.length === 0) {this.hideProgressModal();this.notifications.warning('Главы не найдены');button.disabled = false;button.textContent = '❤️ Лайкнуть все главы';return;}button.textContent = 'Обработка...';this.showProgressModal('Этап 2/2: Лайк глав', 0, chapterIds.length, false);const result = await this.chapterManager.likeMultiple(chapterIds,(current, total, eta) => {this.updateProgressModal(current, total, eta);});this.hideProgressModal();button.disabled = false;button.textContent = '❤️ Лайкнуть все главы';if (result.skipped > 0) {this.notifications.info(`Пропущено ${result.skipped} уже лайкнутых глав`);}if (result.failed > 0) {this.notifications.warning(`Лайкнуто ${result.completed} из ${result.total} глав (${result.failed} ошибок)`);} else {this.notifications.success(`Лайкнуто ${result.completed} глав`);}}showProgressModal(title, current, total, isLoading = false) {if (this.progressModal) {this.progressModal.remove();}const overlay = document.createElement('div');overlay.style.cssText = overlayStyles();const modal = document.createElement('div');modal.id = 'remanga-ext-progress-modal';modal.style.cssText = modalStyles() + `min-width: 400px;`;if (isLoading) {modal.innerHTML = `<div style="margin-bottom: ${DESIGN_TOKENS.spacing.lg}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.bold}; font-size: ${DESIGN_TOKENS.typography.fontSize.xl}; color: ${DESIGN_TOKENS.colors.text.primary};">${title}</div><div style="display: flex; align-items: center; justify-content: center; padding: 20px 0;"><div style="width: 40px;height: 40px;border: 4px solid #374151;border-top-color: ${DESIGN_TOKENS.colors.bg.secondary};border-radius: 50%;animation: spin 1s linear infinite;"></div></div><div style="text-align: center; color: ${DESIGN_TOKENS.colors.text.muted}; font-size: ${DESIGN_TOKENS.typography.fontSize.md};"><span id="progress-text">Загрузка...</span></div><style>@keyframes spin {to { transform: rotate(360deg); }}</style>`;} else {const percent = total > 0 ? Math.round((current / total) * 100) : 0;modal.innerHTML = `<div style="margin-bottom: ${DESIGN_TOKENS.spacing.lg}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.bold}; font-size: ${DESIGN_TOKENS.typography.fontSize.xl}; color: ${DESIGN_TOKENS.colors.text.primary};">${title}</div><div style="background: #374151; height: 12px; border-radius: ${DESIGN_TOKENS.radius.sm}; overflow: hidden; margin-bottom: ${DESIGN_TOKENS.spacing.md};"><div id="progress-bar" style="background: ${DESIGN_TOKENS.colors.bg.secondary}; height: 100%; width: ${percent}%; transition: width ${DESIGN_TOKENS.transitions.normal};"></div></div><div style="text-align: center; color: ${DESIGN_TOKENS.colors.text.muted}; font-size: ${DESIGN_TOKENS.typography.fontSize.md};"><span id="progress-text">${current} из ${total}</span></div>`;}overlay.appendChild(modal);document.body.appendChild(overlay);this.progressModal = overlay;}updateProgressModalLoading(text) {if (!this.progressModal) {return;}const progressText = this.progressModal.querySelector('#progress-text');if (progressText) {progressText.textContent = text;}}updateProgressModal(current, total, eta = null) {if (!this.progressModal) {return;}const percent = Math.round((current / total) * 100);const progressBar = this.progressModal.querySelector('#progress-bar');const progressText = this.progressModal.querySelector('#progress-text');if (progressBar) {progressBar.style.width = `${percent}%`;}if (progressText) {let text = `${current} из ${total}`;if (eta && eta.totalSeconds > 0) {const mins = eta.minutes;const secs = eta.seconds;text += ` • Осталось ~${mins > 0 ? `${mins} мин ` : ''}${secs} сек`;}progressText.textContent = text;}}hideProgressModal() {if (this.progressModal) {setTimeout(() => {if (this.progressModal) {this.progressModal.remove();this.progressModal = null;}}, 500);}}}(function() {'use strict';const extension = new RemangaExtension();if (document.readyState === 'loading') {document.addEventListener('DOMContentLoaded', () => extension.init());} else {extension.init();}})();
 })();

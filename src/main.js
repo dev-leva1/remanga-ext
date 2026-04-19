@@ -18,6 +18,7 @@ class RemangaExtension {
     this.profileCustomizer = null;
     this.settingsPage = null;
     this.guildHighlighter = null;
+    this.feedbackButton = null;
     this.observers = [];
   }
 
@@ -53,6 +54,7 @@ class RemangaExtension {
       this.profileCustomizer = new ProfileCustomizer(this.config);
       this.settingsPage = new SettingsPage(this.config, this.notifications, this.statistics);
       this.guildHighlighter = new GuildHighlighter(this.config);
+      this.feedbackButton = new FeedbackButton(this.config, this.notifications);
 
       window.remangaExtension = this;
 

@@ -18,6 +18,7 @@ const files = [
   'src/ui/Notifications.js',
   'src/ui/SettingsPanel.js',
   'src/ui/SettingsPage.js',
+  'src/ui/FeedbackButton.js',
   'src/features/HeaderCustomizer.js',
   'src/features/ProfileCustomizer.js',
   'src/features/GuildHighlighter.js',
@@ -45,6 +46,13 @@ const header = `// ==UserScript==
 
 /**
  * CHANGELOG
+ *
+ * v1.6.4 - Telegram бот обратной связи
+ * - Добавлен Telegram бот для сообщений об ошибках и предложений
+ * - Кнопка "Обратная связь" в настройках (вкладка "Общее")
+ * - Модальное окно выбора контекста (версия, браузер, URL страницы)
+ * - Deep link интеграция с ботом для автоматической передачи данных
+ * - Обновлен лендинг: секция "Обратная связь" вместо контактов
  *
  * v1.6.3 - Вкладки в окне настроек
  * - Окно настроек разбито на 3 вкладки: Автоматизация, Интерфейс, Общее

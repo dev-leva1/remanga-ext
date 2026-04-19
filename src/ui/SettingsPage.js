@@ -317,6 +317,29 @@ class SettingsPage {
       <div style="display: flex; flex-direction: column; gap: ${DESIGN_TOKENS.spacing.lg};">
         <section style="background: ${DESIGN_TOKENS.colors.bg.secondary}; padding: ${DESIGN_TOKENS.spacing.xl}; border-radius: ${DESIGN_TOKENS.radius.lg};">
           <h2 style="margin: 0 0 ${DESIGN_TOKENS.spacing.lg} 0; font-size: ${DESIGN_TOKENS.typography.fontSize.xl}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.semibold}; color: ${DESIGN_TOKENS.colors.text.primary};">
+            Обратная связь
+          </h2>
+
+          <p style="color: ${DESIGN_TOKENS.colors.text.muted}; margin-bottom: ${DESIGN_TOKENS.spacing.lg};">
+            Нашли баг или есть предложение? Напишите нам в Telegram бот!
+          </p>
+
+          <button id="open-feedback-modal" style="
+            padding: ${DESIGN_TOKENS.spacing.md} ${DESIGN_TOKENS.spacing.xl};
+            background: ${DESIGN_TOKENS.colors.bg.surface};
+            color: ${DESIGN_TOKENS.colors.text.primary};
+            border: none;
+            border-radius: ${DESIGN_TOKENS.radius.pill};
+            cursor: pointer;
+            font-weight: ${DESIGN_TOKENS.typography.fontWeight.medium};
+            font-size: ${DESIGN_TOKENS.typography.fontSize.md};
+            font-family: ${DESIGN_TOKENS.typography.fontFamily};
+            width: 100%;
+          ">📱 Открыть бот обратной связи</button>
+        </section>
+
+        <section style="background: ${DESIGN_TOKENS.colors.bg.secondary}; padding: ${DESIGN_TOKENS.spacing.xl}; border-radius: ${DESIGN_TOKENS.radius.lg};">
+          <h2 style="margin: 0 0 ${DESIGN_TOKENS.spacing.lg} 0; font-size: ${DESIGN_TOKENS.typography.fontSize.xl}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.semibold}; color: ${DESIGN_TOKENS.colors.text.primary};">
             Уведомления и обновления
           </h2>
 
@@ -505,6 +528,15 @@ class SettingsPage {
     if (batchSizeSlider && batchSizeValue) {
       batchSizeSlider.addEventListener('input', (e) => {
         batchSizeValue.textContent = e.target.value;
+      });
+    }
+
+    const feedbackBtn = this.container.querySelector('#open-feedback-modal');
+    if (feedbackBtn) {
+      feedbackBtn.addEventListener('click', () => {
+        if (window.remangaExtension && window.remangaExtension.feedbackButton) {
+          window.remangaExtension.feedbackButton.openContextModal();
+        }
       });
     }
 

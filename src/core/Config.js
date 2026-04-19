@@ -31,7 +31,8 @@ class Config {
         followers: false,
         comments: false
       },
-      highlightGuilds: true
+      highlightGuilds: true,
+      feedbackBotUsername: 'remanga_extension_bot'
     };
 
     this.settings = { ...this.defaults };

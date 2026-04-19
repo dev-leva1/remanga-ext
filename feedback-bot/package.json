@@ -1,0 +1,19 @@
+{
+  "name": "remanga-feedback-bot",
+  "version": "1.0.0",
+  "description": "Telegram bot для обратной связи по расширению Remanga Enhanced",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "keywords": ["telegram", "bot", "feedback"],
+  "author": "dev-leva1",
+  "license": "MIT",
+  "dependencies": {
+    "telegraf": "^4.16.3",
+    "pg": "^8.11.5",
+    "dotenv": "^16.4.5"
+  }
+}
