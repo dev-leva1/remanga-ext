@@ -37,6 +37,8 @@ class TooltipRenderer {
     const { username, avatar, level, chapters_read, main_club, is_online } = userData;
 
     const avatarUrl = avatar?.high ? `https://remanga.org/media/${avatar.high}` : '';
+    const safeAvatarUrl = this.escapeAttribute(avatarUrl);
+    const safeUsername = this.escapeAttribute(username || '');
     const clubName = main_club?.name || 'Нет гильдии';
     const levelName = level?.name || 'Новичок';
     const onlineStatus = is_online ? 'В сети' : 'Не в сети';
@@ -45,8 +47,8 @@ class TooltipRenderer {
     return `
       <div style="display: flex; gap: ${DESIGN_TOKENS.spacing.md}; align-items: flex-start;">
         <img
-          src="${avatarUrl}"
-          alt="${username}"
+          src="${safeAvatarUrl}"
+          alt="${safeUsername}"
           style="
             width: 60px;
             height: 60px;
@@ -257,6 +259,18 @@ class TooltipRenderer {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+
+  /**
+   * Экранирование HTML-атрибутов
+   */
+  escapeAttribute(value) {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
   }
 
   /**
