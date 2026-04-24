@@ -151,13 +151,17 @@ class FeedbackButton {
 
       const deepLink = this.generateDeepLink(type, context);
 
-      // Копируем команду в буфер обмена
+      // Копируем команду в буфер обмена (если поддерживается)
       const command = `/start ${deepLink.split('?start=')[1]}`;
-      navigator.clipboard.writeText(command).then(() => {
-        this.notifications.success('Команда скопирована! Вставьте её в бота.');
-      }).catch(() => {
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        navigator.clipboard.writeText(command).then(() => {
+          this.notifications.success('Команда скопирована! Вставьте её в бота.');
+        }).catch(() => {
+          this.notifications.info('Скопируйте команду вручную из бота');
+        });
+      } else {
         this.notifications.info('Скопируйте команду вручную из бота');
-      });
+      }
 
       window.open(`https://t.me/${this.botUsername}`, '_blank');
 
