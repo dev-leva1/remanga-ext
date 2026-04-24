@@ -130,7 +130,7 @@ class UpdateChecker {
     const safeCurrentVersion = this.escapeHtml(this.currentVersion);
     const changelogLines = changelog.split('\n');
     const changelogHTML = changelogLines
-      .map(line => `<div style="padding: 4px 0; color: #d1d5db;">• ${this.escapeHtml(line)}</div>`)
+      .map(line => `<div style="padding: 4px 0; color: #d1d5db;">• ${this.escapeHTML(line)}</div>`)
       .join('');
 
     modal.innerHTML = `
@@ -241,6 +241,18 @@ class UpdateChecker {
    */
   getCurrentVersion() {
     return this.currentVersion;
+  }
+
+  /**
+   * Экранирование HTML для безопасного рендера текста
+   */
+  escapeHTML(value) {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   /**
