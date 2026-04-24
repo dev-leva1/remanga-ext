@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Remanga Enhanced
 // @namespace    remanga.ext
-// @version      1.6.5
+// @version      1.6.6
 // @description  Автоматизация действий на remanga.org: автолайк, массовая отметка глав
 // @author       dev-leva1
 // @match        https://remanga.org/*
@@ -17,6 +17,15 @@
 
 /**
  * CHANGELOG
+ *
+ * v1.6.6 - Исправления безопасности и стабильности
+ * - Исправлены XSS/HTML injection в тултипах, модальном окне обновления и окне обратной связи
+ * - Усилена валидация URL для remanga.org в feedback-bot
+ * - Исправлен reverse tabnabbing при открытии внешних ссылок и Telegram бота
+ * - Исправлено дублирование обработчиков во вкладках настроек
+ * - Исправлена работа clipboard fallback в обратной связи
+ * - Снято ограничение на большие инкременты статистики в массовых операциях
+ * - Исправлена порча dist userscript при сборке
  *
  * v1.6.5 - Тултипы профилей
  * - Добавлены тултипы пользователей, отображающие краткую информацию о пользователе при наведении на аватар
@@ -443,7 +452,7 @@ constructor(config, notifications) {
 this.config = config;
 this.notifications = notifications;
 this.updateURL = 'https://ext.nexee.ru/remanga-extension.user.js';
-this.currentVersion = '1.6.5';
+this.currentVersion = '1.6.6';
 this.checkInterval = 12 * 60 * 60 * 1000;
 this.isChecking = false;
 }
@@ -865,7 +874,7 @@ this.config = config;
 this.notifications = notifications;
 this.statistics = statistics;
 this.container = null;
-this.currentVersion = '1.6.5';
+this.currentVersion = '1.6.6';
 this.activeTab = 'automation';
 }
 init() {
@@ -1610,7 +1619,7 @@ const base64url = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '
 return `https://t.me/${this.botUsername}?start=${base64url}`;
 }
 getVersion() {
-return '1.6.5'; // Заменяется при сборке
+return '1.6.6'; // Заменяется при сборке
 }
 detectBrowser() {
 const ua = navigator.userAgent;
