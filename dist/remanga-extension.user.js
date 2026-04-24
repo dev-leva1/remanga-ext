@@ -268,9 +268,11 @@ friends: false,
 followers: false,
 comments: false
 },
-highlightGuilds: true,
-feedbackBotUsername: 'remanga_extension_bot',
-userTooltipEnabled: true
+const safeVersion = this.escapeHtml(version);
+const safeCurrentVersion = this.escapeHtml(this.currentVersion);
+.map(line => `<div style="padding: 4px 0; color: #d1d5db;">• ${this.escapeHtml(line)}</div>`)
+Обновление ${safeVersion}
+Текущая версия: ${safeCurrentVersion}
 };
 this.settings = { ...this.defaults };
 Config.instance = this;
@@ -345,6 +347,11 @@ settingsToImport = imported.settings;
 logger.info(`Импорт настроек версии ${imported.version} от ${imported.exportDate}`);
 } else {
 settingsToImport = imported;
+}
+escapeHtml(text) {
+const div = document.createElement('div');
+div.textContent = String(text);
+return div.innerHTML;
 }
 await this.save(settingsToImport);
 return true;

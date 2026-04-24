@@ -126,17 +126,19 @@ class UpdateChecker {
       overflow-y: auto;
     `;
 
+    const safeVersion = this.escapeHtml(version);
+    const safeCurrentVersion = this.escapeHtml(this.currentVersion);
     const changelogLines = changelog.split('\n');
     const changelogHTML = changelogLines
-      .map(line => `<div style="padding: 4px 0; color: #d1d5db;">• ${line}</div>`)
+      .map(line => `<div style="padding: 4px 0; color: #d1d5db;">• ${this.escapeHtml(line)}</div>`)
       .join('');
 
     modal.innerHTML = `
       <h2 style="margin: 0 0 8px 0; font-size: 24px; font-weight: bold; color: #ffffff;">
-        Обновление ${version}
+        Обновление ${safeVersion}
       </h2>
       <div style="margin-bottom: 24px; color: #9ca3af; font-size: 14px;">
-        Текущая версия: ${this.currentVersion}
+        Текущая версия: ${safeCurrentVersion}
       </div>
 
       <div style="margin-bottom: 24px;">
@@ -212,6 +214,15 @@ class UpdateChecker {
         overlay.remove();
       }
     });
+  }
+
+  /**
+   * Экранирование HTML-спецсимволов
+   */
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = String(text);
+    return div.innerHTML;
   }
 
   /**
