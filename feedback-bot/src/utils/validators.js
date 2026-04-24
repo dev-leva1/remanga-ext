@@ -71,13 +71,14 @@ export const validators = {
 
     try {
       const parsed = new URL(url);
+      const hostname = parsed.hostname.toLowerCase();
 
       // Только remanga.org
-      if (!parsed.hostname.includes('remanga.org')) {
+      if (hostname !== 'remanga.org' && !hostname.endsWith('.remanga.org')) {
         return null;
       }
 
-      return url;
+      return parsed.toString();
     } catch {
       return null;
     }
