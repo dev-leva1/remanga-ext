@@ -78,7 +78,7 @@ class Statistics {
    */
   async incrementReads(count = 1) {
     const validCount = parseInt(count);
-    if (!Number.isInteger(validCount) || validCount < 0 || validCount > 10000) {
+    if (!Number.isInteger(validCount) || validCount < 0) {
       throw new Error(`Невалидное значение count: ${count}`);
     }
     this.stats.chaptersRead += validCount;
@@ -90,7 +90,7 @@ class Statistics {
    */
   async incrementLikes(count = 1) {
     const validCount = parseInt(count);
-    if (!Number.isInteger(validCount) || validCount < 0 || validCount > 10000) {
+    if (!Number.isInteger(validCount) || validCount < 0) {
       throw new Error(`Невалидное значение count: ${count}`);
     }
     this.stats.chaptersLiked += validCount;
