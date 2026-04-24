@@ -163,7 +163,7 @@ class FeedbackButton {
         this.notifications.info('Скопируйте команду вручную из бота');
       }
 
-      window.open(`https://t.me/${this.botUsername}`, '_blank');
+      window.open(`https://t.me/${this.botUsername}`, '_blank', 'noopener,noreferrer');
 
       this.modal.remove();
       this.modal = null;
