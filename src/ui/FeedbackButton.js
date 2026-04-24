@@ -83,7 +83,7 @@ class FeedbackButton {
           <input type="checkbox" id="include-url" checked style="width: 20px; height: 20px; cursor: pointer;">
           <div>
             <div style="color: ${DESIGN_TOKENS.colors.text.primary};">Текущая страница</div>
-            <div style="font-size: ${DESIGN_TOKENS.typography.fontSize.sm}; color: ${DESIGN_TOKENS.colors.text.muted}; word-break: break-all;">${this.truncateUrl(window.location.href)}</div>
+            <div style="font-size: ${DESIGN_TOKENS.typography.fontSize.sm}; color: ${DESIGN_TOKENS.colors.text.muted}; word-break: break-all;">${this.escapeHtml(this.truncateUrl(window.location.href))}</div>
           </div>
         </label>
       </div>
@@ -217,6 +217,18 @@ class FeedbackButton {
     }
 
     return url.substring(0, maxLength) + '...';
+  }
+
+  /**
+   * HTML-экранирование для безопасной вставки в innerHTML
+   */
+  escapeHtml(text) {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   /**
