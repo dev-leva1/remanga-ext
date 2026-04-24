@@ -464,54 +464,54 @@ class SettingsPage {
   attachEventListeners() {
     const tabs = this.container.querySelectorAll('.settings-tab');
     tabs.forEach(tab => {
-      tab.addEventListener('click', (e) => {
+      tab.onclick = (e) => {
         this.activeTab = e.currentTarget.dataset.tab;
         this.updateContent();
-      });
+      };
     });
 
     const saveBtn = this.container.querySelector('#save-settings');
     if (saveBtn) {
-      saveBtn.addEventListener('click', async () => {
+      saveBtn.onclick = async () => {
         await this.saveSettings();
-      });
+      };
     }
 
     const closeBtn = this.container.querySelector('#close-page');
     if (closeBtn) {
-      closeBtn.addEventListener('click', (e) => {
+      closeBtn.onclick = (e) => {
         e.preventDefault();
         this.close();
-      });
+      };
     }
 
     const resetBtn = this.container.querySelector('#reset-settings');
     if (resetBtn) {
-      resetBtn.addEventListener('click', () => {
+      resetBtn.onclick = () => {
         if (confirm('Сбросить все настройки к значениям по умолчанию?')) {
           this.config.reset().then(() => {
             this.notifications.success('Настройки сброшены. Перезагрузка...');
             setTimeout(() => window.location.reload(), 1000);
           });
         }
-      });
+      };
     }
 
     const resetStatsBtn = this.container.querySelector('#reset-stats');
     if (resetStatsBtn) {
-      resetStatsBtn.addEventListener('click', () => {
+      resetStatsBtn.onclick = () => {
         if (confirm('Сбросить всю статистику?')) {
           this.statistics.reset().then(() => {
             this.notifications.success('Статистика сброшена. Перезагрузка...');
             setTimeout(() => window.location.reload(), 1000);
           });
         }
-      });
+      };
     }
 
     const checkUpdatesBtn = this.container.querySelector('#check-updates');
     if (checkUpdatesBtn) {
-      checkUpdatesBtn.addEventListener('click', async () => {
+      checkUpdatesBtn.onclick = async () => {
         checkUpdatesBtn.disabled = true;
         checkUpdatesBtn.textContent = 'Проверка...';
 
@@ -521,32 +521,32 @@ class SettingsPage {
 
         checkUpdatesBtn.disabled = false;
         checkUpdatesBtn.textContent = 'Проверить обновления';
-      });
+      };
     }
 
     const durationSlider = this.container.querySelector('#notificationDuration');
     const durationValue = this.container.querySelector('#durationValue');
     if (durationSlider && durationValue) {
-      durationSlider.addEventListener('input', (e) => {
+      durationSlider.oninput = (e) => {
         durationValue.textContent = e.target.value;
-      });
+      };
     }
 
     const batchSizeSlider = this.container.querySelector('#batchSize');
     const batchSizeValue = this.container.querySelector('#batchSizeValue');
     if (batchSizeSlider && batchSizeValue) {
-      batchSizeSlider.addEventListener('input', (e) => {
+      batchSizeSlider.oninput = (e) => {
         batchSizeValue.textContent = e.target.value;
-      });
+      };
     }
 
     const feedbackBtn = this.container.querySelector('#open-feedback-modal');
     if (feedbackBtn) {
-      feedbackBtn.addEventListener('click', () => {
+      feedbackBtn.onclick = () => {
         if (window.remangaExtension && window.remangaExtension.feedbackButton) {
           window.remangaExtension.feedbackButton.openContextModal();
         }
-      });
+      };
     }
 
     if (this.activeTab === 'general') {
