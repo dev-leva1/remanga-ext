@@ -14,7 +14,9 @@
       "WebFetch(domain:remanga.org)",
       "Bash(npm run:*)",
       "mcp__chrome-devtools__take_screenshot",
-      "Bash(git show *)"
+      "Bash(git show *)",
+      "mcp__chrome-devtools__lighthouse_audit",
+      "mcp__chrome-devtools__list_console_messages"
     ]
   }
 }

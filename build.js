@@ -1,7 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 
-// Читаем версию из package.json
 const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
 const version = packageJson.version;
 
@@ -61,7 +60,7 @@ const header = `// ==UserScript==
  * v1.6.5 - Тултипы профилей
  * - Добавлены тултипы пользователей, отображающие краткую информацию о пользователе при наведении на аватар
  * - Добавлена настройка для включения/выключения тултипов пользователей
- * 
+ *
  * v1.6.4 - Telegram бот обратной связи
  * - Добавлен Telegram бот для сообщений об ошибках и предложений
  * - Кнопка "Обратная связь" в настройках (вкладка "Общее")
@@ -102,6 +101,56 @@ const header = `// ==UserScript==
 
 `;
 
+function extractChangelogVersions(headerText) {
+  const changelogMatch = headerText.match(/\/\*\*[\s\S]*?CHANGELOG\s*\n([\s\S]*?)\*\//);
+
+  if (!changelogMatch) {
+    return [];
+  }
+
+  const lines = changelogMatch[1]
+    .split('\n')
+    .map(line => line.replace(/^\s*\*\s?/, '').trim())
+    .filter(Boolean);
+
+  const versions = [];
+  let currentVersion = null;
+
+  lines.forEach(line => {
+    const versionMatch = line.match(/^v([\d.]+)\s+-\s+(.+)$/);
+
+    if (versionMatch) {
+      currentVersion = {
+        version: versionMatch[1],
+        title: versionMatch[2],
+        changes: []
+      };
+      versions.push(currentVersion);
+      return;
+    }
+
+    if (currentVersion && line.startsWith('- ')) {
+      currentVersion.changes.push(line.slice(2).trim());
+    }
+  });
+
+  return versions;
+}
+
+function syncLandingChangelog(versions) {
+  const landingScriptPath = path.join(__dirname, 'dist', 'script.js');
+
+  if (!fs.existsSync(landingScriptPath)) {
+    return;
+  }
+
+  const replacement = `const CHANGELOG_DATA = ${JSON.stringify(versions, null, 2)};`;
+  const landingScript = fs.readFileSync(landingScriptPath, 'utf8');
+  const updatedLandingScript = landingScript.replace(/const CHANGELOG_DATA = \[[\s\S]*?\];/, replacement);
+
+  fs.writeFileSync(landingScriptPath, updatedLandingScript, 'utf8');
+}
+
 console.log('🔨 Начало сборки...\n');
 console.log(`📌 Версия: ${version}\n`);
 
@@ -119,29 +168,16 @@ files.forEach(file => {
 
   let content = fs.readFileSync(filePath, 'utf8');
 
-  // Удаляем import/export
   content = content
     .replace(/^import .+$/gm, '')
     .replace(/^export .+$/gm, '')
     .replace(/^export default .+$/gm, '');
 
-  // Заменяем __VERSION__ на реальную версию
   content = content.replace(/__VERSION__/g, version);
-
-  // Удаляем многострочные комментарии /** ... */
   content = content.replace(/\/\*\*[\s\S]*?\*\//g, '');
-
-  // Удаляем однострочные комментарии // (но не в строках)
-  // Более безопасный подход: удаляем только если // в начале строки после пробелов
   content = content.replace(/^\s*\/\/.*$/gm, '');
-
-  // Удаляем пустые строки
   content = content.replace(/^\s*[\r\n]/gm, '');
-
-  // Удаляем лишние пробелы в начале строк (оставляем минимальные отступы)
   content = content.replace(/^[ \t]+/gm, '');
-
-  // Удаляем множественные пробелы
   content = content.replace(/ {2,}/g, ' ');
 
   output += content + '\n';
@@ -157,6 +193,9 @@ if (!fs.existsSync(distDir)) {
 const outputPath = path.join(distDir, 'remanga-extension.user.js');
 fs.writeFileSync(outputPath, output, 'utf8');
 
+const changelogVersions = extractChangelogVersions(header);
+syncLandingChangelog(changelogVersions);
+
 const stats = fs.statSync(outputPath);
 const sizeKB = (stats.size / 1024).toFixed(2);
 const lines = output.split('\n').length;
@@ -166,4 +205,3 @@ console.log(`📄 Файл: ${outputPath}`);
 console.log(`📊 Размер: ${sizeKB} KB`);
 console.log(`📝 Строк кода: ${lines}`);
 console.log(`🔖 Версия: ${version}`);
-
