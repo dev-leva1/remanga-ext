@@ -64,10 +64,7 @@
 'use strict';
 const logger = {prefix: '[RemangaExt]',info(message, ...args) {console.log(`${this.prefix} ${message}`, ...args);},warn(message, ...args) {console.warn(`${this.prefix} ${message}`, ...args);},error(message, ...args) {console.error(`${this.prefix} ${message}`, ...args);},debug(message, ...args) {if (this.isDebugEnabled()) {console.debug(`${this.prefix} [DEBUG] ${message}`, ...args);}},isDebugEnabled() {return localStorage.getItem('remanga_ext_debug') === 'true';}};
 const validators = {isChapterId(value) {const num = parseInt(value);return Number.isInteger(num) && num > 0 && num < Number.MAX_SAFE_INTEGER;},isChapterIds(values) {if (!Array.isArray(values)) {return false;}if (values.length === 0) {return false;}return values.every(v => this.isChapterId(v));},isDelay(value) {const num = parseInt(value);return Number.isInteger(num) && num >= 1000 && num <= 60000;},isValidToken(token) {if (typeof token !== 'string') {return false;}if (token.length < 20 || token.length > 100) {return false;}return /^[a-zA-Z0-9_-]+$/.test(token);},sanitizeChapterId(value) {const num = parseInt(value);if (!this.isChapterId(num)) {throw new Error(`Невалидный ID главы: ${value}`);}return num;},sanitizeChapterIds(values) {if (!Array.isArray(values)) {throw new Error('ID глав должны быть массивом');}if (values.length === 0) {throw new Error('Массив ID глав не может быть пустым');}if (values.length > 1000) {throw new Error('Слишком много ID глав (максимум 1000)');}return values.map(v => this.sanitizeChapterId(v));},sanitizeGuildName(name) {if (typeof name !== 'string') {throw new Error('Название гильдии должно быть строкой');}const trimmed = name.trim();if (trimmed.length === 0 || trimmed.length > 100) {throw new Error('Невалидная длина названия гильдии');}return trimmed;},sanitizeSettings(settings) {const sanitized = {};if ('autoLike' in settings) {sanitized.autoLike = Boolean(settings.autoLike);}if ('autoMarkAsRead' in settings) {sanitized.autoMarkAsRead = Boolean(settings.autoMarkAsRead);}if ('notificationsEnabled' in settings) {sanitized.notificationsEnabled = Boolean(settings.notificationsEnabled);}if ('notificationDuration' in settings) {const duration = parseInt(settings.notificationDuration);if (duration >= 1 && duration <= 10) {sanitized.notificationDuration = duration;}}if ('batchSize' in settings) {const batchSize = parseInt(settings.batchSize);if (batchSize >= 1 && batchSize <= 50) {sanitized.batchSize = batchSize;}}if ('skipProcessed' in settings) {sanitized.skipProcessed = Boolean(settings.skipProcessed);}if ('autoUpdateEnabled' in settings) {sanitized.autoUpdateEnabled = Boolean(settings.autoUpdateEnabled);}if ('blockCustomThemes' in settings) {sanitized.blockCustomThemes = Boolean(settings.blockCustomThemes);}if ('hideChatIndicator' in settings) {sanitized.hideChatIndicator = Boolean(settings.hideChatIndicator);}if ('hideProfileBlocks' in settings) {const blocks = settings.hideProfileBlocks;if (typeof blocks === 'object' && blocks !== null && !Array.isArray(blocks)) {sanitized.hideProfileBlocks = {};const allowedKeys = ['statistics', 'badges', 'achievements', 'favoriteCards', 'publishers', 'guilds', 'friends', 'followers', 'comments'];allowedKeys.forEach(key => {if (key in blocks) {sanitized.hideProfileBlocks[key] = Boolean(blocks[key]);}});}}if ('highlightGuilds' in settings) {sanitized.highlightGuilds = Boolean(settings.highlightGuilds);}return sanitized;}};
-const domUtils = {waitForElement(selector, timeout = 10000) {return new Promise((resolve, reject) => {const existing = document.querySelector(selector);if (existing) {resolve(existing);return;}let observer = null;const timeoutId = setTimeout(() => {if (observer) {observer.disconnect();}reject(new Error(`Таймаут ожидания элемента: ${selector}`));}, timeout);observer = new MutationObserver(() => {const element = document.querySelector(selector);if (element) {clearTimeout(timeoutId);observer.disconnect();resolve(element);}});observer.observe(document.body, {childList: true,subtree: true});});},observeElement(selector, callback, options = {}) {const element = document.querySelector(selector);if (!element) {logger.warn(`Элемент не найден: ${selector}`);return null;}const defaultOptions = {childList: true,subtree: true,attributes: false};const observer = new MutationObserver((mutations) => {callback(mutations, element);});observer.observe(element, { ...defaultOptions, ...options });return observer;},extractChapterIdFromUrl() {const match = window.location.pathname.match(/\/manga\/[^/]+\/(\d+)/);return match ? parseInt(match[1]) : null;},extractMangaSlug() {const match = window.location.pathname.match(/\/manga\/([^/]+)/);highlightGuilds: true,
-feedbackBotUsername: 'remanga_extension_bot',
-userTooltipEnabled: true
-try {const data = JSON.parse(script.textContent);if (data.props?.pageProps?.branch?.id) {return data.props.pageProps.branch.id;}} catch (e) {}}if (typeof window !== 'undefined' && window.__NEXT_DATA__) {const branchId = window.__NEXT_DATA__?.props?.pageProps?.branch?.id;if (branchId) {return branchId;}}return null;},extractChapterIdsFromPage() {const elements = document.querySelectorAll('[data-testid^="chapter_"]');const ids = [];elements.forEach(el => {const match = el.dataset.testid.match(/chapter_(\d+)/);if (match) {ids.push(parseInt(match[1]));}});return ids;},findReadButton(chapterId) {return document.querySelector(`[data-testid="update_view_${chapterId}"]`);},findLikeButton(chapterId) {return document.querySelector(`[data-testid="like_btn_${chapterId}"]`);},findNextChapterLink() {const header = document.querySelector('header');if (!header) {return null;}const links = header.querySelectorAll('a[href*="/manga/"]');const currentPath = window.location.pathname;for (const link of links) {const href = link.getAttribute('href');if (href && href !== currentPath && href.match(/\/manga\/[^/]+\/\d+$/)) {return link;}}return null;},isAtPageBottom(threshold = 100) {const scrollTop = window.pageYOffset || document.documentElement.scrollTop;const scrollHeight = document.documentElement.scrollHeight;const clientHeight = document.documentElement.clientHeight;return scrollTop + clientHeight >= scrollHeight - threshold;}};
+const domUtils = {waitForElement(selector, timeout = 10000) {return new Promise((resolve, reject) => {const existing = document.querySelector(selector);if (existing) {resolve(existing);return;}let observer = null;const timeoutId = setTimeout(() => {if (observer) {observer.disconnect();}reject(new Error(`Таймаут ожидания элемента: ${selector}`));}, timeout);observer = new MutationObserver(() => {const element = document.querySelector(selector);if (element) {clearTimeout(timeoutId);observer.disconnect();resolve(element);}});observer.observe(document.body, {childList: true,subtree: true});});},observeElement(selector, callback, options = {}) {const element = document.querySelector(selector);if (!element) {logger.warn(`Элемент не найден: ${selector}`);return null;}const defaultOptions = {childList: true,subtree: true,attributes: false};const observer = new MutationObserver((mutations) => {callback(mutations, element);});observer.observe(element, { ...defaultOptions, ...options });return observer;},extractChapterIdFromUrl() {const match = window.location.pathname.match(/\/manga\/[^/]+\/(\d+)/);return match ? parseInt(match[1]) : null;},extractMangaSlug() {const match = window.location.pathname.match(/\/manga\/([^/]+)/);return match ? match[1] : null;},extractBranchId() {const scripts = document.querySelectorAll('script[type="application/json"]');for (const script of scripts) {try {const data = JSON.parse(script.textContent);if (data.props?.pageProps?.branch?.id) {return data.props.pageProps.branch.id;}} catch (e) {}}if (typeof window !== 'undefined' && window.__NEXT_DATA__) {const branchId = window.__NEXT_DATA__?.props?.pageProps?.branch?.id;if (branchId) {return branchId;}}return null;},extractChapterIdsFromPage() {const elements = document.querySelectorAll('[data-testid^="chapter_"]');const ids = [];elements.forEach(el => {const match = el.dataset.testid.match(/chapter_(\d+)/);if (match) {ids.push(parseInt(match[1]));}});return ids;},findReadButton(chapterId) {return document.querySelector(`[data-testid="update_view_${chapterId}"]`);},findLikeButton(chapterId) {return document.querySelector(`[data-testid="like_btn_${chapterId}"]`);},findNextChapterLink() {const header = document.querySelector('header');if (!header) {return null;}const links = header.querySelectorAll('a[href*="/manga/"]');const currentPath = window.location.pathname;for (const link of links) {const href = link.getAttribute('href');if (href && href !== currentPath && href.match(/\/manga\/[^/]+\/\d+$/)) {return link;}}return null;},isAtPageBottom(threshold = 100) {const scrollTop = window.pageYOffset || document.documentElement.scrollTop;const scrollHeight = document.documentElement.scrollHeight;const clientHeight = document.documentElement.clientHeight;return scrollTop + clientHeight >= scrollHeight - threshold;}};
 const changelogParser = {
 parseVersion(scriptText) {
 const versionMatch = scriptText.match(/@version\s+(\d+\.\d+\.\d+)/);
@@ -88,6 +85,11 @@ if (!changelogMatch) {
 return 'Список изменений недоступен';
 }
 const changelogText = changelogMatch[1];
+const lines = changelogText
+.split('\n')
+.map(line => line.replace(/^\s*\*\s*/, '').trim())
+.filter(line => line.length > 0);
+return lines.join('\n');
 },
 isValidVersion(version) {
 if (typeof version !== 'string') return false;
@@ -266,11 +268,9 @@ friends: false,
 followers: false,
 comments: false
 },
-const safeVersion = this.escapeHtml(version);
-const safeCurrentVersion = this.escapeHtml(this.currentVersion);
-.map(line => `<div style="padding: 4px 0; color: #d1d5db;">• ${this.escapeHtml(line)}</div>`)
-Обновление ${safeVersion}
-Текущая версия: ${safeCurrentVersion}
+highlightGuilds: true,
+feedbackBotUsername: 'remanga_extension_bot',
+userTooltipEnabled: true
 };
 this.settings = { ...this.defaults };
 Config.instance = this;
@@ -346,11 +346,6 @@ logger.info(`Импорт настроек версии ${imported.version} от
 } else {
 settingsToImport = imported;
 }
-escapeHtml(text) {
-const div = document.createElement('div');
-div.textContent = String(text);
-return div.innerHTML;
-}
 await this.save(settingsToImport);
 return true;
 } catch (error) {
@@ -414,7 +409,7 @@ return this.saveQueue;
 }
 async incrementReads(count = 1) {
 const validCount = parseInt(count);
-if (!Number.isInteger(validCount) || validCount < 0 || validCount > 10000) {
+if (!Number.isInteger(validCount) || validCount < 0) {
 throw new Error(`Невалидное значение count: ${count}`);
 }
 this.stats.chaptersRead += validCount;
@@ -422,7 +417,7 @@ await this.save();
 }
 async incrementLikes(count = 1) {
 const validCount = parseInt(count);
-if (!Number.isInteger(validCount) || validCount < 0 || validCount > 10000) {
+if (!Number.isInteger(validCount) || validCount < 0) {
 throw new Error(`Невалидное значение count: ${count}`);
 }
 this.stats.chaptersLiked += validCount;
@@ -536,16 +531,18 @@ max-width: 600px;
 max-height: 80vh;
 overflow-y: auto;
 `;
+const safeVersion = this.escapeHtml(version);
+const safeCurrentVersion = this.escapeHtml(this.currentVersion);
 const changelogLines = changelog.split('\n');
 const changelogHTML = changelogLines
-.map(line => `<div style="padding: 4px 0; color: #d1d5db;">• ${line}</div>`)
+.map(line => `<div style="padding: 4px 0; color: #d1d5db;">• ${this.escapeHTML(line)}</div>`)
 .join('');
 modal.innerHTML = `
 <h2 style="margin: 0 0 8px 0; font-size: 24px; font-weight: bold; color: #ffffff;">
-Обновление ${version}
+Обновление ${safeVersion}
 </h2>
 <div style="margin-bottom: 24px; color: #9ca3af; font-size: 14px;">
-Текущая версия: ${this.currentVersion}
+Текущая версия: ${safeCurrentVersion}
 </div>
 <div style="margin-bottom: 24px;">
 <div style="font-weight: 600; margin-bottom: 12px; color: #ffffff; font-size: 16px;">
@@ -614,6 +611,11 @@ overlay.remove();
 }
 });
 }
+escapeHtml(text) {
+const div = document.createElement('div');
+div.textContent = String(text);
+return div.innerHTML;
+}
 performUpdate() {
 this.notifications.info('Обновление начато. Tampermonkey загрузит новую версию...');
 setTimeout(() => {
@@ -622,6 +624,14 @@ window.location.href = this.updateURL;
 }
 getCurrentVersion() {
 return this.currentVersion;
+}
+escapeHTML(value) {
+return String(value)
+.replace(/&/g, '&amp;')
+.replace(/</g, '&lt;')
+.replace(/>/g, '&gt;')
+.replace(/"/g, '&quot;')
+.replace(/'/g, '&#39;');
 }
 async getLastCheckTime() {
 return await GM.getValue('lastUpdateCheck', 0);
@@ -650,6 +660,8 @@ return tooltip;
 buildContent(userData) {
 const { username, avatar, level, chapters_read, main_club, is_online } = userData;
 const avatarUrl = avatar?.high ? `https://remanga.org/media/${avatar.high}` : '';
+const safeAvatarUrl = this.escapeAttribute(avatarUrl);
+const safeUsername = this.escapeAttribute(username || '');
 const clubName = main_club?.name || 'Нет гильдии';
 const levelName = level?.name || 'Новичок';
 const onlineStatus = is_online ? 'В сети' : 'Не в сети';
@@ -657,8 +669,8 @@ const onlineColor = is_online ? '#10b981' : '#6b7280';
 return `
 <div style="display: flex; gap: ${DESIGN_TOKENS.spacing.md}; align-items: flex-start;">
 <img
-src="${avatarUrl}"
-alt="${username}"
+src="${safeAvatarUrl}"
+alt="${safeUsername}"
 style="
 width: 60px;
 height: 60px;
@@ -829,6 +841,14 @@ escapeHtml(text) {
 const div = document.createElement('div');
 div.textContent = text;
 return div.innerHTML;
+}
+escapeAttribute(value) {
+return String(value)
+.replace(/&/g, '&amp;')
+.replace(/"/g, '&quot;')
+.replace(/'/g, '&#39;')
+.replace(/</g, '&lt;')
+.replace(/>/g, '&gt;');
 }
 isVisible() {
 return this.tooltip !== null;
@@ -1226,49 +1246,49 @@ style="width: 18px; height: 18px; cursor: pointer;">
 attachEventListeners() {
 const tabs = this.container.querySelectorAll('.settings-tab');
 tabs.forEach(tab => {
-tab.addEventListener('click', (e) => {
+tab.onclick = (e) => {
 this.activeTab = e.currentTarget.dataset.tab;
 this.updateContent();
-});
+};
 });
 const saveBtn = this.container.querySelector('#save-settings');
 if (saveBtn) {
-saveBtn.addEventListener('click', async () => {
+saveBtn.onclick = async () => {
 await this.saveSettings();
-});
+};
 }
 const closeBtn = this.container.querySelector('#close-page');
 if (closeBtn) {
-closeBtn.addEventListener('click', (e) => {
+closeBtn.onclick = (e) => {
 e.preventDefault();
 this.close();
-});
+};
 }
 const resetBtn = this.container.querySelector('#reset-settings');
 if (resetBtn) {
-resetBtn.addEventListener('click', () => {
+resetBtn.onclick = () => {
 if (confirm('Сбросить все настройки к значениям по умолчанию?')) {
 this.config.reset().then(() => {
 this.notifications.success('Настройки сброшены. Перезагрузка...');
 setTimeout(() => window.location.reload(), 1000);
 });
 }
-});
+};
 }
 const resetStatsBtn = this.container.querySelector('#reset-stats');
 if (resetStatsBtn) {
-resetStatsBtn.addEventListener('click', () => {
+resetStatsBtn.onclick = () => {
 if (confirm('Сбросить всю статистику?')) {
 this.statistics.reset().then(() => {
 this.notifications.success('Статистика сброшена. Перезагрузка...');
 setTimeout(() => window.location.reload(), 1000);
 });
 }
-});
+};
 }
 const checkUpdatesBtn = this.container.querySelector('#check-updates');
 if (checkUpdatesBtn) {
-checkUpdatesBtn.addEventListener('click', async () => {
+checkUpdatesBtn.onclick = async () => {
 checkUpdatesBtn.disabled = true;
 checkUpdatesBtn.textContent = 'Проверка...';
 if (window.remangaExtension && window.remangaExtension.updateChecker) {
@@ -1276,29 +1296,29 @@ await window.remangaExtension.updateChecker.checkForUpdates(true);
 }
 checkUpdatesBtn.disabled = false;
 checkUpdatesBtn.textContent = 'Проверить обновления';
-});
+};
 }
 const durationSlider = this.container.querySelector('#notificationDuration');
 const durationValue = this.container.querySelector('#durationValue');
 if (durationSlider && durationValue) {
-durationSlider.addEventListener('input', (e) => {
+durationSlider.oninput = (e) => {
 durationValue.textContent = e.target.value;
-});
+};
 }
 const batchSizeSlider = this.container.querySelector('#batchSize');
 const batchSizeValue = this.container.querySelector('#batchSizeValue');
 if (batchSizeSlider && batchSizeValue) {
-batchSizeSlider.addEventListener('input', (e) => {
+batchSizeSlider.oninput = (e) => {
 batchSizeValue.textContent = e.target.value;
-});
+};
 }
 const feedbackBtn = this.container.querySelector('#open-feedback-modal');
 if (feedbackBtn) {
-feedbackBtn.addEventListener('click', () => {
+feedbackBtn.onclick = () => {
 if (window.remangaExtension && window.remangaExtension.feedbackButton) {
 window.remangaExtension.feedbackButton.openContextModal();
 }
-});
+};
 }
 if (this.activeTab === 'general') {
 this.updateLastCheckInfo();
@@ -1507,7 +1527,7 @@ cursor: pointer;
 <input type="checkbox" id="include-url" checked style="width: 20px; height: 20px; cursor: pointer;">
 <div>
 <div style="color: ${DESIGN_TOKENS.colors.text.primary};">Текущая страница</div>
-<div style="font-size: ${DESIGN_TOKENS.typography.fontSize.sm}; color: ${DESIGN_TOKENS.colors.text.muted}; word-break: break-all;">${this.truncateUrl(window.location.href)}</div>
+<div style="font-size: ${DESIGN_TOKENS.typography.fontSize.sm}; color: ${DESIGN_TOKENS.colors.text.muted}; word-break: break-all;">${this.escapeHtml(this.truncateUrl(window.location.href))}</div>
 </div>
 </label>
 </div>
@@ -1531,7 +1551,7 @@ cursor: pointer;
 </div>
 `;
 overlay.appendChild(modal);
-})();
+document.body.appendChild(overlay);
 this.modal = overlay;
 modal.querySelector('#feedback-cancel').addEventListener('click', () => {
 overlay.remove();
@@ -1561,11 +1581,15 @@ u: includeUrl ? window.location.href : null
 };
 const deepLink = this.generateDeepLink(type, context);
 const command = `/start ${deepLink.split('?start=')[1]}`;
+if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
 navigator.clipboard.writeText(command).then(() => {
 this.notifications.success('Команда скопирована! Вставьте её в бота.');
 }).catch(() => {
 this.notifications.info('Скопируйте команду вручную из бота');
 });
+} else {
+this.notifications.info('Скопируйте команду вручную из бота');
+}
 window.open(`https://t.me/${this.botUsername}`, '_blank');
 this.modal.remove();
 this.modal = null;
@@ -1601,6 +1625,14 @@ if (url.length <= maxLength) {
 return url;
 }
 return url.substring(0, maxLength) + '...';
+}
+escapeHtml(text) {
+return text
+.replace(/&/g, '&amp;')
+.replace(/</g, '&lt;')
+.replace(/>/g, '&gt;')
+.replace(/"/g, '&quot;')
+.replace(/'/g, '&#39;');
 }
 cleanup() {
 if (this.modal) {
