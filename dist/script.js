@@ -111,7 +111,7 @@ function renderChangelog(versions) {
     return;
   }
 
-  versions.forEach(({ version, title, changes }) => {
+  versions.slice(0, 4).forEach(({ version, title, changes }) => {
     const versionElement = createElement('article', 'changelog-version');
     const headerElement = createElement('div', 'changelog-header');
     const versionTitle = title ? `v${version} — ${title}` : `v${version}`;
@@ -160,7 +160,36 @@ function setupSmoothScroll() {
   });
 }
 
+function setupMobileNav() {
+  const mobileNav = document.querySelector('.mobile-nav');
+
+  if (!mobileNav) {
+    return;
+  }
+
+  const links = mobileNav.querySelectorAll('.mobile-nav-link');
+
+  links.forEach(link => {
+    link.addEventListener('click', () => {
+      mobileNav.removeAttribute('open');
+    });
+  });
+
+  document.addEventListener('click', event => {
+    if (!mobileNav.hasAttribute('open')) {
+      return;
+    }
+
+    if (mobileNav.contains(event.target)) {
+      return;
+    }
+
+    mobileNav.removeAttribute('open');
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   renderChangelog(CHANGELOG_DATA);
   setupSmoothScroll();
+  setupMobileNav();
 });

@@ -30,7 +30,7 @@
       "downloadUrl": "https://ext.nexee.ru/remanga-extension.user.js",
       "author": {
         "@type": "Person",
-        "name": "fills"
+        "name": "dev-leva1"
       },
       "offers": {
         "@type": "Offer",
@@ -46,90 +46,196 @@
   <header class="site-header">
     <div class="container header-inner">
       <a href="#top" class="brand">Remanga Enhanced</a>
-      <nav class="site-nav" aria-label="Основная навигация">
-        <a href="#features" class="nav-link">Возможности</a>
-        <a href="#benefits" class="nav-link">Преимущества</a>
+
+      <nav class="site-nav site-nav-desktop" aria-label="Основная навигация">
+        <a href="#features" class="nav-link">Сценарии</a>
+        <a href="#trust" class="nav-link">Почему работает</a>
         <a href="#installation" class="nav-link">Установка</a>
-        <a href="#changelog" class="nav-link">Изменения</a>
-        <a href="#contact" class="nav-link">Обратная связь</a>
+        <a href="#faq" class="nav-link">FAQ</a>
+        <a href="#feedback" class="nav-link nav-link-accent">Бот</a>
       </nav>
+
+      <details class="mobile-nav">
+        <summary class="mobile-nav-toggle" aria-label="Открыть меню">
+          <span></span>
+          <span></span>
+          <span></span>
+        </summary>
+        <nav class="mobile-nav-menu" aria-label="Мобильная навигация">
+          <a href="#features" class="mobile-nav-link">Сценарии</a>
+          <a href="#trust" class="mobile-nav-link">Почему работает</a>
+          <a href="#installation" class="mobile-nav-link">Установка</a>
+          <a href="#faq" class="mobile-nav-link">FAQ</a>
+          <a href="#feedback" class="mobile-nav-link mobile-nav-link-accent">Бот обратной связи</a>
+        </nav>
+      </details>
     </div>
   </header>
 
   <main id="main-content">
     <section class="hero">
-      <div class="container hero-content">
-        <p class="hero-badge">Userscript для Tampermonkey и remanga.org</p>
-        <h1 class="hero-title">Автолайк, автоотметка и массовые действия для Remanga</h1>
-        <p class="hero-subtitle">Расширение автоматизирует рутину на remanga.org: ставит лайки, отмечает главы прочитанными, добавляет массовые кнопки и даёт настройки прямо в нативном интерфейсе сайта.</p>
-        <div class="hero-buttons">
-          <a href="remanga-extension.user.js" class="button button-primary">Установить userscript</a>
-          <a href="#installation" class="button button-secondary">Как установить</a>
+      <div class="container hero-layout">
+        <div class="hero-copy">
+          <p class="hero-badge">Userscript для Tampermonkey и remanga.org</p>
+          <h1 class="hero-title">Меньше рутины. Больше чтения.</h1>
+          <p class="hero-subtitle">Remanga Enhanced сам ставит лайки, отмечает главы прочитанными и дает массовые действия прямо внутри интерфейса Remanga.</p>
+          <div class="hero-buttons">
+            <a href="remanga-extension.user.js" class="button button-primary">Установить userscript</a>
+            <a href="#installation" class="button button-secondary">Как установить</a>
+          </div>
+          <ul class="hero-metrics" aria-label="Ключевые преимущества">
+            <li class="hero-metric">
+              <strong>Без отдельного сайта</strong>
+              <span>Кнопки и настройки появляются прямо в Remanga</span>
+            </li>
+            <li class="hero-metric">
+              <strong>Массовые действия</strong>
+              <span>Лайк и отметка глав с прогрессом, а не по одной</span>
+            </li>
+            <li class="hero-metric">
+              <strong>Аккуратная работа</strong>
+              <span>Через API remanga.org и с паузами между запросами</span>
+            </li>
+          </ul>
         </div>
-        <p class="hero-note">Работает через официальный API remanga.org, использует rate limiting и не требует отдельного интерфейса вне сайта.</p>
-        <ul class="hero-points" aria-label="Ключевые преимущества">
-          <li class="hero-point">Автолайк и автоотметка при открытии главы</li>
-          <li class="hero-point">Массовые действия на странице списка глав</li>
-          <li class="hero-point">Настройки, toast-уведомления и прогресс прямо в UI Remanga</li>
-        </ul>
+
+        <div class="hero-visual" aria-hidden="true">
+          <div class="settings-preview">
+            <div class="settings-preview-header">
+              <h2>Настройки расширения</h2>
+              <span class="settings-preview-close">Закрыть</span>
+            </div>
+            <div class="settings-preview-body">
+              <nav class="settings-preview-tabs">
+                <span class="settings-preview-tab">
+                  <svg viewBox="0 0 24 24" role="presentation"><path d="M19.11 9.59h-5.4V3.28a1.26 1.26 0 0 0-2.15-.89l-.15.18L4 12.47l-.15.19a1.21 1.21 0 0 0-.21.71 1.27 1.27 0 0 0 1.26 1.26H11v6.09A1.27 1.27 0 0 0 12.21 22a1.25 1.25 0 0 0 1-.49l.08-.1 6.82-9.77.07-.11a1.22 1.22 0 0 0 .19-.66 1.25 1.25 0 0 0-1.26-1.28Zm-6.27 9.12v-6H6.15l5.67-7.57v6.31h6.08Z"/></svg>
+                  Автоматизация
+                </span>
+                <span class="settings-preview-tab is-active">
+                  <svg viewBox="0 0 20 20" role="presentation"><path d="M14.13 16.07c1.86 0 3.37-1.54 3.37-3.45 0-1.91-1.52-3.45-3.37-3.45s-3.38 1.54-3.38 3.45c0 1.91 1.52 3.45 3.38 3.45ZM11.74 15.07 9.36 17.5M9.3 15.83l1.65 1.67M5.76 11.03c1.8 0 3.26-1.49 3.26-3.33S7.56 4.37 5.76 4.37 2.5 5.86 2.5 7.7s1.46 3.33 3.26 3.33ZM10.85 2.5 8.08 5.35M8.76 2.5h2.08v2.13"/></svg>
+                  Интерфейс
+                </span>
+                <span class="settings-preview-tab">
+                  <svg viewBox="0 0 20 20" role="presentation"><path d="M14.23 6.94V5.9c0-2.25-.54-5.23-5.23-5.23S3.76 3.65 3.76 5.9v1.04C1.43 7.23.66 8.42.66 11.33v1.55c0 3.42 1.04 4.46 4.46 4.46h7.75c3.42 0 4.46-1.04 4.46-4.46v-1.55c0-2.91-.77-4.09-3.1-4.38ZM9 14.62a2.52 2.52 0 1 1 0-5.04 2.52 2.52 0 0 1 0 5.04ZM5.12 6.87h-.19V5.9c0-2.44.69-4.07 4.07-4.07s4.06 1.63 4.06 4.07v.98h-.19Z"/></svg>
+                  Общее
+                </span>
+              </nav>
+
+              <div class="settings-preview-content">
+                <section class="settings-preview-card">
+                  <h3>Кастомизация интерфейса</h3>
+                  <div class="settings-preview-options">
+                    <div class="settings-preview-option">
+                      <span class="settings-preview-checkbox is-checked"></span>
+                      <span>
+                        <strong>Блокировать кастомные темы в профилях</strong>
+                        <small>Отключить пользовательские темы и оставить только стандартные стили</small>
+                      </span>
+                    </div>
+                    <div class="settings-preview-option">
+                      <span class="settings-preview-checkbox is-checked"></span>
+                      <span>
+                        <strong>Скрыть индикатор непрочитанных сообщений</strong>
+                        <small>Убрать счетчик сообщений у иконки чата в header</small>
+                      </span>
+                    </div>
+                    <div class="settings-preview-option">
+                      <span class="settings-preview-checkbox is-checked"></span>
+                      <span>
+                        <strong>Подсветка гильдий</strong>
+                        <small>Выделять посты и гильдии в топе</small>
+                      </span>
+                    </div>
+                    <div class="settings-preview-option">
+                      <span class="settings-preview-checkbox is-checked"></span>
+                      <span>
+                        <strong>Тултипы профилей</strong>
+                        <small>Показывать краткую информацию о пользователе при наведении на аватар</small>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="settings-preview-blocks">
+                    <strong>Скрыть блоки в профилях</strong>
+                    <div class="settings-preview-grid">
+                      <span><i></i>Статистика</span>
+                      <span><i></i>Бейджи</span>
+                      <span><i></i>Ачивки</span>
+                      <span><i></i>Избранные карточки</span>
+                      <span><i></i>Паблишеры</span>
+                      <span><i></i>Гильдии</span>
+                      <span><i></i>Друзья</span>
+                      <span><i></i>Подписчики</span>
+                    </div>
+                  </div>
+                </section>
+              </div>
+            </div>
+            <div class="settings-preview-actions">
+              <span class="settings-preview-reset">Сбросить настройки</span>
+              <span class="settings-preview-save">Сохранить изменения</span>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
     <section id="features" class="section-block section-alt">
       <div class="container">
-        <h2 class="section-title">Что умеет расширение</h2>
-        <p class="section-lead">Функции на landing синхронизированы с текущим продуктом: без обещаний того, чего в расширении нет.</p>
-        <div class="features-grid">
-          <article class="feature-card">
-            <div class="feature-icon" aria-hidden="true">⚡</div>
-            <h3 class="feature-title">Автолайк глав</h3>
-            <p class="feature-description">Автоматически ставит лайк при открытии главы, если функция включена в настройках.</p>
+        <h2 class="section-title">Что происходит в реальном сценарии</h2>
+        <p class="section-lead">Конкретные действия внутри сайта, которые убирают рутину.</p>
+        <div class="scenario-grid">
+          <article class="scenario-card">
+            <div class="scenario-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="presentation"><path d="M12 21c-.3 0-.6-.1-.8-.4l-1.6-1.5C5.1 15 2 12.1 2 8.5 2 5.4 4.4 3 7.5 3c1.8 0 3.6.8 4.5 2.1C12.9 3.8 14.7 3 16.5 3 19.6 3 22 5.4 22 8.5c0 3.6-3.1 6.5-7.6 10.6l-1.6 1.5c-.2.3-.5.4-.8.4Z"/></svg>
+            </div>
+            <h3 class="scenario-title">Открываешь главу — лайк и отметка уже ставятся сами</h3>
+            <p class="scenario-description">Во время чтения не надо возвращаться назад и прожимать одинаковые действия вручную. Включил один раз в настройках — дальше работает в фоне.</p>
           </article>
-          <article class="feature-card">
-            <div class="feature-icon" aria-hidden="true">✓</div>
-            <h3 class="feature-title">Автоотметка прочитанного</h3>
-            <p class="feature-description">Отмечает главу прочитанной без лишних кликов во время чтения.</p>
+
+          <article class="scenario-card">
+            <div class="scenario-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="presentation"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v13a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 18.5v-13Zm3 1.5v2h10V7H7Zm0 5v2h10v-2H7Zm0 5v2h6v-2H7Z"/></svg>
+            </div>
+            <h3 class="scenario-title">Открываешь список глав — появляются массовые кнопки</h3>
+            <p class="scenario-description">Можно одним действием отметить прочитанными или лайкнуть много глав сразу. Подходит для длинных тайтлов, где вручную кликать слишком долго.</p>
           </article>
-          <article class="feature-card">
-            <div class="feature-icon" aria-hidden="true">📚</div>
-            <h3 class="feature-title">Массовая отметка глав</h3>
-            <p class="feature-description">Добавляет кнопку для отметки всех загруженных глав прочитанными на странице списка.</p>
+
+          <article class="scenario-card">
+            <div class="scenario-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="presentation"><path d="M12 2a8 8 0 0 1 8 8v1.1c0 .7.2 1.4.6 2l1 1.5a1.5 1.5 0 0 1-1.3 2.4H3.7a1.5 1.5 0 0 1-1.3-2.4l1-1.5c.4-.6.6-1.3.6-2V10a8 8 0 0 1 8-8Zm0 20a3 3 0 0 1-2.8-2h5.6A3 3 0 0 1 12 22Z"/></svg>
+            </div>
+            <h3 class="scenario-title">Во время массовых операций видно, что происходит</h3>
+            <p class="scenario-description">Расширение показывает toast-уведомления и прогресс выполнения. Видно, что уже обработано, а что еще в очереди.</p>
           </article>
-          <article class="feature-card">
-            <div class="feature-icon" aria-hidden="true">❤️</div>
-            <h3 class="feature-title">Массовый лайк глав</h3>
-            <p class="feature-description">Позволяет лайкнуть все доступные главы одной операцией с прогрессом выполнения.</p>
-          </article>
-          <article class="feature-card">
-            <div class="feature-icon" aria-hidden="true">⚙️</div>
-            <h3 class="feature-title">Настройки в нативном UI</h3>
-            <p class="feature-description">Панель настроек встроена в интерфейс Remanga, а не вынесена в отдельный внешний сайт.</p>
-          </article>
-          <article class="feature-card">
-            <div class="feature-icon" aria-hidden="true">🔔</div>
-            <h3 class="feature-title">Toast и индикатор прогресса</h3>
-            <p class="feature-description">Показывает уведомления, статус выполнения и прогресс массовых операций без перезагрузки страницы.</p>
+
+          <article class="scenario-card">
+            <div class="scenario-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="presentation"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm1 14.9V18h-2v-1.1A3 3 0 0 1 9 14h2a1 1 0 1 0 2 0c0-.6-.4-.9-1.3-1.2-1.6-.5-2.7-1.3-2.7-3.1A3 3 0 0 1 11 6.1V5h2v1.1A3 3 0 0 1 15 9h-2a1 1 0 1 0-2 0c0 .5.3.8 1.2 1.1 1.7.6 2.8 1.4 2.8 3.2a3 3 0 0 1-2 3.5Z"/></svg>
+            </div>
+            <h3 class="scenario-title">Настройки лежат там, где ими реально пользуются</h3>
+            <p class="scenario-description">Не нужен отдельный кабинет или внешний интерфейс. Все основные переключатели встроены в Remanga и открываются внутри сайта.</p>
           </article>
         </div>
       </div>
     </section>
 
-    <section id="benefits" class="section-block">
+    <section id="trust" class="section-block">
       <div class="container">
-        <h2 class="section-title">Почему удобно и безопасно</h2>
-        <p class="section-lead">Расширение сделано под реальный сценарий чтения: меньше рутины, меньше лишних кликов, больше контроля.</p>
-        <div class="benefits-grid">
-          <article class="benefit-card">
-            <h3 class="benefit-title">Прямо внутри сайта</h3>
-            <p class="benefit-description">Кнопки и настройки встроены в привычный интерфейс remanga.org и не ломают пользовательский поток.</p>
+        <h2 class="section-title">Почему этим удобно пользоваться</h2>
+        <p class="section-lead">Только то, что уже есть в расширении и работает внутри обычного сценария чтения.</p>
+        <div class="trust-grid">
+          <article class="trust-card">
+            <h3 class="trust-title">Прямо внутри Remanga</h3>
+            <p class="trust-description">Новые действия и настройки встраиваются в привычный интерфейс сайта, а не уводят в отдельную панель.</p>
           </article>
-          <article class="benefit-card">
-            <h3 class="benefit-title">Официальное API</h3>
-            <p class="benefit-description">Расширение использует официальные endpoints remanga.org для отметки просмотров и лайков.</p>
+          <article class="trust-card">
+            <h3 class="trust-title">Через API remanga.org</h3>
+            <p class="trust-description">Лайки и отметки отправляются штатным способом, без хрупких хакающих обходов DOM для самих действий.</p>
           </article>
-          <article class="benefit-card">
-            <h3 class="benefit-title">Rate limiting</h3>
-            <p class="benefit-description">Запросы отправляются с задержками, чтобы снизить нагрузку и не спамить API при массовых действиях.</p>
+          <article class="trust-card">
+            <h3 class="trust-title">Без спама запросами</h3>
+            <p class="trust-description">Массовые операции идут с паузами между запросами, чтобы не долбить API без остановки.</p>
           </article>
         </div>
       </div>
@@ -138,13 +244,13 @@
     <section id="installation" class="section-block section-alt">
       <div class="container">
         <h2 class="section-title">Установка за пару минут</h2>
-        <p class="section-lead">Нужен только Tampermonkey. После этого один клик по userscript-файлу запускает установку.</p>
+        <p class="section-lead">Нужен только Tampermonkey. Потом один клик по userscript-файлу — и можно идти читать.</p>
         <div class="installation-steps">
           <article class="step">
             <div class="step-number" aria-hidden="true">1</div>
             <div class="step-content">
-              <h3 class="step-title">Установите Tampermonkey</h3>
-              <p class="step-description">Выберите браузер и установите расширение Tampermonkey из официального каталога.</p>
+              <h3 class="step-title">Поставь Tampermonkey</h3>
+              <p class="step-description">Выбери свой браузер и установи Tampermonkey из официального каталога.</p>
               <div class="browser-links">
                 <a href="https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo" target="_blank" rel="noopener noreferrer" class="browser-link">Chrome</a>
                 <a href="https://addons.mozilla.org/firefox/addon/tampermonkey/" target="_blank" rel="noopener noreferrer" class="browser-link">Firefox</a>
@@ -153,22 +259,24 @@
               </div>
             </div>
           </article>
+
           <article class="step">
             <div class="step-number" aria-hidden="true">2</div>
             <div class="step-content">
-              <h3 class="step-title">Откройте userscript</h3>
-              <p class="step-description">Нажмите на кнопку ниже. Tampermonkey предложит установить скрипт автоматически.</p>
+              <h3 class="step-title">Открой файл установки</h3>
+              <p class="step-description">Нажми кнопку ниже. Tampermonkey сам предложит установить скрипт.</p>
               <div class="step-actions">
                 <a href="remanga-extension.user.js" class="button button-primary">Открыть файл установки</a>
               </div>
-              <p class="install-note">Если установка не открылась автоматически, откройте файл <code>remanga-extension.user.js</code> вручную через Tampermonkey Dashboard.</p>
+              <p class="install-note">Если автоустановка не сработала, открой <code>remanga-extension.user.js</code> вручную через Tampermonkey Dashboard.</p>
             </div>
           </article>
+
           <article class="step">
             <div class="step-number" aria-hidden="true">3</div>
             <div class="step-content">
-              <h3 class="step-title">Зайдите на Remanga</h3>
-              <p class="step-description">Откройте <a href="https://remanga.org" target="_blank" rel="noopener noreferrer" class="inline-link">remanga.org</a>, авторизуйтесь и пользуйтесь новыми кнопками и настройками прямо на сайте.</p>
+              <h3 class="step-title">Зайди на Remanga</h3>
+              <p class="step-description">Открой <a href="https://remanga.org" target="_blank" rel="noopener noreferrer" class="inline-link">remanga.org</a>, авторизуйся и пользуйся новыми кнопками и настройками прямо на сайте.</p>
             </div>
           </article>
         </div>
@@ -180,42 +288,50 @@
         <h2 class="section-title">Частые вопросы</h2>
         <div class="faq-list">
           <details class="faq-item">
-            <summary class="faq-question">Это отдельное расширение из магазина браузера?</summary>
-            <p class="faq-answer">Нет. Это userscript для Tampermonkey, который устанавливается поверх браузера и работает на remanga.org.</p>
+            <summary class="faq-question">Это расширение из магазина браузера?</summary>
+            <p class="faq-answer">Нет. Это userscript для Tampermonkey, который устанавливается поверх браузера и работает только на remanga.org.</p>
           </details>
           <details class="faq-item">
             <summary class="faq-question">Что меняется после установки?</summary>
-            <p class="faq-answer">На странице чтения работают автолайк и автоотметка, а на странице списка глав появляются массовые действия и связанный с ними прогресс.</p>
+            <p class="faq-answer">На странице чтения работают автолайк и автоотметка, а на странице списка глав появляются массовые действия, уведомления и прогресс операций.</p>
           </details>
           <details class="faq-item">
-            <summary class="faq-question">Где менять настройки?</summary>
-            <p class="faq-answer">Внутри интерфейса Remanga: расширение встраивает настройки в нативное пользовательское меню сайта.</p>
+            <summary class="faq-question">Где писать про баг или новую идею?</summary>
+            <p class="faq-answer">В Telegram-бот. Туда удобно отправлять баги, предложения и описание странного поведения прямо по факту.</p>
           </details>
         </div>
       </div>
     </section>
 
     <section id="changelog" class="section-block section-alt">
-      <div class="container">
-        <h2 class="section-title">История изменений</h2>
-        <p class="section-lead">Последние версии подтягиваются из текущего changelog сборки без внешних запросов.</p>
-        <div class="changelog-content" id="changelog-list"></div>
+      <div class="container changelog-wrap">
+        <details class="changelog-disclosure">
+          <summary class="changelog-summary">
+            <span>
+              <strong>История изменений</strong>
+              <small>Открывай только если хочешь посмотреть последние версии</small>
+            </span>
+            <span class="changelog-summary-icon" aria-hidden="true"></span>
+          </summary>
+          <div class="changelog-body">
+            <p class="section-lead changelog-lead">Последние версии подтягиваются из текущего changelog сборки без внешних запросов.</p>
+            <div class="changelog-content" id="changelog-list"></div>
+          </div>
+        </details>
       </div>
     </section>
 
-    <section id="contact" class="section-block">
-      <div class="container contact-container">
-        <h2 class="section-title">Обратная связь</h2>
-        <p class="section-lead contact-intro">Нашли баг, хотите предложить фичу или сообщить о проблеме? Напишите в Telegram-бот или напрямую разработчику.</p>
-        <div class="contact-cta">
-          <a href="https://t.me/remanga_extension_bot" target="_blank" rel="noopener noreferrer" class="button button-primary">Открыть бот обратной связи</a>
-        </div>
-        <div class="contact-grid">
-          <a href="https://t.me/levlimansky" target="_blank" rel="noopener noreferrer" class="contact-card">
-            <div class="contact-icon" aria-hidden="true">👤</div>
-            <div class="contact-name">Разработчик</div>
-            <div class="contact-value">@levlimansky</div>
-          </a>
+    <section id="feedback" class="section-block">
+      <div class="container feedback-container">
+        <div class="feedback-card">
+          <div class="feedback-copy">
+            <p class="feedback-kicker">Обратная связь</p>
+            <h2 class="feedback-title">Нашел баг, сломанный сценарий или идею для новой фичи?</h2>
+            <p class="feedback-text">Напиши в Telegram-бот. Туда можно отправить проблему, предложение или описание страницы, где расширение повело себя не так.</p>
+          </div>
+          <div class="feedback-actions">
+            <a href="https://t.me/remanga_extension_bot" target="_blank" rel="noopener noreferrer" class="button button-primary button-large">Открыть Telegram-бота</a>
+          </div>
         </div>
       </div>
     </section>
@@ -224,7 +340,7 @@
   <footer class="footer">
     <div class="container footer-inner">
       <p class="footer-text">Remanga Enhanced — userscript для Tampermonkey и remanga.org.</p>
-      <p class="footer-text">Автолайк, автоотметка прочитанного, массовые действия и настройки прямо в интерфейсе сайта.</p>
+      <p class="footer-text">Автолайк, автоотметка, массовые действия и настройки прямо внутри сайта.</p>
     </div>
   </footer>
 
