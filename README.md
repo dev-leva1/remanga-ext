@@ -2,6 +2,15 @@
 
 Tampermonkey расширение для автоматизации действий на сайте remanga.org.
 
+## Документация
+
+Актуальные документы проекта:
+
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- [docs/ROADMAP.md](docs/ROADMAP.md)
+- [docs/API_LIKES_ENDPOINT.md](docs/API_LIKES_ENDPOINT.md)
+- [docs/README.md](docs/README.md)
+
 ## Возможности
 
 ### ✅ Реализовано
