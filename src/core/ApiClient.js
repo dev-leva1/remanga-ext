@@ -153,6 +153,61 @@ class ApiClient {
     return this.request('/api/v2/users/current/');
   }
 
+  async getCatalogPage(page = 1, count = 1) {
+    const validPage = parseInt(page);
+    const validCount = parseInt(count);
+
+    if (!Number.isInteger(validPage) || validPage < 1 || validPage > 999) {
+      throw new Error(`Невалидная страница каталога: ${page}`);
+    }
+
+    if (!Number.isInteger(validCount) || validCount < 1 || validCount > 30) {
+      throw new Error(`Невалидный размер страницы каталога: ${count}`);
+    }
+
+    const params = new URLSearchParams({
+      count: validCount.toString(),
+      ordering: '-score',
+      page: validPage.toString(),
+      unstrict_search_fields: 'genres'
+    });
+
+    params.append('unstrict_search_fields', 'categories');
+
+    return this.request(`/api/v2/search/catalog/?${params.toString()}`);
+  }
+
+  async getRandomTitle() {
+    const maxPage = 999;
+    const minPage = 1;
+
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const randomPage = Math.floor(Math.random() * (maxPage - minPage + 1)) + minPage;
+      try {
+        const data = await this.getCatalogPage(randomPage, 1);
+        const title = Array.isArray(data?.results) ? data.results[0] : null;
+
+        if (title && !title.is_forbidden && typeof title.dir === 'string' && title.dir.trim()) {
+          return title;
+        }
+      } catch (error) {
+        logger.warn(`Не удалось получить случайный тайтл со страницы ${randomPage}:`, error);
+      }
+    }
+
+    const fallbackData = await this.getCatalogPage(1, 30);
+    const titles = Array.isArray(fallbackData?.results)
+      ? fallbackData.results.filter(title => !title.is_forbidden && typeof title.dir === 'string' && title.dir.trim())
+      : [];
+
+    if (titles.length === 0) {
+      throw new Error('Каталог не вернул доступные тайтлы');
+    }
+
+    const randomIndex = Math.floor(Math.random() * titles.length);
+    return titles[randomIndex];
+  }
+
   /**
    * Статистика запросов
    */

@@ -20,6 +20,7 @@ class RemangaExtension {
     this.guildHighlighter = null;
     this.feedbackButton = null;
     this.userTooltip = null;
+    this.randomTitleNavigator = null;
     this.observers = [];
   }
 
@@ -56,6 +57,7 @@ class RemangaExtension {
       this.settingsPage = new SettingsPage(this.config, this.notifications, this.statistics);
       this.guildHighlighter = new GuildHighlighter(this.config);
       this.feedbackButton = new FeedbackButton(this.config, this.notifications);
+      this.randomTitleNavigator = new RandomTitleNavigator(this.api, this.config, this.notifications);
 
       const tooltipRenderer = new TooltipRenderer();
       this.userTooltip = new UserTooltip(this.api, this.config, tooltipRenderer);
@@ -78,6 +80,7 @@ class RemangaExtension {
 
       this.settingsPanel.inject();
       this.headerCustomizer.init();
+      this.randomTitleNavigator.init();
 
       await this.updateChecker.init();
 
@@ -156,6 +159,12 @@ class RemangaExtension {
       this.cleanupProfilePage();
       this.cleanupGuildPages();
     }
+
+    setTimeout(() => {
+      if (this.randomTitleNavigator) {
+        this.randomTitleNavigator.init();
+      }
+    }, 300);
   }
 
   /**
@@ -184,6 +193,9 @@ class RemangaExtension {
     }
     if (this.userTooltip) {
       this.userTooltip.cleanup();
+    }
+    if (this.randomTitleNavigator) {
+      this.randomTitleNavigator.cleanup();
     }
     logger.info('Ресурсы расширения очищены');
   }

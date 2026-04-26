@@ -23,6 +23,7 @@ const files = [
   'src/features/ProfileCustomizer.js',
   'src/features/GuildHighlighter.js',
   'src/features/UserTooltip.js',
+  'src/features/RandomTitleNavigator.js',
   'src/features/ChapterManager.js',
   'src/features/AutoLiker.js',
   'src/main.js'
@@ -47,6 +48,11 @@ const header = `// ==UserScript==
 
 /**
  * CHANGELOG
+ *
+ * v1.6.7 - Случайный тайтл в каталоге
+ * - Добавлена кнопка "Рандомный тайтл" на странице каталога /manga
+ * - Добавлена настройка для включения/выключения кнопки в интерфейсе расширения
+ * - Реализован переход к случайному доступному тайтлу через API каталога с fallback логикой
  *
  * v1.6.6 - Исправления безопасности и стабильности
  * - Исправлены XSS/HTML injection в тултипах, модальном окне обновления и окне обратной связи

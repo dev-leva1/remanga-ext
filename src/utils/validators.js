@@ -155,6 +155,10 @@ const validators = {
       sanitized.highlightGuilds = Boolean(settings.highlightGuilds);
     }
 
+    if ('randomTitleButtonEnabled' in settings) {
+      sanitized.randomTitleButtonEnabled = Boolean(settings.randomTitleButtonEnabled);
+    }
+
     return sanitized;
   }
 };

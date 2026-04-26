@@ -302,6 +302,15 @@ class SettingsPage {
             </div>
           </label>
 
+          <label style="display: flex; align-items: center; gap: ${DESIGN_TOKENS.spacing.md}; cursor: pointer;">
+            <input type="checkbox" id="randomTitleButtonEnabled" ${this.config.get('randomTitleButtonEnabled') ? 'checked' : ''}
+                   style="width: 20px; height: 20px; cursor: pointer;">
+            <div>
+              <div style="font-weight: ${DESIGN_TOKENS.typography.fontWeight.medium}; color: ${DESIGN_TOKENS.colors.text.primary};">Кнопка случайного тайтла</div>
+              <div style="font-size: ${DESIGN_TOKENS.typography.fontSize.sm}; color: ${DESIGN_TOKENS.colors.text.muted};">Показывать кнопку перехода к случайному тайтлу на странице каталога</div>
+            </div>
+          </label>
+
           <div>
             <div style="font-weight: ${DESIGN_TOKENS.typography.fontWeight.medium}; color: ${DESIGN_TOKENS.colors.text.primary}; margin-bottom: ${DESIGN_TOKENS.spacing.md};">
               Скрыть блоки в профилях
@@ -593,6 +602,7 @@ class SettingsPage {
         hideChatIndicator: this.container.querySelector('#hideChatIndicator')?.checked ?? this.config.get('hideChatIndicator'),
         highlightGuilds: this.container.querySelector('#highlightGuilds')?.checked ?? this.config.get('highlightGuilds'),
         userTooltipEnabled: this.container.querySelector('#userTooltipEnabled')?.checked ?? this.config.get('userTooltipEnabled'),
+        randomTitleButtonEnabled: this.container.querySelector('#randomTitleButtonEnabled')?.checked ?? this.config.get('randomTitleButtonEnabled'),
         hideProfileBlocks
       };
 
