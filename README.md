@@ -98,6 +98,8 @@ src/
 
 ## Разработка
 
+Подробное руководство для разработчиков: [`docs/DEVELOPER_GUIDE.md`](docs/DEVELOPER_GUIDE.md).
+
 ### Требования
 
 - Node.js (для сборки)
