@@ -12,6 +12,7 @@ class UserTooltip {
     this.currentHoveredElement = null;
     this.isEnabled = true;
     this.requestId = 0;
+    this.listenersAttached = false;
     this.boundHandleMouseOver = this.handleMouseOver.bind(this);
     this.boundHandleMouseOut = this.handleMouseOut.bind(this);
   }
@@ -34,8 +35,23 @@ class UserTooltip {
    * Подключение обработчиков событий
    */
   attachEventListeners() {
+    if (this.listenersAttached) {
+      return;
+    }
+
     document.addEventListener('mouseover', this.boundHandleMouseOver, true);
     document.addEventListener('mouseout', this.boundHandleMouseOut, true);
+    this.listenersAttached = true;
+  }
+
+  detachEventListeners() {
+    if (!this.listenersAttached) {
+      return;
+    }
+
+    document.removeEventListener('mouseover', this.boundHandleMouseOver, true);
+    document.removeEventListener('mouseout', this.boundHandleMouseOut, true);
+    this.listenersAttached = false;
   }
 
   /**
@@ -189,6 +205,13 @@ class UserTooltip {
     }
   }
 
+  close() {
+    this.requestId++;
+    this.clearHoverTimeout();
+    this.currentHoveredElement = null;
+    this.renderer.remove();
+  }
+
   /**
    * Очистка кеша
    */
@@ -203,8 +226,7 @@ class UserTooltip {
   setEnabled(enabled) {
     this.isEnabled = enabled;
     if (!enabled) {
-      this.clearHoverTimeout();
-      this.renderer.remove();
+      this.close();
     }
     logger.debug(`Тултипы ${enabled ? 'включены' : 'отключены'}`);
   }
@@ -213,10 +235,9 @@ class UserTooltip {
    * Очистка ресурсов
    */
   cleanup() {
-    this.clearHoverTimeout();
-    this.renderer.remove();
+    this.close();
+    this.detachEventListeners();
     this.cache.clear();
-    this.currentHoveredElement = null;
     logger.info('UserTooltip очищен');
   }
 }

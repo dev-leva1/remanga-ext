@@ -1,5 +1,14 @@
 const CHANGELOG_DATA = [
   {
+    "version": "1.6.8",
+    "title": "Исправления cleanup SPA-навигации",
+    "changes": [
+      "Закрытие тултипов профилей при смене подстраницы внутри SPA",
+      "Очистка progress/update/feedback/settings overlays при route change",
+      "Сброс route-scoped observers и cleanup состояния перед переинициализацией страницы"
+    ]
+  },
+  {
     "version": "1.6.7",
     "title": "Случайный тайтл в каталоге",
     "changes": [

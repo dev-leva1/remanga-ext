@@ -135,6 +135,8 @@ class RemangaExtension {
    * Обработка изменения URL
    */
   handleUrlChange() {
+    this.cleanupRouteState();
+
     const pageType = this.detectPageType();
     logger.info(`URL изменен, новый тип страницы: ${pageType}`);
 
@@ -154,10 +156,6 @@ class RemangaExtension {
       setTimeout(() => {
         this.initGuildPages(pageType);
       }, 300);
-    } else {
-      this.removeChapterButtons();
-      this.cleanupProfilePage();
-      this.cleanupGuildPages();
     }
 
     setTimeout(() => {
@@ -167,12 +165,43 @@ class RemangaExtension {
     }, 300);
   }
 
+  cleanupRouteState() {
+    this.disconnectPageObservers();
+    this.hideProgressModal(true);
+    this.removeChapterButtons();
+    this.cleanupProfilePage();
+    this.cleanupGuildPages();
+
+    if (this.userTooltip) {
+      this.userTooltip.close();
+    }
+
+    if (this.feedbackButton) {
+      this.feedbackButton.cleanup();
+    }
+
+    if (this.updateChecker) {
+      this.updateChecker.cleanup();
+    }
+
+    if (this.settingsPage) {
+      this.settingsPage.cleanup();
+    }
+  }
+
+  disconnectPageObservers() {
+    this.observers.forEach(observer => observer.disconnect());
+    this.observers = [];
+  }
+
   /**
    * Очистка ресурсов
    */
   cleanup() {
-    this.observers.forEach(observer => observer.disconnect());
-    this.observers = [];
+    this.cleanupRouteState();
+    if (this.userTooltip) {
+      this.userTooltip.cleanup();
+    }
     if (this.notifications) {
       this.notifications.cleanup();
     }
@@ -182,17 +211,8 @@ class RemangaExtension {
     if (this.headerCustomizer) {
       this.headerCustomizer.cleanup();
     }
-    if (this.profileCustomizer) {
-      this.profileCustomizer.cleanup();
-    }
-    if (this.settingsPage) {
-      this.settingsPage.cleanup();
-    }
-    if (this.guildHighlighter) {
-      this.guildHighlighter.cleanup();
-    }
-    if (this.userTooltip) {
-      this.userTooltip.cleanup();
+    if (this.feedbackButton) {
+      this.feedbackButton.cleanup();
     }
     if (this.randomTitleNavigator) {
       this.randomTitleNavigator.cleanup();
@@ -563,6 +583,7 @@ class RemangaExtension {
   showProgressModal(title, current, total, isLoading = false) {
     if (this.progressModal) {
       this.progressModal.remove();
+      this.progressModal = null;
     }
 
     const overlay = document.createElement('div');
@@ -664,15 +685,24 @@ class RemangaExtension {
   /**
    * Скрыть модальное окно прогресса
    */
-  hideProgressModal() {
-    if (this.progressModal) {
-      setTimeout(() => {
-        if (this.progressModal) {
-          this.progressModal.remove();
-          this.progressModal = null;
-        }
-      }, 500);
+  hideProgressModal(immediate = false) {
+    if (!this.progressModal) {
+      return;
     }
+
+    if (immediate) {
+      this.progressModal.remove();
+      this.progressModal = null;
+      return;
+    }
+
+    const progressModal = this.progressModal;
+    setTimeout(() => {
+      if (this.progressModal === progressModal) {
+        progressModal.remove();
+        this.progressModal = null;
+      }
+    }, 500);
   }
 }
 

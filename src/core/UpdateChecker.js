@@ -10,6 +10,7 @@ class UpdateChecker {
     this.currentVersion = '__VERSION__';
     this.checkInterval = 12 * 60 * 60 * 1000;
     this.isChecking = false;
+    this.modal = null;
   }
 
   /**
@@ -113,6 +114,8 @@ class UpdateChecker {
    * Показать модальное окно с changelog
    */
   showUpdateModal(version, changelog) {
+    this.cleanup();
+
     const overlay = document.createElement('div');
     overlay.style.cssText = overlayStyles() + `
       z-index: 9999999;
@@ -199,21 +202,29 @@ class UpdateChecker {
 
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
+    this.modal = overlay;
 
     modal.querySelector('#update-later').addEventListener('click', () => {
-      overlay.remove();
+      this.cleanup();
     });
 
     modal.querySelector('#update-now').addEventListener('click', () => {
-      overlay.remove();
+      this.cleanup();
       this.performUpdate();
     });
 
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) {
-        overlay.remove();
+        this.cleanup();
       }
     });
+  }
+
+  cleanup() {
+    if (this.modal) {
+      this.modal.remove();
+      this.modal = null;
+    }
   }
 
   /**
