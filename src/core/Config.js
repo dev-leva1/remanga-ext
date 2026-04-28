@@ -34,7 +34,8 @@ class Config {
       highlightGuilds: true,
       feedbackBotUsername: 'remanga_extension_bot',
       userTooltipEnabled: true,
-      randomTitleButtonEnabled: true
+      randomTitleButtonEnabled: true,
+      titleCoverPreviewEnabled: true
     };
 
     this.settings = { ...this.defaults };

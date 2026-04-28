@@ -21,6 +21,7 @@ class RemangaExtension {
     this.feedbackButton = null;
     this.userTooltip = null;
     this.randomTitleNavigator = null;
+    this.titleCoverPreview = null;
     this.observers = [];
   }
 
@@ -58,6 +59,7 @@ class RemangaExtension {
       this.guildHighlighter = new GuildHighlighter(this.config);
       this.feedbackButton = new FeedbackButton(this.config, this.notifications);
       this.randomTitleNavigator = new RandomTitleNavigator(this.api, this.config, this.notifications);
+      this.titleCoverPreview = new TitleCoverPreview(this.config);
 
       const tooltipRenderer = new TooltipRenderer();
       this.userTooltip = new UserTooltip(this.api, this.config, tooltipRenderer);
@@ -72,6 +74,8 @@ class RemangaExtension {
         this.initChaptersPage();
       } else if (pageType === 'reader') {
         this.initReaderPage();
+      } else if (pageType === 'title') {
+        this.initTitlePage();
       } else if (pageType === 'profile') {
         this.initProfilePage();
       } else if (pageType === 'forum' || pageType === 'guild-top') {
@@ -148,6 +152,10 @@ class RemangaExtension {
       setTimeout(() => {
         this.initReaderPage();
       }, 300);
+    } else if (pageType === 'title') {
+      setTimeout(() => {
+        this.initTitlePage();
+      }, 300);
     } else if (pageType === 'profile') {
       setTimeout(() => {
         this.initProfilePage();
@@ -169,6 +177,7 @@ class RemangaExtension {
     this.disconnectPageObservers();
     this.hideProgressModal(true);
     this.removeChapterButtons();
+    this.cleanupTitlePage();
     this.cleanupProfilePage();
     this.cleanupGuildPages();
 
@@ -217,6 +226,9 @@ class RemangaExtension {
     if (this.randomTitleNavigator) {
       this.randomTitleNavigator.cleanup();
     }
+    if (this.titleCoverPreview) {
+      this.titleCoverPreview.cleanup();
+    }
     logger.info('Ресурсы расширения очищены');
   }
 
@@ -243,6 +255,10 @@ class RemangaExtension {
 
     if (path.match(/\/manga\/[^/]+\/\d+/)) {
       return 'reader';
+    }
+
+    if (path.match(/^\/manga\/[^/]+(?:\/main)?\/?$/)) {
+      return 'title';
     }
 
     if (path.includes('/forum')) {
@@ -338,6 +354,19 @@ class RemangaExtension {
 
     if (this.config.get('autoLike')) {
       await this.autoLiker.init();
+    }
+  }
+
+  initTitlePage() {
+    logger.info('Инициализация страницы тайтла');
+    if (this.titleCoverPreview) {
+      this.titleCoverPreview.init();
+    }
+  }
+
+  cleanupTitlePage() {
+    if (this.titleCoverPreview) {
+      this.titleCoverPreview.cleanup();
     }
   }
 

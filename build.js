@@ -24,6 +24,7 @@ const files = [
   'src/features/GuildHighlighter.js',
   'src/features/UserTooltip.js',
   'src/features/RandomTitleNavigator.js',
+  'src/features/TitleCoverPreview.js',
   'src/features/ChapterManager.js',
   'src/features/AutoLiker.js',
   'src/main.js'
@@ -48,6 +49,11 @@ const header = `// ==UserScript==
 
 /**
  * CHANGELOG
+ *
+ * v1.6.9 - Полноэкранный просмотр обложки
+ * - Клик по обложке тайтла открывает overlay без перехода на другую страницу
+ * - Добавлена настройка включения и выключения полноэкранного просмотра обложки
+ * - Добавлена поддержка SPA-переинициализации и cleanup для preview обложки
  *
  * v1.6.8 - Исправления cleanup SPA-навигации
  * - Закрытие тултипов профилей при смене подстраницы внутри SPA

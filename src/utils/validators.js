@@ -159,6 +159,10 @@ const validators = {
       sanitized.randomTitleButtonEnabled = Boolean(settings.randomTitleButtonEnabled);
     }
 
+    if ('titleCoverPreviewEnabled' in settings) {
+      sanitized.titleCoverPreviewEnabled = Boolean(settings.titleCoverPreviewEnabled);
+    }
+
     return sanitized;
   }
 };

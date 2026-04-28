@@ -311,6 +311,15 @@ class SettingsPage {
             </div>
           </label>
 
+          <label style="display: flex; align-items: center; gap: ${DESIGN_TOKENS.spacing.md}; cursor: pointer;">
+            <input type="checkbox" id="titleCoverPreviewEnabled" ${this.config.get('titleCoverPreviewEnabled') ? 'checked' : ''}
+                   style="width: 20px; height: 20px; cursor: pointer;">
+            <div>
+              <div style="font-weight: ${DESIGN_TOKENS.typography.fontWeight.medium}; color: ${DESIGN_TOKENS.colors.text.primary};">Полноэкранный просмотр обложки</div>
+              <div style="font-size: ${DESIGN_TOKENS.typography.fontSize.sm}; color: ${DESIGN_TOKENS.colors.text.muted};">Открывать обложку тайтла в overlay по клику или тапу</div>
+            </div>
+          </label>
+
           <div>
             <div style="font-weight: ${DESIGN_TOKENS.typography.fontWeight.medium}; color: ${DESIGN_TOKENS.colors.text.primary}; margin-bottom: ${DESIGN_TOKENS.spacing.md};">
               Скрыть блоки в профилях
@@ -603,6 +612,7 @@ class SettingsPage {
         highlightGuilds: this.container.querySelector('#highlightGuilds')?.checked ?? this.config.get('highlightGuilds'),
         userTooltipEnabled: this.container.querySelector('#userTooltipEnabled')?.checked ?? this.config.get('userTooltipEnabled'),
         randomTitleButtonEnabled: this.container.querySelector('#randomTitleButtonEnabled')?.checked ?? this.config.get('randomTitleButtonEnabled'),
+        titleCoverPreviewEnabled: this.container.querySelector('#titleCoverPreviewEnabled')?.checked ?? this.config.get('titleCoverPreviewEnabled'),
         hideProfileBlocks
       };
 
