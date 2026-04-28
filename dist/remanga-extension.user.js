@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Remanga Enhanced
 // @namespace    remanga.ext
-// @version      1.6.9
+// @version      1.6.10
 // @description  Автоматизация действий на remanga.org: автолайк, массовая отметка глав
 // @author       dev-leva1
 // @match        https://remanga.org/*
@@ -17,6 +17,10 @@
 
 /**
  * CHANGELOG
+ *
+ * v1.6.10 - Обновление брендинга настроек
+ * - Добавлены логотип и название Remanga Enhanced в страницу настроек
+ * - Улучшена мобильная адаптация SettingsPage для экранов до 768px
  *
  * v1.6.9 - Полноэкранный просмотр обложки
  * - Клик по обложке тайтла открывает overlay без перехода на другую страницу
@@ -469,7 +473,7 @@ constructor(config, notifications) {
 this.config = config;
 this.notifications = notifications;
 this.updateURL = 'https://ext.nexee.ru/remanga-extension.user.js';
-this.currentVersion = '1.6.9';
+this.currentVersion = '1.6.10';
 this.checkInterval = 12 * 60 * 60 * 1000;
 this.isChecking = false;
 this.modal = null;
@@ -900,7 +904,7 @@ this.config = config;
 this.notifications = notifications;
 this.statistics = statistics;
 this.container = null;
-this.currentVersion = '1.6.9';
+this.currentVersion = '1.6.10';
 this.activeTab = 'automation';
 }
 init() {
@@ -923,6 +927,7 @@ font-family: ${DESIGN_TOKENS.typography.fontFamily};
 backdrop-filter: blur(4px);
 `;
 const modal = document.createElement('div');
+modal.id = 'remanga-ext-settings-modal';
 modal.style.cssText = `
 max-width: 1200px;
 margin: ${DESIGN_TOKENS.spacing.xxl} auto;
@@ -930,6 +935,8 @@ background: ${DESIGN_TOKENS.colors.bg.primary};
 border-radius: ${DESIGN_TOKENS.radius.xl};
 padding: ${DESIGN_TOKENS.spacing.xxl};
 box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+width: min(1200px, calc(100vw - ${DESIGN_TOKENS.spacing.xl} * 2));
+box-sizing: border-box;
 `;
 modal.innerHTML = this.createContent();
 this.container.appendChild(modal);
@@ -947,34 +954,17 @@ this.cleanup();
 window.location.reload();
 }
 createContent() {
-const stats = this.statistics.getStats();
-const installDate = new Date(stats.installDate).toLocaleDateString('ru-RU');
 return `
-<div style="display: flex; flex-direction: column; gap: ${DESIGN_TOKENS.spacing.xl};">
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: ${DESIGN_TOKENS.spacing.lg};">
-<h1 style="margin: 0; font-size: ${DESIGN_TOKENS.typography.fontSize.xxl}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.bold}; color: ${DESIGN_TOKENS.colors.text.primary};">
-Настройки расширения
-</h1>
-<a href="/" id="close-page" style="
-padding: ${DESIGN_TOKENS.spacing.md} ${DESIGN_TOKENS.spacing.xl};
-background: ${DESIGN_TOKENS.colors.bg.secondary};
-color: ${DESIGN_TOKENS.colors.text.primary};
-border: none;
-border-radius: ${DESIGN_TOKENS.radius.pill};
-cursor: pointer;
-font-weight: ${DESIGN_TOKENS.typography.fontWeight.medium};
-font-size: ${DESIGN_TOKENS.typography.fontSize.md};
-text-decoration: none;
-display: inline-block;
-">Закрыть</a>
-</div>
-<div style="display: flex; gap: ${DESIGN_TOKENS.spacing.xl};">
+<div id="remanga-ext-settings-layout" style="display: flex; flex-direction: column; gap: ${DESIGN_TOKENS.spacing.xl};">
+${this.renderPageHeader()}
+${this.renderBrandCard()}
+<div id="remanga-ext-settings-body" style="display: flex; gap: ${DESIGN_TOKENS.spacing.xl};">
 ${this.renderTabs()}
-<div style="flex: 1;">
+<div id="remanga-ext-settings-content" style="flex: 1; min-width: 0;">
 ${this.renderTabContent()}
 </div>
 </div>
-<div style="display: flex; gap: ${DESIGN_TOKENS.spacing.md}; justify-content: flex-end;">
+<div id="remanga-ext-settings-actions" style="display: flex; gap: ${DESIGN_TOKENS.spacing.md}; justify-content: flex-end;">
 <button id="reset-settings" style="
 padding: ${DESIGN_TOKENS.spacing.md} ${DESIGN_TOKENS.spacing.xl};
 background: #ef4444;
@@ -1001,6 +991,70 @@ font-family: ${DESIGN_TOKENS.typography.fontFamily};
 </div>
 `;
 }
+getBrandingData() {
+return {
+name: 'Remanga Enhanced',
+version: `v${this.currentVersion}`,
+logo: `<svg width="48" height="48" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<rect width="120" height="120" rx="24" fill="white" stroke="#E0E0E0" stroke-width="0.5"></rect>
+<circle cx="60" cy="60" r="42" fill="white" stroke="#1a1a1a" stroke-width="1.5"></circle>
+<path d="M 60 18 A 42 42 0 0 1 60 102 A 21 21 0 0 1 60 60 A 21 21 0 0 0 60 18 Z" fill="#1a1a1a"></path>
+<circle cx="60" cy="39" r="8" fill="white"></circle>
+<circle cx="60" cy="81" r="8" fill="#1a1a1a" stroke="white" stroke-width="1"></circle>
+<circle cx="56" cy="34" r="2" fill="#1a1a1a"></circle>
+<circle cx="64" cy="34" r="2" fill="#1a1a1a"></circle>
+<path d="M 55 39 Q 60 43 65 39" fill="none" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round"></path>
+<circle cx="56" cy="78" r="2" fill="white"></circle>
+<circle cx="64" cy="78" r="2" fill="white"></circle>
+<path d="M 55 83 Q 60 87 65 83" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"></path>
+<circle cx="90" cy="90" r="14" fill="#E63946"></circle>
+<path d="M90 80 L91.5 84.5 L96 82 L93.5 86.5 L98 88 L93.5 89.5 L96 94 L91.5 91.5 L90 96 L88.5 91.5 L84 94 L86.5 89.5 L82 88 L86.5 86.5 L84 82 L88.5 84.5 Z" fill="none" stroke="white" stroke-width="1" stroke-linejoin="round"></path>
+<circle cx="90" cy="88" r="3.5" fill="none" stroke="white" stroke-width="1"></circle>
+</svg>`
+};
+}
+renderPageHeader() {
+return `
+<div id="remanga-ext-settings-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: ${DESIGN_TOKENS.spacing.lg}; gap: ${DESIGN_TOKENS.spacing.lg};">
+<h1 id="remanga-ext-settings-title" style="margin: 0; font-size: ${DESIGN_TOKENS.typography.fontSize.xxl}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.bold}; color: ${DESIGN_TOKENS.colors.text.primary}; min-width: 0; word-break: break-word;">
+Настройки расширения
+</h1>
+<a href="/" id="close-page" style="
+padding: ${DESIGN_TOKENS.spacing.md} ${DESIGN_TOKENS.spacing.xl};
+background: ${DESIGN_TOKENS.colors.bg.secondary};
+color: ${DESIGN_TOKENS.colors.text.primary};
+border: none;
+border-radius: ${DESIGN_TOKENS.radius.pill};
+cursor: pointer;
+font-weight: ${DESIGN_TOKENS.typography.fontWeight.medium};
+font-size: ${DESIGN_TOKENS.typography.fontSize.md};
+text-decoration: none;
+display: inline-block;
+flex-shrink: 0;
+">Закрыть</a>
+</div>
+`;
+}
+renderBrandCard() {
+const branding = this.getBrandingData();
+return `
+<section id="remanga-ext-brand-card" style="background: ${DESIGN_TOKENS.colors.bg.secondary}; padding: ${DESIGN_TOKENS.spacing.xl}; border-radius: ${DESIGN_TOKENS.radius.lg}; margin-top: -${DESIGN_TOKENS.spacing.md};">
+<div id="remanga-ext-brand-card-inner" style="display: flex; align-items: center; gap: ${DESIGN_TOKENS.spacing.lg}; min-width: 0;">
+<div style="display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 48px; height: 48px; border-radius: ${DESIGN_TOKENS.radius.md}; overflow: hidden;">
+${branding.logo}
+</div>
+<div style="display: flex; flex-direction: column; gap: ${DESIGN_TOKENS.spacing.xs}; min-width: 0;">
+<div style="font-size: ${DESIGN_TOKENS.typography.fontSize.xl}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.bold}; color: ${DESIGN_TOKENS.colors.text.primary}; line-height: 1.2; word-break: break-word;">
+${branding.name}
+</div>
+<div style="font-size: ${DESIGN_TOKENS.typography.fontSize.sm}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.medium}; color: ${DESIGN_TOKENS.colors.text.muted}; line-height: 1.2;">
+${branding.version}
+</div>
+</div>
+</div>
+</section>
+`;
+}
 renderTabs() {
 const tabs = [
 {
@@ -1020,7 +1074,7 @@ icon: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0
 }
 ];
 return `
-<div style="
+<div id="remanga-ext-settings-tabs" style="
 display: flex;
 flex-direction: column;
 gap: ${DESIGN_TOKENS.spacing.sm};
@@ -1496,6 +1550,63 @@ border: none;
 #remanga-ext-settings-page nav a:hover {
 background: ${DESIGN_TOKENS.colors.interactive.hover};
 }
+@media (max-width: 768px) {
+#remanga-ext-settings-modal {
+width: calc(100vw - ${DESIGN_TOKENS.spacing.lg} * 2) !important;
+margin: ${DESIGN_TOKENS.spacing.lg} auto !important;
+padding: ${DESIGN_TOKENS.spacing.lg} !important;
+border-radius: ${DESIGN_TOKENS.radius.lg} !important;
+}
+#remanga-ext-settings-layout {
+gap: ${DESIGN_TOKENS.spacing.lg} !important;
+}
+#remanga-ext-settings-header {
+flex-direction: column !important;
+align-items: stretch !important;
+margin-bottom: ${DESIGN_TOKENS.spacing.md} !important;
+}
+#remanga-ext-settings-title {
+font-size: 20px !important;
+}
+#close-page {
+width: 100% !important;
+text-align: center !important;
+box-sizing: border-box !important;
+}
+#remanga-ext-brand-card {
+margin-top: 0 !important;
+padding: ${DESIGN_TOKENS.spacing.lg} !important;
+}
+#remanga-ext-brand-card-inner {
+align-items: flex-start !important;
+}
+#remanga-ext-settings-body {
+flex-direction: column !important;
+gap: ${DESIGN_TOKENS.spacing.lg} !important;
+}
+#remanga-ext-settings-tabs {
+min-width: 0 !important;
+}
+#remanga-ext-settings-content {
+min-width: 0 !important;
+}
+#remanga-ext-settings-actions {
+flex-direction: column !important;
+}
+#remanga-ext-settings-actions button {
+width: 100% !important;
+}
+#remanga-ext-settings-page section {
+padding: ${DESIGN_TOKENS.spacing.lg} !important;
+}
+#remanga-ext-settings-page .settings-tab {
+width: 100% !important;
+box-sizing: border-box !important;
+}
+#remanga-ext-settings-page [style*="grid-template-columns: repeat(2, 1fr)"] {
+grid-template-columns: 1fr !important;
+}
+}
 `;
 document.head.appendChild(style);
 }
@@ -1663,7 +1774,7 @@ const base64url = base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '
 return `https://t.me/${this.botUsername}?start=${base64url}`;
 }
 getVersion() {
-return '1.6.9'; // Заменяется при сборке
+return '1.6.10'; // Заменяется при сборке
 }
 detectBrowser() {
 const ua = navigator.userAgent;
