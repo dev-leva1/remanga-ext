@@ -110,6 +110,7 @@ class TitleCoverPreview {
       this.coverElement.removeEventListener('blur', this.boundHandleBlur);
     }
 
+    this.removeHoverBadge();
     this.coverElement = null;
     this.coverWrapper = null;
     this.listenersAttached = false;
