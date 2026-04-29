@@ -5,8 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex,nofollow">
   <meta name="theme-color" content="#131416">
+  <meta name="color-scheme" content="dark">
   <title>404 — Страница не найдена | Remanga Enhanced</title>
   <link rel="icon" href="logo.svg" type="image/svg+xml">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="og-image.png">
   <link rel="alternate icon" href="logo.svg">
   <link rel="stylesheet" href="styles.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,7 +21,7 @@
 
   <header class="site-header">
     <div class="container header-inner">
-      <a href="index.html" class="brand">Remanga Enhanced</a>
+      <a href="index.html" class="brand" translate="no">Remanga Enhanced</a>
 
       <nav class="site-nav site-nav-desktop" aria-label="Основная навигация">
         <a href="index.html" class="nav-link">Главная</a>
@@ -126,6 +129,34 @@
     </div>
   </footer>
 
-  <script src="script.js"></script>
+  <script>
+    (() => {
+      const mobileNav = document.querySelector('.mobile-nav');
+
+      if (!mobileNav) {
+        return;
+      }
+
+      const links = mobileNav.querySelectorAll('.mobile-nav-link');
+
+      links.forEach(link => {
+        link.addEventListener('click', () => {
+          mobileNav.removeAttribute('open');
+        });
+      });
+
+      document.addEventListener('click', event => {
+        if (!mobileNav.hasAttribute('open')) {
+          return;
+        }
+
+        if (mobileNav.contains(event.target)) {
+          return;
+        }
+
+        mobileNav.removeAttribute('open');
+      });
+    })();
+  </script>
 </body>
 </html>

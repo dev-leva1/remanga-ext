@@ -30,10 +30,6 @@
   --header-height: 61px;
 }
 
-html {
-  scroll-behavior: smooth;
-}
-
 body {
   font-family: "Exo 2", system-ui, -apple-system, sans-serif;
   background: var(--bg-primary);
