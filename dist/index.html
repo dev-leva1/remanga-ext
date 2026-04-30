@@ -3,21 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Remanga Enhanced — userscript для Tampermonkey с автолайком, автоотметкой прочитанных глав, массовыми действиями и настройками прямо в интерфейсе remanga.org.">
+  <meta name="description" content="Установи Remanga Enhanced — userscript для Remanga. Автолайк, автоотметка прочитанных глав, массовые действия, тултипы профилей, подсветка гильдий и настройки прямо внутри сайта.">
   <meta name="robots" content="index,follow">
   <meta name="theme-color" content="#131416">
   <meta name="color-scheme" content="dark">
-  <meta property="og:title" content="Remanga Enhanced — userscript для Tampermonkey">
-  <meta property="og:description" content="Автолайк, автоотметка прочитанных глав, массовые операции и настройки прямо на remanga.org.">
+  <meta property="og:title" content="Remanga Enhanced — userscript для Remanga">
+  <meta property="og:description" content="Userscript для Remanga с автолайком, автоотметкой глав, массовыми действиями и настройками прямо внутри сайта.">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="ru_RU">
   <meta property="og:url" content="https://ext.nexee.ru/">
   <meta property="og:image" content="https://ext.nexee.ru/og-image.png">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Remanga Enhanced — userscript для Tampermonkey">
-  <meta name="twitter:description" content="Автолайк, автоотметка прочитанных глав и массовые действия на remanga.org.">
+  <meta name="twitter:title" content="Remanga Enhanced — userscript для Remanga">
+  <meta name="twitter:description" content="Userscript для Remanga с автолайком, автоотметкой глав, массовыми действиями и настройками прямо внутри сайта.">
   <meta name="twitter:image" content="https://ext.nexee.ru/og-image.png">
-  <title>Remanga Enhanced — userscript для Tampermonkey с автолайком и массовыми действиями</title>
+  <title>Remanga Enhanced — userscript для Remanga: автолайк и автоотметка глав</title>
   <link rel="canonical" href="https://ext.nexee.ru/">
   <link rel="icon" href="logo.svg" type="image/svg+xml">
   <link rel="icon" href="favicon.ico" sizes="any">
@@ -34,7 +34,7 @@
       "name": "Remanga Enhanced",
       "applicationCategory": "BrowserApplication",
       "operatingSystem": "Chrome, Firefox, Edge, Safari",
-      "description": "Userscript для Tampermonkey с автолайком, автоотметкой прочитанных глав, массовыми действиями и настройками прямо в интерфейсе remanga.org.",
+      "description": "Установи Remanga Enhanced — userscript для remanga.org. Автолайк, автоотметка прочитанных глав, массовые действия, тултипы профилей, подсветка гильдий и настройки прямо внутри сайта.",
       "downloadUrl": "https://ext.nexee.ru/remanga-extension.user.js",
       "author": {
         "@type": "Person",
@@ -47,20 +47,95 @@
       }
     }
   </script>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Как установить userscript для Remanga?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Установи Tampermonkey или Stay для Safari, открой remanga-extension.user.js и подтверди установку userscript."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Это официальное расширение Remanga?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Нет. Remanga Enhanced — независимый userscript для remanga.org, а не официальное расширение Remanga."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Что меняется после установки?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "На странице чтения работают автолайк и автоотметка, а на странице списка глав появляются массовые действия, уведомления, прогресс операций и дополнительные настройки интерфейса."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "В каких браузерах работает Remanga Enhanced?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Userscript работает в Chrome, Firefox, Edge и Safari при установленном Tampermonkey или совместимом менеджере userscript, например Stay для Safari."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Что делать, если userscript не работает?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Проверь, что Tampermonkey включен, userscript установлен, открыта страница remanga.org и нет конфликтующих расширений или отключенных разрешений."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Где писать про баг или новую идею?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Напиши в Telegram-бот Remanga Enhanced и отправь описание проблемы, идеи или страницы, где расширение повело себя не так."
+          }
+        }
+      ]
+    }
+  </script>
+  <script type="text/javascript">
+    (function(m,e,t,r,i,k,a){
+        m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+        m[i].l=1*new Date();
+        for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+        k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a);
+    })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=108980965', 'ym');
+
+    ym(108980965, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
+  </script>
 </head>
 <body id="top">
+  <noscript><div><img src="https://mc.yandex.ru/watch/108980965" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
   <a class="skip-link" href="#main-content">Перейти к содержимому</a>
 
   <header class="site-header">
     <div class="container header-inner">
-      <a href="#top" class="brand" translate="no">Remanga Enhanced</a>
+      <a href="#top" class="brand" translate="no" aria-label="Remanga Enhanced v1.6.10">
+        <span class="brand-logo" aria-hidden="true">
+          <img src="logo.svg" alt="" width="40" height="40">
+        </span>
+        <span class="brand-copy">
+          <span class="brand-title">Remanga Enhanced</span>
+          <span class="brand-version">v1.6.10</span>
+        </span>
+      </a>
 
       <nav class="site-nav site-nav-desktop" aria-label="Основная навигация">
-        <a href="#features" class="nav-link">Сценарии</a>
-        <a href="#trust" class="nav-link">Почему работает</a>
-        <a href="#installation" class="nav-link">Установка</a>
-        <a href="#faq" class="nav-link">FAQ</a>
-        <a href="#feedback" class="nav-link nav-link-accent">Бот</a>
+        <a href="#features" class="nav-link">Возможности</a>
+        <a href="#security" class="nav-link">Безопасность</a>
+        <a href="#installation" class="nav-link">Как установить</a>
+        <a href="#faq" class="nav-link">Вопросы</a>
+        <a href="#feedback" class="nav-link nav-link-accent">Поддержка</a>
       </nav>
 
       <details class="mobile-nav">
@@ -70,11 +145,11 @@
           <span></span>
         </summary>
         <nav class="mobile-nav-menu" aria-label="Мобильная навигация">
-          <a href="#features" class="mobile-nav-link">Сценарии</a>
-          <a href="#trust" class="mobile-nav-link">Почему работает</a>
-          <a href="#installation" class="mobile-nav-link">Установка</a>
-          <a href="#faq" class="mobile-nav-link">FAQ</a>
-          <a href="#feedback" class="mobile-nav-link mobile-nav-link-accent">Бот обратной связи</a>
+          <a href="#features" class="mobile-nav-link">Возможности</a>
+          <a href="#security" class="mobile-nav-link">Безопасность</a>
+          <a href="#installation" class="mobile-nav-link">Как установить</a>
+          <a href="#faq" class="mobile-nav-link">Вопросы</a>
+          <a href="#feedback" class="mobile-nav-link mobile-nav-link-accent">Поддержка</a>
         </nav>
       </details>
     </div>
@@ -84,9 +159,9 @@
     <section class="hero">
       <div class="container hero-layout">
         <div class="hero-copy">
-          <p class="hero-badge">Userscript для Tampermonkey и remanga.org</p>
-          <h1 class="hero-title">Меньше рутины. Больше чтения.</h1>
-          <p class="hero-subtitle">Remanga Enhanced сам ставит лайки, отмечает главы прочитанными и дает массовые действия прямо внутри интерфейса Remanga.</p>
+          <p class="hero-badge">Userscript для Remanga, Tampermonkey и Stay</p>
+          <h1 class="hero-title">Remanga Enhanced — userscript для Remanga с автолайком, автоотметкой глав и массовыми действиями</h1>
+          <p class="hero-subtitle">Автоматизируй рутину на remanga.org: ставь лайки, отмечай главы прочитанными, запускай массовые действия и управляй настройками прямо внутри сайта.</p>
           <div class="hero-buttons">
             <a href="remanga-extension.user.js" class="button button-primary">Установить userscript</a>
             <a href="#installation" class="button button-secondary">Как установить</a>
@@ -188,62 +263,94 @@
       </div>
     </section>
 
-    <section id="features" class="section-block section-alt">
+    <section id="about" class="section-block section-alt">
+      <div class="container section-narrow">
+        <h2 class="section-title">Что такое Remanga Enhanced</h2>
+        <p class="section-lead">Remanga Enhanced — бесплатный userscript для Tampermonkey, который добавляет автоматизацию и дополнительные настройки на remanga.org.</p>
+        <div class="info-card">
+          <p class="info-card-text">Userscript помогает автоматически ставить лайки, отмечать главы прочитанными, выполнять массовые действия со списком глав и настраивать интерфейс Remanga под себя без отдельного кабинета или внешней панели.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="features" class="section-block">
       <div class="container">
-        <h2 class="section-title">Что происходит в реальном сценарии</h2>
-        <p class="section-lead">Конкретные действия внутри сайта, которые убирают рутину.</p>
-        <div class="scenario-grid">
+        <h2 class="section-title">Возможности userscript для Remanga</h2>
+        <p class="section-lead">Ключевые функции Remanga Enhanced для чтения, списка глав и настройки интерфейса remanga.org.</p>
+        <div class="scenario-grid feature-grid-wide">
           <article class="scenario-card">
-            <div class="scenario-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" role="presentation"><path d="M12 21c-.3 0-.6-.1-.8-.4l-1.6-1.5C5.1 15 2 12.1 2 8.5 2 5.4 4.4 3 7.5 3c1.8 0 3.6.8 4.5 2.1C12.9 3.8 14.7 3 16.5 3 19.6 3 22 5.4 22 8.5c0 3.6-3.1 6.5-7.6 10.6l-1.6 1.5c-.2.3-.5.4-.8.4Z"/></svg>
-            </div>
-            <h3 class="scenario-title">Открываешь главу — лайк и отметка уже ставятся сами</h3>
-            <p class="scenario-description">Во время чтения не надо возвращаться назад и прожимать одинаковые действия вручную. Включил один раз в настройках — дальше работает в фоне.</p>
+            <h3 class="scenario-title">Автолайк глав на Remanga</h3>
+            <p class="scenario-description">Userscript может автоматически ставить лайк открытой главе, чтобы не возвращаться назад и не повторять одни и те же действия вручную.</p>
           </article>
-
           <article class="scenario-card">
-            <div class="scenario-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" role="presentation"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v13a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 18.5v-13Zm3 1.5v2h10V7H7Zm0 5v2h10v-2H7Zm0 5v2h6v-2H7Z"/></svg>
-            </div>
-            <h3 class="scenario-title">Открываешь список глав — появляются массовые кнопки</h3>
-            <p class="scenario-description">Можно одним действием отметить прочитанными или лайкнуть много глав сразу. Подходит для длинных тайтлов, где вручную кликать слишком долго.</p>
+            <h3 class="scenario-title">Автоотметка прочитанных глав</h3>
+            <p class="scenario-description">После чтения глава может автоматически отмечаться прочитанной, чтобы история чтения на Remanga оставалась в порядке.</p>
           </article>
-
           <article class="scenario-card">
-            <div class="scenario-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" role="presentation"><path d="M12 2a8 8 0 0 1 8 8v1.1c0 .7.2 1.4.6 2l1 1.5a1.5 1.5 0 0 1-1.3 2.4H3.7a1.5 1.5 0 0 1-1.3-2.4l1-1.5c.4-.6.6-1.3.6-2V10a8 8 0 0 1 8-8Zm0 20a3 3 0 0 1-2.8-2h5.6A3 3 0 0 1 12 22Z"/></svg>
-            </div>
-            <h3 class="scenario-title">Во время массовых операций видно, что происходит</h3>
-            <p class="scenario-description">Расширение показывает toast-уведомления и прогресс выполнения. Видно, что уже обработано, а что еще в очереди.</p>
+            <h3 class="scenario-title">Массовые действия со списком глав</h3>
+            <p class="scenario-description">На странице списка глав появляются кнопки для массовой отметки и лайков с прогрессом выполнения для длинных тайтлов.</p>
           </article>
-
           <article class="scenario-card">
-            <div class="scenario-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" role="presentation"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm1 14.9V18h-2v-1.1A3 3 0 0 1 9 14h2a1 1 0 1 0 2 0c0-.6-.4-.9-1.3-1.2-1.6-.5-2.7-1.3-2.7-3.1A3 3 0 0 1 11 6.1V5h2v1.1A3 3 0 0 1 15 9h-2a1 1 0 1 0-2 0c0 .5.3.8 1.2 1.1 1.7.6 2.8 1.4 2.8 3.2a3 3 0 0 1-2 3.5Z"/></svg>
-            </div>
-            <h3 class="scenario-title">Настройки лежат там, где ими реально пользуются</h3>
-            <p class="scenario-description">Не нужен отдельный кабинет или внешний интерфейс. Все основные переключатели встроены в Remanga и открываются внутри сайта.</p>
+            <h3 class="scenario-title">Настройки интерфейса Remanga</h3>
+            <p class="scenario-description">Скрипт добавляет переключатели прямо внутри сайта: можно скрывать лишние элементы, управлять поведением интерфейса и менять доступные функции.</p>
+          </article>
+          <article class="scenario-card">
+            <h3 class="scenario-title">Тултипы профилей и подсветка гильдий</h3>
+            <p class="scenario-description">Remanga Enhanced показывает краткую информацию о пользователях при наведении на аватар и выделяет нужные гильдии на форуме и в топе.</p>
+          </article>
+          <article class="scenario-card">
+            <h3 class="scenario-title">Уведомления, прогресс и обратная связь</h3>
+            <p class="scenario-description">Во время массовых операций виден прогресс, а про баг или идею можно быстро написать через Telegram-бот Remanga Enhanced.</p>
           </article>
         </div>
       </div>
     </section>
 
-    <section id="trust" class="section-block">
+    <section id="browsers" class="section-block section-alt">
       <div class="container">
-        <h2 class="section-title">Почему этим удобно пользоваться</h2>
-        <p class="section-lead">Только то, что уже есть в расширении и работает внутри обычного сценария чтения.</p>
-        <div class="trust-grid">
+        <h2 class="section-title">В каких браузерах работает Remanga Enhanced</h2>
+        <p class="section-lead">Скрипт работает в браузерах с поддержкой userscript-менеджеров вроде Tampermonkey или Stay.</p>
+        <div class="trust-grid browser-grid">
           <article class="trust-card">
-            <h3 class="trust-title">Прямо внутри Remanga</h3>
-            <p class="trust-description">Новые действия и настройки встраиваются в привычный интерфейс сайта, а не уводят в отдельную панель.</p>
+            <h3 class="trust-title">Google Chrome</h3>
+            <p class="trust-description">Используй Tampermonkey и устанавливай userscript напрямую через файл установки.</p>
           </article>
           <article class="trust-card">
-            <h3 class="trust-title">Через API remanga.org</h3>
-            <p class="trust-description">Лайки и отметки отправляются штатным способом, без хрупких хакающих обходов DOM для самих действий.</p>
+            <h3 class="trust-title">Mozilla Firefox</h3>
+            <p class="trust-description">Поддерживается через Tampermonkey и другие совместимые менеджеры userscript.</p>
           </article>
           <article class="trust-card">
-            <h3 class="trust-title">Без спама запросами</h3>
-            <p class="trust-description">Массовые операции идут с паузами между запросами, чтобы не долбить API без остановки.</p>
+            <h3 class="trust-title">Microsoft Edge</h3>
+            <p class="trust-description">Работает через Tampermonkey так же, как и в Chrome.</p>
+          </article>
+          <article class="trust-card">
+            <h3 class="trust-title">Safari</h3>
+            <p class="trust-description">Для Safari можно использовать Stay или другой совместимый менеджер userscript.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="security" class="section-block">
+      <div class="container">
+        <h2 class="section-title">Безопасность и принцип работы</h2>
+        <p class="section-lead">Коротко о том, как Remanga Enhanced работает на remanga.org и почему сценарии не выглядят как набор случайных хаков.</p>
+        <div class="trust-grid security-grid">
+          <article class="trust-card">
+            <h3 class="trust-title">Работает только на remanga.org</h3>
+            <p class="trust-description">Userscript рассчитан на страницы Remanga и добавляет функции прямо в интерфейс сайта, а не через отдельный внешний кабинет.</p>
+          </article>
+          <article class="trust-card">
+            <h3 class="trust-title">Использует API сайта</h3>
+            <p class="trust-description">Лайки и отметки глав отправляются через API remanga.org, а не через хрупкие DOM-клики по скрытым элементам.</p>
+          </article>
+          <article class="trust-card">
+            <h3 class="trust-title">Делает паузы между запросами</h3>
+            <p class="trust-description">Массовые операции идут с ограничением частоты запросов, чтобы не долбить API без остановки.</p>
+          </article>
+          <article class="trust-card">
+            <h3 class="trust-title">Неофициальный userscript</h3>
+            <p class="trust-description">Remanga Enhanced — независимый проект для улучшения пользовательского опыта на remanga.org, а не официальное расширение Remanga.</p>
           </article>
         </div>
       </div>
@@ -251,21 +358,21 @@
 
     <section id="installation" class="section-block section-alt">
       <div class="container">
-        <h2 class="section-title">Установка за пару минут</h2>
-        <p class="section-lead">Нужен только Tampermonkey. Потом один клик по userscript-файлу — и можно идти читать.</p>
+        <h2 class="section-title">Как установить Remanga Enhanced</h2>
+        <p class="section-lead">Нужен только Tampermonkey или совместимый менеджер userscript. Потом один клик по файлу установки — и можно идти читать.</p>
         <div class="installation-steps">
           <article class="step">
             <div class="step-number" aria-hidden="true">1</div>
             <div class="step-content">
               <h3 class="step-title">Поставь Tampermonkey</h3>
-              <p class="step-description">Выбери свой браузер и установи менеджер userscript. Для Safari используй Stay — бесплатный аналог Tampermonkey.</p>
+              <p class="step-description">Выбери свой браузер и установи менеджер userscript. Для Safari используй Stay — совместимый аналог для установки userscript.</p>
               <div class="browser-links">
                 <a href="https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo" target="_blank" rel="noopener noreferrer" class="browser-link">Chrome</a>
                 <a href="https://addons.mozilla.org/firefox/addon/tampermonkey/" target="_blank" rel="noopener noreferrer" class="browser-link">Firefox</a>
                 <a href="https://apps.apple.com/us/app/stay-for-safari/id1591620171" target="_blank" rel="noopener noreferrer" class="browser-link">Safari / Stay</a>
                 <a href="https://microsoftedge.microsoft.com/addons/detail/tampermonkey/iikmkjmpaadaobahmlepeloendndfphd" target="_blank" rel="noopener noreferrer" class="browser-link">Edge</a>
               </div>
-              <p class="install-note">Safari: если Tampermonkey недоступен или платный, ставь <a href="https://apps.apple.com/us/app/stay-for-safari/id1591620171" target="_blank" rel="noopener noreferrer" class="inline-link">Stay for Safari</a>.</p>
+              <p class="install-note">Safari: если Tampermonkey недоступен, ставь <a href="https://apps.apple.com/us/app/stay-for-safari/id1591620171" target="_blank" rel="noopener noreferrer" class="inline-link">Stay for Safari</a>.</p>
             </div>
           </article>
 
@@ -273,7 +380,7 @@
             <div class="step-number" aria-hidden="true">2</div>
             <div class="step-content">
               <h3 class="step-title">Открой файл установки</h3>
-              <p class="step-description">Нажми кнопку ниже. Tampermonkey сам предложит установить скрипт.</p>
+              <p class="step-description">Нажми кнопку ниже. Tampermonkey сам предложит установить Remanga Enhanced.</p>
               <div class="step-actions">
                 <a href="remanga-extension.user.js" class="button button-primary">Открыть файл установки</a>
               </div>
@@ -285,7 +392,7 @@
             <div class="step-number" aria-hidden="true">3</div>
             <div class="step-content">
               <h3 class="step-title">Зайди на Remanga</h3>
-              <p class="step-description">Открой <a href="https://remanga.org" target="_blank" rel="noopener noreferrer" class="inline-link">remanga.org</a>, авторизуйся и пользуйся новыми кнопками и настройками прямо на сайте.</p>
+              <p class="step-description">Открой <a href="https://remanga.org" target="_blank" rel="noopener noreferrer" class="inline-link">remanga.org</a>, авторизуйся и пользуйся новыми кнопками, массовыми действиями и настройками прямо на сайте.</p>
             </div>
           </article>
         </div>
@@ -294,19 +401,31 @@
 
     <section id="faq" class="section-block">
       <div class="container faq-container">
-        <h2 class="section-title">Частые вопросы</h2>
+        <h2 class="section-title">FAQ по Remanga Enhanced</h2>
         <div class="faq-list">
           <details class="faq-item">
-            <summary class="faq-question">Это расширение из магазина браузера?</summary>
-            <p class="faq-answer">Нет. Это userscript для Tampermonkey, который устанавливается поверх браузера и работает только на remanga.org.</p>
+            <summary class="faq-question">Как установить userscript для Remanga?</summary>
+            <p class="faq-answer">Установи Tampermonkey или Stay для Safari, открой <code>remanga-extension.user.js</code> и подтверди установку userscript.</p>
+          </details>
+          <details class="faq-item">
+            <summary class="faq-question">Это официальное расширение Remanga?</summary>
+            <p class="faq-answer">Нет. Remanga Enhanced — независимый userscript для remanga.org, а не официальное расширение Remanga.</p>
           </details>
           <details class="faq-item">
             <summary class="faq-question">Что меняется после установки?</summary>
-            <p class="faq-answer">На странице чтения работают автолайк и автоотметка, а на странице списка глав появляются массовые действия, уведомления и прогресс операций.</p>
+            <p class="faq-answer">На странице чтения работают автолайк и автоотметка, а на странице списка глав появляются массовые действия, уведомления, прогресс операций и дополнительные настройки интерфейса.</p>
+          </details>
+          <details class="faq-item">
+            <summary class="faq-question">В каких браузерах работает Remanga Enhanced?</summary>
+            <p class="faq-answer">Userscript работает в Chrome, Firefox, Edge и Safari при установленном Tampermonkey или совместимом менеджере userscript, например Stay для Safari.</p>
+          </details>
+          <details class="faq-item">
+            <summary class="faq-question">Что делать, если userscript не работает?</summary>
+            <p class="faq-answer">Проверь, что Tampermonkey включен, userscript установлен, открыта страница remanga.org и нет конфликтующих расширений или отключенных разрешений.</p>
           </details>
           <details class="faq-item">
             <summary class="faq-question">Где писать про баг или новую идею?</summary>
-            <p class="faq-answer">В Telegram-бот. Туда удобно отправлять баги, предложения и описание странного поведения прямо по факту.</p>
+            <p class="faq-answer">Напиши в Telegram-бот Remanga Enhanced и отправь описание проблемы, идеи или страницы, где расширение повело себя не так.</p>
           </details>
         </div>
       </div>
@@ -323,7 +442,6 @@
             <span class="changelog-summary-icon" aria-hidden="true"></span>
           </summary>
           <div class="changelog-body">
-            <p class="section-lead changelog-lead">Последние версии подтягиваются из текущего changelog сборки без внешних запросов.</p>
             <div class="changelog-content" id="changelog-list"></div>
           </div>
         </details>
@@ -334,9 +452,9 @@
       <div class="container feedback-container">
         <div class="feedback-card">
           <div class="feedback-copy">
-            <p class="feedback-kicker">Обратная связь</p>
-            <h2 class="feedback-title">Нашел баг, сломанный сценарий или идею для новой фичи?</h2>
-            <p class="feedback-text">Напиши в Telegram-бот. Туда можно отправить проблему, предложение или описание страницы, где расширение повело себя не так.</p>
+            <p class="feedback-kicker">Поддержка</p>
+            <h2 class="feedback-title">Нашел баг, сломанный сценарий или идею для новой функции?</h2>
+            <p class="feedback-text">Напиши в Telegram-бот. Туда можно отправить проблему, предложение или описание страницы, где Remanga Enhanced повел себя не так.</p>
           </div>
           <div class="feedback-actions">
             <a href="https://t.me/remanga_extension_bot" target="_blank" rel="noopener noreferrer" class="button button-primary button-large">Открыть Telegram-бота</a>
@@ -344,6 +462,7 @@
         </div>
       </div>
     </section>
+
   </main>
 
   <footer class="footer">

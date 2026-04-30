@@ -3,22 +3,4 @@
   <url>
     <loc>https://ext.nexee.ru/</loc>
   </url>
-  <url>
-    <loc>https://ext.nexee.ru/remanga-extension.user.js</loc>
-  </url>
-  <url>
-    <loc>https://ext.nexee.ru/styles.css</loc>
-  </url>
-  <url>
-    <loc>https://ext.nexee.ru/script.js</loc>
-  </url>
-  <url>
-    <loc>https://ext.nexee.ru/logo.svg</loc>
-  </url>
-  <url>
-    <loc>https://ext.nexee.ru/robots.txt</loc>
-  </url>
-  <url>
-    <loc>https://ext.nexee.ru/llms.txt</loc>
-  </url>
 </urlset>

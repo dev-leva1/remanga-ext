@@ -57,6 +57,10 @@ code {
   padding: 0 var(--spacing-xl);
 }
 
+.hero .container {
+  width: min(1440px, 100%);
+}
+
 .skip-link {
   position: absolute;
   left: var(--spacing-lg);
@@ -92,11 +96,50 @@ code {
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
   color: var(--text-primary);
   text-decoration: none;
+  white-space: nowrap;
+}
+
+.brand-logo {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.brand-logo img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.brand-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.brand-title {
   font-size: 16px;
   font-weight: 600;
-  white-space: nowrap;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.brand-version {
+  margin-top: 3px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--text-muted);
 }
 
 .site-nav {
@@ -190,13 +233,13 @@ code {
 
 .hero-layout {
   display: grid;
-  grid-template-columns: minmax(0, 0.82fr) minmax(600px, 1.18fr);
-  gap: var(--spacing-3xl);
+  grid-template-columns: minmax(0, 1.08fr) minmax(500px, 0.92fr);
+  gap: clamp(32px, 4vw, 64px);
   align-items: center;
 }
 
 .hero-copy {
-  max-width: 620px;
+  max-width: 860px;
 }
 
 .hero-badge {
@@ -504,7 +547,12 @@ code {
 
 .button-large {
   min-height: 44px;
-  padding: 0 22px;
+  padding: 0 28px;
+}
+
+.feedback-actions .button-large {
+  min-width: 260px;
+  white-space: nowrap;
 }
 
 .button-primary:focus-visible,
@@ -545,6 +593,26 @@ summary:focus-visible,
   line-height: 1.6;
 }
 
+.section-narrow {
+  max-width: 900px;
+}
+
+.info-card {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: var(--spacing-xxl);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  background: rgba(19, 20, 22, 0.72);
+}
+
+.info-card-text {
+  color: var(--text-secondary);
+  font-size: 16px;
+  line-height: 1.7;
+  text-align: center;
+}
+
 .scenario-grid,
 .trust-grid {
   display: grid;
@@ -557,6 +625,12 @@ summary:focus-visible,
 
 .trust-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.feature-grid-wide,
+.browser-grid,
+.security-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .scenario-card,
@@ -868,8 +942,14 @@ summary:focus-visible,
 
 @media (max-width: 1100px) {
   .hero-layout,
-  .trust-grid {
+  .trust-grid,
+  .browser-grid,
+  .security-grid {
     grid-template-columns: 1fr;
+  }
+
+  .feature-grid-wide {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .hero-copy {
@@ -904,7 +984,10 @@ summary:focus-visible,
   }
 
   .hero-metrics,
-  .scenario-grid {
+  .scenario-grid,
+  .feature-grid-wide,
+  .browser-grid,
+  .security-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -966,6 +1049,10 @@ summary:focus-visible,
   .hero-buttons,
   .browser-links {
     flex-direction: column;
+  }
+
+  .info-card {
+    padding: var(--spacing-xl);
   }
 
   .button,

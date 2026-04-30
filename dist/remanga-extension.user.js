@@ -2628,6 +2628,7 @@ this.coverElement.removeEventListener('mouseleave', this.boundHandleMouseLeave);
 this.coverElement.removeEventListener('focus', this.boundHandleFocus);
 this.coverElement.removeEventListener('blur', this.boundHandleBlur);
 }
+this.removeHoverBadge();
 this.coverElement = null;
 this.coverWrapper = null;
 this.listenersAttached = false;

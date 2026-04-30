@@ -172,6 +172,22 @@ function syncLandingChangelog(versions) {
   fs.writeFileSync(landingScriptPath, updatedLandingScript, 'utf8');
 }
 
+function syncLandingVersion(versionValue) {
+  const landingIndexPath = path.join(__dirname, 'dist', 'index.html');
+
+  if (!fs.existsSync(landingIndexPath)) {
+    return;
+  }
+
+  const landingIndex = fs.readFileSync(landingIndexPath, 'utf8');
+  const updatedLandingIndex = landingIndex
+    .replace(/aria-label="Remanga Enhanced(?: v[\d.]+| __LANDING_VERSION__)?"/, `aria-label="Remanga Enhanced v${versionValue}"`)
+    .replace(/<span class="brand-version">(?:v[\d.]+|__LANDING_VERSION__)<\/span>/, `<span class="brand-version">v${versionValue}</span>`);
+
+  fs.writeFileSync(landingIndexPath, updatedLandingIndex, 'utf8');
+}
+
+syncLandingVersion(version);
 console.log('🔨 Начало сборки...\n');
 console.log(`📌 Версия: ${version}\n`);
 
