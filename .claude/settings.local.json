@@ -17,7 +17,8 @@
       "Bash(git show *)",
       "mcp__chrome-devtools__lighthouse_audit",
       "mcp__chrome-devtools__list_console_messages",
-      "mcp__chrome-devtools__resize_page"
+      "mcp__chrome-devtools__resize_page",
+      "mcp__chrome-devtools__select_page"
     ]
   }
 }
