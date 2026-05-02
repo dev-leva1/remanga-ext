@@ -273,33 +273,43 @@ code {
   display: flex;
   gap: var(--spacing-lg);
   flex-wrap: wrap;
-  margin-bottom: var(--spacing-xxl);
+  margin-bottom: var(--spacing-lg);
 }
 
-.hero-metrics {
+.hero-reassurance {
+  max-width: 62ch;
+  margin-bottom: var(--spacing-xl);
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.hero-trust {
   list-style: none;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--spacing-md);
 }
 
-.hero-metric {
-  padding: var(--spacing-xl);
+.hero-trust-item {
+  padding: var(--spacing-lg);
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-lg);
-  background: rgba(24, 25, 27, 0.55);
+  background: rgba(24, 25, 27, 0.45);
 }
 
-.hero-metric strong {
+.hero-trust-item strong {
   display: block;
   margin-bottom: var(--spacing-sm);
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   color: var(--text-primary);
 }
 
-.hero-metric span {
+.hero-trust-item span {
+  display: block;
   color: var(--text-secondary);
+  line-height: 1.5;
 }
 
 .hero-visual {
@@ -318,10 +328,20 @@ code {
 
 .settings-preview-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: var(--spacing-xl);
   margin-bottom: var(--spacing-xxl);
+}
+
+.settings-preview-eyebrow {
+  margin-bottom: var(--spacing-sm);
+  color: #7aa2ff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .settings-preview-header h2 {
@@ -331,8 +351,7 @@ code {
 }
 
 .settings-preview-close,
-.settings-preview-reset,
-.settings-preview-save {
+.settings-preview-status {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -489,20 +508,19 @@ code {
   justify-content: flex-end;
   gap: var(--spacing-md);
   margin-top: var(--spacing-xxl);
+  flex-wrap: wrap;
 }
 
-.settings-preview-reset,
-.settings-preview-save {
+.settings-preview-status {
   min-height: 34px;
   padding: 0 var(--spacing-lg);
+  background: rgba(29, 78, 216, 0.14);
+  border: 1px solid rgba(59, 130, 246, 0.2);
 }
 
-.settings-preview-reset {
-  background: #ef4444;
-}
-
-.settings-preview-save {
-  background: #2a2a2a;
+.settings-preview-status-secondary {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--border-soft);
 }
 
 .button {
@@ -584,6 +602,10 @@ summary:focus-visible,
   text-align: center;
 }
 
+.section-title-left {
+  text-align: left;
+}
+
 .section-lead {
   max-width: 760px;
   margin: 0 auto var(--spacing-3xl);
@@ -591,6 +613,12 @@ summary:focus-visible,
   color: var(--text-secondary);
   font-size: 16px;
   line-height: 1.6;
+}
+
+.section-lead-left {
+  margin-left: 0;
+  margin-right: 0;
+  text-align: left;
 }
 
 .section-narrow {
@@ -627,10 +655,103 @@ summary:focus-visible,
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.feature-grid-wide,
-.browser-grid,
-.security-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.features-layout {
+  display: grid;
+  gap: var(--spacing-3xl);
+}
+
+.features-intro {
+  max-width: 760px;
+}
+
+.feature-clusters {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: var(--spacing-xl);
+}
+
+.feature-cluster,
+.feature-cluster-primary {
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  background: rgba(19, 20, 22, 0.72);
+}
+
+.feature-cluster-primary {
+  padding: 36px;
+}
+
+.feature-cluster-stack {
+  display: grid;
+  gap: var(--spacing-xl);
+}
+
+.feature-cluster {
+  padding: var(--spacing-xxl);
+}
+
+.feature-cluster-kicker {
+  margin-bottom: var(--spacing-md);
+  color: #7aa2ff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.feature-cluster-title {
+  margin-bottom: var(--spacing-lg);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--text-primary);
+}
+
+.feature-cluster-text {
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.feature-list {
+  list-style: none;
+  display: grid;
+  gap: var(--spacing-md);
+}
+
+.feature-list li {
+  position: relative;
+  padding-left: var(--spacing-xl);
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.feature-list li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #7aa2ff;
+}
+
+.security-layout {
+  display: grid;
+  gap: var(--spacing-3xl);
+}
+
+.security-copy {
+  max-width: 760px;
+}
+
+.security-points {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.trust-card-compact {
+  padding: var(--spacing-xl);
 }
 
 .scenario-card,
@@ -943,13 +1064,9 @@ summary:focus-visible,
 @media (max-width: 1100px) {
   .hero-layout,
   .trust-grid,
-  .browser-grid,
-  .security-grid {
+  .feature-clusters,
+  .security-points {
     grid-template-columns: 1fr;
-  }
-
-  .feature-grid-wide {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .hero-copy {
@@ -983,11 +1100,9 @@ summary:focus-visible,
     display: none;
   }
 
-  .hero-metrics,
+  .hero-trust,
   .scenario-grid,
-  .feature-grid-wide,
-  .browser-grid,
-  .security-grid {
+  .security-points {
     grid-template-columns: 1fr;
   }
 }
@@ -1006,12 +1121,20 @@ summary:focus-visible,
   }
 
   .hero-subtitle,
-  .section-lead {
+  .section-lead,
+  .feature-cluster-text,
+  .feature-list li {
     font-size: 16px;
   }
 
   .section-title {
     font-size: 28px;
+  }
+
+  .feature-cluster-primary,
+  .feature-cluster,
+  .trust-card-compact {
+    padding: var(--spacing-xl);
   }
 
   .settings-preview-body {
@@ -1030,8 +1153,7 @@ summary:focus-visible,
     flex-direction: column;
   }
 
-  .settings-preview-reset,
-  .settings-preview-save {
+  .settings-preview-status {
     width: 100%;
   }
 
@@ -1093,7 +1215,9 @@ summary:focus-visible,
   .trust-card,
   .faq-item,
   .changelog-summary,
-  .changelog-body {
+  .changelog-body,
+  .feature-cluster,
+  .feature-cluster-primary {
     padding-left: var(--spacing-lg);
     padding-right: var(--spacing-lg);
   }
