@@ -118,113 +118,305 @@ const CHANGELOG_DATA = [
   }
 ];
 
-function createElement(tagName, className, text) {
-  const element = document.createElement(tagName);
+class DomElementFactory {
+  create(tagName, className, text) {
+    if (!this.isSafeTagName(tagName)) {
+      throw new TypeError('Invalid tag name');
+    }
 
-  if (className) {
-    element.className = className;
+    const element = document.createElement(tagName);
+
+    if (typeof className === 'string' && className.trim()) {
+      element.className = className.trim();
+    }
+
+    if (typeof text === 'string') {
+      element.textContent = text;
+    }
+
+    return element;
   }
 
-  if (typeof text === 'string') {
-    element.textContent = text;
+  isSafeTagName(tagName) {
+    return typeof tagName === 'string' && /^[a-z][a-z0-9-]*$/i.test(tagName);
   }
-
-  return element;
 }
 
-function renderChangelog(versions) {
-  const container = document.getElementById('changelog-list');
-
-  if (!container) {
-    return;
+class ChangelogRenderer {
+  constructor(container, elementFactory, maxItems = 4) {
+    this.container = container instanceof Element ? container : null;
+    this.elementFactory = elementFactory instanceof DomElementFactory ? elementFactory : new DomElementFactory();
+    this.maxItems = Number.isInteger(maxItems) && maxItems > 0 ? maxItems : 4;
   }
 
-  container.replaceChildren();
+  render(versions) {
+    if (!this.container) {
+      return;
+    }
 
-  if (!Array.isArray(versions) || versions.length === 0) {
-    container.appendChild(createElement('div', 'changelog-empty', 'История изменений скоро появится.'));
-    return;
+    this.container.replaceChildren();
+
+    if (!Array.isArray(versions) || versions.length === 0) {
+      this.container.appendChild(this.elementFactory.create('div', 'changelog-empty', 'История изменений скоро появится.'));
+      return;
+    }
+
+    versions.slice(0, this.maxItems).forEach(item => this.renderVersion(item));
   }
 
-  versions.slice(0, 4).forEach(({ version, title, changes }) => {
-    const versionElement = createElement('article', 'changelog-version');
-    const headerElement = createElement('div', 'changelog-header');
-    const versionTitle = title ? `v${version} — ${title}` : `v${version}`;
+  renderVersion(item) {
+    if (!item || typeof item !== 'object') {
+      return;
+    }
 
-    headerElement.appendChild(createElement('h3', 'changelog-version-number', versionTitle));
+    const version = this.toText(item.version);
+
+    if (!version) {
+      return;
+    }
+
+    const title = this.toText(item.title);
+    const changes = Array.isArray(item.changes) ? item.changes.filter(change => typeof change === 'string' && change.trim()) : [];
+    const versionElement = this.elementFactory.create('article', 'changelog-version');
+    const headerElement = this.elementFactory.create('div', 'changelog-header');
+    const versionTitle = title ? `v${version}: ${title}` : `v${version}`;
+
+    headerElement.appendChild(this.elementFactory.create('h3', 'changelog-version-number', versionTitle));
     versionElement.appendChild(headerElement);
 
-    if (Array.isArray(changes) && changes.length > 0) {
-      const changesList = createElement('ul', 'changelog-changes');
+    if (changes.length > 0) {
+      const changesList = this.elementFactory.create('ul', 'changelog-changes');
 
       changes.forEach(change => {
-        changesList.appendChild(createElement('li', '', change));
+        changesList.appendChild(this.elementFactory.create('li', '', change.trim()));
       });
 
       versionElement.appendChild(changesList);
     }
 
-    container.appendChild(versionElement);
-  });
-}
-
-function setupSmoothScroll() {
-  const anchors = document.querySelectorAll('a[href^="#"]');
-  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  anchors.forEach(anchor => {
-    anchor.addEventListener('click', event => {
-      const targetSelector = anchor.getAttribute('href');
-
-      if (!targetSelector || targetSelector === '#') {
-        return;
-      }
-
-      const target = document.querySelector(targetSelector);
-
-      if (!target) {
-        return;
-      }
-
-      event.preventDefault();
-      target.scrollIntoView({
-        behavior: prefersReducedMotion ? 'auto' : 'smooth',
-        block: 'start'
-      });
-    });
-  });
-}
-
-function setupMobileNav() {
-  const mobileNav = document.querySelector('.mobile-nav');
-
-  if (!mobileNav) {
-    return;
+    this.container.appendChild(versionElement);
   }
 
-  const links = mobileNav.querySelectorAll('.mobile-nav-link');
+  toText(value) {
+    return typeof value === 'string' ? value.trim() : '';
+  }
+}
 
-  links.forEach(link => {
-    link.addEventListener('click', () => {
-      mobileNav.removeAttribute('open');
+class AnchorScrollController {
+  constructor(documentRef, windowRef, options = {}) {
+    this.document = documentRef && typeof documentRef.querySelectorAll === 'function' ? documentRef : document;
+    this.window = windowRef && typeof windowRef.scrollTo === 'function' ? windowRef : window;
+    this.anchorSelector = typeof options.anchorSelector === 'string' ? options.anchorSelector : 'a[href^="#"]';
+    this.headerSelector = typeof options.headerSelector === 'string' ? options.headerSelector : '.site-header';
+    this.extraOffset = Number.isFinite(options.extraOffset) && options.extraOffset >= 0 ? options.extraOffset : 16;
+  }
+
+  init() {
+    const anchors = this.document.querySelectorAll(this.anchorSelector);
+
+    anchors.forEach(anchor => {
+      if (anchor instanceof HTMLAnchorElement) {
+        anchor.addEventListener('click', event => this.handleClick(event, anchor));
+      }
     });
-  });
+  }
 
-  document.addEventListener('click', event => {
-    if (!mobileNav.hasAttribute('open')) {
+  handleClick(event, anchor) {
+    if (!(event instanceof Event) || !(anchor instanceof HTMLAnchorElement)) {
       return;
     }
 
-    if (mobileNav.contains(event.target)) {
+    const targetId = this.getTargetId(anchor.getAttribute('href'));
+
+    if (!targetId) {
       return;
     }
 
-    mobileNav.removeAttribute('open');
-  });
+    const target = this.document.getElementById(targetId);
+
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+
+    event.preventDefault();
+    this.scrollToTarget(target);
+    this.updateHash(targetId);
+
+    if (this.shouldMoveFocus(anchor, target)) {
+      this.focusTarget(target);
+    }
+  }
+
+  getTargetId(href) {
+    if (typeof href !== 'string' || href.length < 2 || !href.startsWith('#')) {
+      return '';
+    }
+
+    try {
+      const targetId = decodeURIComponent(href.slice(1));
+      return /^[A-Za-z][A-Za-z0-9_-]*$/.test(targetId) ? targetId : '';
+    } catch {
+      return '';
+    }
+  }
+
+  scrollToTarget(target) {
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+
+    this.window.scrollTo({
+      top: this.getScrollTop(target),
+      behavior: this.prefersReducedMotion() ? 'auto' : 'smooth'
+    });
+  }
+
+  getScrollTop(target) {
+    if (!(target instanceof HTMLElement)) {
+      return 0;
+    }
+
+    const targetTop = target.getBoundingClientRect().top + this.window.scrollY;
+    return Math.max(0, Math.round(targetTop - this.getHeaderOffset()));
+  }
+
+  getHeaderOffset() {
+    const header = this.document.querySelector(this.headerSelector);
+
+    if (!(header instanceof HTMLElement)) {
+      return this.extraOffset;
+    }
+
+    return Math.ceil(header.getBoundingClientRect().height) + this.extraOffset;
+  }
+
+  updateHash(targetId) {
+    if (typeof targetId !== 'string' || !targetId) {
+      return;
+    }
+
+    this.window.history.pushState(null, '', `#${encodeURIComponent(targetId)}`);
+  }
+
+  shouldMoveFocus(anchor, target) {
+    if (!(anchor instanceof HTMLAnchorElement) || !(target instanceof HTMLElement)) {
+      return false;
+    }
+
+    return anchor.classList.contains('skip-link') || target.id === 'main-content';
+  }
+
+  focusTarget(target) {
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+
+    const hadTabIndex = target.hasAttribute('tabindex');
+
+    if (!this.isFocusable(target) && !hadTabIndex) {
+      target.setAttribute('tabindex', '-1');
+    }
+
+    target.focus({ preventScroll: true });
+
+    if (!hadTabIndex) {
+      target.addEventListener('blur', () => target.removeAttribute('tabindex'), { once: true });
+    }
+  }
+
+  isFocusable(target) {
+    return target instanceof HTMLElement && target.matches('a[href], button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])');
+  }
+
+  prefersReducedMotion() {
+    return this.window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+}
+
+class MobileNavController {
+  constructor(root, documentRef) {
+    this.root = root instanceof HTMLDetailsElement ? root : null;
+    this.document = documentRef && typeof documentRef.addEventListener === 'function' ? documentRef : document;
+    this.toggle = this.root ? this.root.querySelector('.mobile-nav-toggle') : null;
+    this.handleDocumentClick = this.handleDocumentClick.bind(this);
+    this.handleKeyDown = this.handleKeyDown.bind(this);
+  }
+
+  init() {
+    if (!this.root) {
+      return;
+    }
+
+    const links = this.root.querySelectorAll('.mobile-nav-link');
+
+    links.forEach(link => {
+      if (link instanceof HTMLAnchorElement) {
+        link.addEventListener('click', () => this.close());
+      }
+    });
+
+    this.root.addEventListener('toggle', () => this.syncExpandedState());
+    this.document.addEventListener('click', this.handleDocumentClick);
+    this.document.addEventListener('keydown', this.handleKeyDown);
+    this.syncExpandedState();
+  }
+
+  handleDocumentClick(event) {
+    if (!(event instanceof MouseEvent) || !this.root || !this.root.hasAttribute('open')) {
+      return;
+    }
+
+    if (event.target instanceof Node && this.root.contains(event.target)) {
+      return;
+    }
+
+    this.close();
+  }
+
+  handleKeyDown(event) {
+    if (!(event instanceof KeyboardEvent) || event.key !== 'Escape' || !this.root || !this.root.hasAttribute('open')) {
+      return;
+    }
+
+    this.close();
+
+    if (this.toggle instanceof HTMLElement) {
+      this.toggle.focus();
+    }
+  }
+
+  close() {
+    if (!this.root) {
+      return;
+    }
+
+    this.root.removeAttribute('open');
+    this.syncExpandedState();
+  }
+
+  syncExpandedState() {
+    if (!this.root || !(this.toggle instanceof HTMLElement)) {
+      return;
+    }
+
+    this.toggle.setAttribute('aria-expanded', this.root.hasAttribute('open') ? 'true' : 'false');
+  }
+}
+
+class LandingPageApp {
+  constructor(documentRef = document, windowRef = window) {
+    this.document = documentRef && typeof documentRef.getElementById === 'function' ? documentRef : document;
+    this.window = windowRef && typeof windowRef.matchMedia === 'function' ? windowRef : window;
+    this.elementFactory = new DomElementFactory();
+  }
+
+  init() {
+    new ChangelogRenderer(this.document.getElementById('changelog-list'), this.elementFactory).render(CHANGELOG_DATA);
+    new AnchorScrollController(this.document, this.window).init();
+    new MobileNavController(this.document.querySelector('.mobile-nav'), this.document).init();
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  renderChangelog(CHANGELOG_DATA);
-  setupSmoothScroll();
-  setupMobileNav();
+  new LandingPageApp(document, window).init();
 });
