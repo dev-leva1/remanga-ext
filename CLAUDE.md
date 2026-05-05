@@ -1,224 +1,224 @@
 # CLAUDE.md
 
-Guidance for Claude Code when working with this repository.
+Guidance for Claude Code in this repo.
 
 ## Проект
 
-Tampermonkey расширение для автоматизации действий на remanga.org (автолайк глав, массовая отметка прочитанных).
+Tampermonkey extension for remanga.org automation: chapter auto-like, bulk mark-as-read.
 
 ## Сборка и разработка
 
 ```bash
-# Сборка расширения
+# РЎР±РѕСЂРєР° СЂР°СЃС€РёСЂРµРЅРёСЏ
 npm run build
 
-# Разработка (сборка + инструкция)
+# Р Р°Р·СЂР°Р±РѕС‚РєР° (СЃР±РѕСЂРєР° + РёРЅСЃС‚СЂСѓРєС†РёСЏ)
 npm run dev
 ```
 
-Результат сборки: `dist/remanga-extension.user.js` - готовый userscript для Tampermonkey.
+Build output: `dist/remanga-extension.user.js` - ready Tampermonkey userscript.
 
 ## Архитектура
 
-Прагматичная ООП архитектура с четким разделением ответственности:
+Pragmatic OOP architecture. Clear responsibility split.
 
 ### Структура компонентов
 
 ```
 src/
-├── core/           # Ядро системы
-│   ├── Config.js       # Singleton для управления настройками (GM.getValue/setValue)
-│   └── ApiClient.js    # HTTP клиент с rate limiting (300ms между запросами)
-├── features/       # Бизнес-логика
-│   ├── ChapterManager.js  # Операции с главами (отметка, лайки, batch обработка)
-│   └── AutoLiker.js       # Автоматический лайк при открытии главы
-├── ui/             # UI компоненты
-│   ├── SettingsPanel.js   # Панель настроек (интеграция в dropdown меню)
-│   └── Notifications.js   # Toast уведомления
-└── utils/          # Утилиты
-    ├── validators.js      # Валидация и санитизация входных данных
-    ├── logger.js          # Логирование (включается через localStorage)
-    └── dom.js             # Работа с DOM (поиск элементов, извлечение ID)
+в”њв”Ђв”Ђ core/           # РЇРґСЂРѕ СЃРёСЃС‚РµРјС‹
+в”‚   в”њв”Ђв”Ђ Config.js       # Singleton РґР»СЏ СѓРїСЂР°РІР»РµРЅРёСЏ РЅР°СЃС‚СЂРѕР№РєР°РјРё (GM.getValue/setValue)
+в”‚   в””в”Ђв”Ђ ApiClient.js    # HTTP РєР»РёРµРЅС‚ СЃ rate limiting (300ms РјРµР¶РґСѓ Р·Р°РїСЂРѕСЃР°РјРё)
+в”њв”Ђв”Ђ features/       # Р‘РёР·РЅРµСЃ-Р»РѕРіРёРєР°
+в”‚   в”њв”Ђв”Ђ ChapterManager.js  # РћРїРµСЂР°С†РёРё СЃ РіР»Р°РІР°РјРё (РѕС‚РјРµС‚РєР°, Р»Р°Р№РєРё, batch РѕР±СЂР°Р±РѕС‚РєР°)
+в”‚   в””в”Ђв”Ђ AutoLiker.js       # РђРІС‚РѕРјР°С‚РёС‡РµСЃРєРёР№ Р»Р°Р№Рє РїСЂРё РѕС‚РєСЂС‹С‚РёРё РіР»Р°РІС‹
+в”њв”Ђв”Ђ ui/             # UI РєРѕРјРїРѕРЅРµРЅС‚С‹
+в”‚   в”њв”Ђв”Ђ SettingsPanel.js   # РџР°РЅРµР»СЊ РЅР°СЃС‚СЂРѕРµРє (РёРЅС‚РµРіСЂР°С†РёСЏ РІ dropdown РјРµРЅСЋ)
+в”‚   в””в”Ђв”Ђ Notifications.js   # Toast СѓРІРµРґРѕРјР»РµРЅРёСЏ
+в””в”Ђв”Ђ utils/          # РЈС‚РёР»РёС‚С‹
+    в”њв”Ђв”Ђ validators.js      # Р’Р°Р»РёРґР°С†РёСЏ Рё СЃР°РЅРёС‚РёР·Р°С†РёСЏ РІС…РѕРґРЅС‹С… РґР°РЅРЅС‹С…
+    в”њв”Ђв”Ђ logger.js          # Р›РѕРіРёСЂРѕРІР°РЅРёРµ (РІРєР»СЋС‡Р°РµС‚СЃСЏ С‡РµСЂРµР· localStorage)
+    в””в”Ђв”Ђ dom.js             # Р Р°Р±РѕС‚Р° СЃ DOM (РїРѕРёСЃРє СЌР»РµРјРµРЅС‚РѕРІ, РёР·РІР»РµС‡РµРЅРёРµ ID)
 ```
 
 ### Поток данных
 
 ```
-main.js (точка входа)
-  ├─> Config (загрузка настроек)
-  ├─> ApiClient (инициализация с токеном из cookie)
-  ├─> ChapterManager (бизнес-логика)
-  │     ├─> AutoLiker (автоматические действия)
-  │     └─> API запросы через ApiClient
-  └─> UI компоненты (SettingsPanel, Notifications)
+main.js (С‚РѕС‡РєР° РІС…РѕРґР°)
+  в”њв”Ђ> Config (Р·Р°РіСЂСѓР·РєР° РЅР°СЃС‚СЂРѕРµРє)
+  в”њв”Ђ> ApiClient (РёРЅРёС†РёР°Р»РёР·Р°С†РёСЏ СЃ С‚РѕРєРµРЅРѕРј РёР· cookie)
+  в”њв”Ђ> ChapterManager (Р±РёР·РЅРµСЃ-Р»РѕРіРёРєР°)
+  в”‚     в”њв”Ђ> AutoLiker (Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРёРµ РґРµР№СЃС‚РІРёСЏ)
+  в”‚     в””в”Ђ> API Р·Р°РїСЂРѕСЃС‹ С‡РµСЂРµР· ApiClient
+  в””в”Ђ> UI РєРѕРјРїРѕРЅРµРЅС‚С‹ (SettingsPanel, Notifications)
 ```
 
 ### Ключевые особенности
 
 **Config (Singleton):**
-- Хранение настроек через GM.getValue/GM.setValue
-- Валидация через validators.sanitizeSettings()
-- Значения по умолчанию в this.defaults
+- Store settings via GM.getValue/GM.setValue.
+- Validate via validators.sanitizeSettings().
+- Defaults in this.defaults.
 
 **ApiClient:**
-- Rate limiting: минимум 300ms между запросами
-- Автоподстановка токена из cookie (token=...)
-- Использует GM.xmlHttpRequest для обхода CORS
-- Timeout: 15 секунд
+- Rate limit: min 300ms between requests.
+- Auto token from cookie (token=...).
+- Use GM.xmlHttpRequest to bypass CORS.
+- Timeout: 15 sec.
 
 **ChapterManager:**
-- Batch обработка лайков: по 10 глав за раз
-- Задержки между операциями: 300-500ms
-- Метод loadAllChaptersByScroll() для загрузки всех глав через скролл страницы
-- Обновление UI кнопок после операций
+- Like batch: 10 chapters per batch.
+- Operation delays: 300-500ms.
+- loadAllChaptersByScroll() loads all chapters by page scroll.
+- Update UI buttons after operations.
 
 **main.js:**
-- Определение типа страницы: 'chapters' | 'reader' | 'other'
-- SPA навигация: перехват history.pushState/replaceState
-- MutationObserver для отслеживания изменений DOM
-- Двухэтапные операции: 1) загрузка глав через скролл, 2) обработка
+- Detect page type: 'chapters' | 'reader' | 'other'.
+- SPA navigation: intercept history.pushState/replaceState.
+- MutationObserver tracks DOM changes.
+- Two-step ops: 1) load chapters by scroll, 2) process.
 
 ## API Endpoints
 
-Официальное API remanga.org:
+Official remanga.org API:
 
-- `POST /api/activity/views/` - отметка главы как прочитанной
+- `POST /api/activity/views/` - mark chapter read
   - Body: `{ chapter: chapterId }`
-  
-- `POST /api/activity/votes/` - лайк глав (поддерживает массивы)
+
+- `POST /api/activity/votes/` - like chapter; supports arrays
   - Body: `{ chapter_ids: [id1, id2, ...] }`
-  
-- `GET /api/v2/titles/chapters/` - получение информации о главах
+
+- `GET /api/v2/titles/chapters/` - get chapter info
   - Params: `branch_id`, `user_data=1`, `ordering=-index`, `page`
 
 ## Безопасность
 
-**КРИТИЧНО:** Строгие правила безопасности:
+**КРИТИЧНО:** strict security rules:
 
-- Все входные данные проходят валидацию через validators.js
-- ID глав санитизируются: validators.sanitizeChapterId() / sanitizeChapterIds()
-- Токен извлекается из cookie и валидируется: validators.isValidToken()
-- Rate limiting защищает от бана (300ms между запросами)
-- Timeout для всех API запросов: 15 секунд
-- Обработка всех ошибок через try/catch с логированием
+- All input validated through validators.js.
+- Chapter IDs sanitized: validators.sanitizeChapterId() / sanitizeChapterIds().
+- Token extracted from cookie and validated: validators.isValidToken().
+- Rate limiting protects from ban: 300ms between requests.
+- API timeout: 15 sec.
+- All errors handled via try/catch + logging.
 
 ## Сборка (build.js)
 
-Простой сборщик без зависимостей:
-- Читает файлы в порядке (utils → core → features → ui → main)
-- Удаляет import/export, комментарии, пустые строки
-- Добавляет Tampermonkey header с версией из package.json
-- Оборачивает в IIFE: `(function(){ 'use strict'; ... })()`
-- Результат: один файл dist/remanga-extension.user.js
+Simple dependency-free builder:
+- Reads files in order: utils -> core -> features -> ui -> main.
+- Removes import/export, comments, empty lines.
+- Adds Tampermonkey header with version from package.json.
+- Wraps in IIFE: `(function(){ 'use strict'; ... })()`.
+- Output: single file dist/remanga-extension.user.js.
 
 ## Отладка
 
-Включить debug режим:
+Enable debug:
 ```javascript
 localStorage.setItem('remanga_ext_debug', 'true');
 ```
 
-После этого в консоли браузера будут детальные логи работы расширения.
+After this browser console shows detailed extension logs.
 
 ## Типы страниц
 
-Определение типа страницы по URL:
+Page type by URL:
 
-- **'chapters'**: `/manga/{название}/chapters` - страница списка глав
-  - Добавляются кнопки "Прочитать все" и "Лайкнуть все"
-  - MutationObserver отслеживает изменения DOM
-  
-- **'reader'**: `/manga/{название}/{chapterId}` - страница чтения
-  - Автолайк при открытии (если включено в настройках)
-  - Автоотметка как прочитанной
-  
-- **'other'**: остальные страницы
-  - Расширение неактивно
+- **'chapters'**: `/manga/{название}/chapters` - chapter list page
+  - Adds "Прочитать все" and "Лайкнуть все" buttons.
+  - MutationObserver tracks DOM changes.
+
+- **'reader'**: `/manga/{название}/{chapterId}` - reader page
+  - Auto-like on open if enabled in settings.
+  - Auto mark as read.
+
+- **'other'**: all other pages
+  - Extension inactive.
 
 ## Важные детали реализации
 
 **SPA навигация:**
-- Remanga.org использует React Router
-- Перехватываем history.pushState/replaceState для отслеживания переходов
-- Даем 300ms на рендеринг React перед инициализацией компонентов
+- Remanga.org uses React Router.
+- Intercept history.pushState/replaceState to track transitions.
+- Wait 300ms for React render before component init.
 
 **Массовые операции:**
-- Двухэтапный процесс с модальным окном прогресса
-- Этап 1: Загрузка всех глав через скролл (индикатор загрузки)
-- Этап 2: Обработка глав (прогресс-бар с процентами)
+- Two-step process with progress modal.
+- Step 1: load all chapters by scroll, show loading indicator.
+- Step 2: process chapters, show progress bar with percent.
 
 **UI интеграция:**
-- Настройки встроены в нативное dropdown меню пользователя
-- Кнопки используют классы сайта: 'cs-button'
-- Toast уведомления с анимацией появления/исчезновения
+- Settings embedded into native user dropdown menu.
+- Buttons use site class: 'cs-button'.
+- Toast notifications with show/hide animation.
 
 ## Принципы разработки
 
-- **ООП и SOLID**: каждый класс имеет одну ответственность
-- **Безопасность**: валидация всех входных данных, никогда не доверять пользовательскому вводу
-- **Производительность**: batch операции, rate limiting, минимальные манипуляции с DOM
-- **Отказоустойчивость**: обработка всех ошибок, graceful degradation
+- **ООП и SOLID**: each class has one responsibility.
+- **Безопасность**: validate all input; never trust user input.
+- **Производительность**: batch ops, rate limiting, minimal DOM manipulation.
+- **Отказоустойчивость**: handle all errors, graceful degradation.
 
 Behavioral guidelines to reduce common LLM coding mistakes.
 
-**Tradeoff:** Guidelines bias toward caution over speed. For trivial tasks, use judgment.
+**Tradeoff:** caution over speed. For trivial tasks, use judgment.
 
 ## 1. Think Before Coding
 
 **Don't assume. Don't hide confusion. Surface tradeoffs.**
 
-Before implementing:
-- State assumptions explicitly. If uncertain, ask.
-- If multiple interpretations exist, present them - don't pick silently.
-- If simpler approach exists, say so. Push back when warranted.
-- If unclear, stop. Name what's confusing. Ask.
+Before implementation:
+- State assumptions. If uncertain, ask.
+- If multiple interpretations exist, present them.
+- If simpler approach exists, say it. Push back when warranted.
+- If unclear, stop, name confusion, ask.
 
 ## 2. Simplicity First
 
 **Minimum code that solves problem. Nothing speculative.**
 
-- No features beyond what was asked.
+- No unasked features.
 - No abstractions for single-use code.
-- No "flexibility" or "configurability" that wasn't requested.
-- No error handling for impossible scenarios.
-- If you write 200 lines and it could be 50, rewrite it.
+- No unrequested flexibility/configurability.
+- No impossible-scenario error handling.
+- If 200 lines could be 50, rewrite.
 
-Ask yourself: "Would senior engineer say this is overcomplicated?" If yes, simplify.
+Ask: "Would senior engineer say overcomplicated?" If yes, simplify.
 
 ## 3. Surgical Changes
 
-**Touch only what you must. Clean up only your own mess.**
+**Touch only must. Clean only own mess.**
 
 When editing existing code:
-- Don't "improve" adjacent code, comments, or formatting.
-- Don't refactor things that aren't broken.
-- Match existing style, even if you'd do it differently.
-- If you notice unrelated dead code, mention it - don't delete it.
+- Don't improve adjacent code/comments/formatting.
+- Don't refactor unbroken code.
+- Match existing style.
+- If unrelated dead code found, mention it; don't delete.
 
-When your changes create orphans:
-- Remove imports/variables/functions that YOUR changes made unused.
+When changes create orphans:
+- Remove imports/variables/functions made unused by your changes.
 - Don't remove pre-existing dead code unless asked.
 
-Test: Every changed line should trace directly to user's request.
+Test: every changed line must trace to user request.
 
 ## 4. Goal-Driven Execution
 
 **Define success criteria. Loop until verified.**
 
 Transform tasks into verifiable goals:
-- "Add validation" → "Write tests for invalid inputs, then make them pass"
-- "Fix bug" → "Write test that reproduces it, then make it pass"
-- "Refactor X" → "Ensure tests pass before and after"
+- "Add validation" -> "Write invalid-input tests, then pass"
+- "Fix bug" -> "Write reproducing test, then pass"
+- "Refactor X" -> "Ensure tests pass before and after"
 
 For multi-step tasks, state brief plan:
 ```
-1. [Step] → verify: [check]
-2. [Step] → verify: [check]
-3. [Step] → verify: [check]
+1. [Step] в†’ verify: [check]
+2. [Step] в†’ verify: [check]
+3. [Step] в†’ verify: [check]
 ```
 
-Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+Strong success criteria enable independent loop. Weak criteria ("make it work") need clarification.
 
 ---
 
-**Guidelines working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, clarifying questions come before implementation rather than after mistakes.
+**Guidelines working if:** fewer useless diffs, fewer overcomplication rewrites, clarification before implementation.
