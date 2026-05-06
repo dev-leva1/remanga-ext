@@ -175,6 +175,20 @@ class ApiClient {
     });
   }
 
+  async commentChapter(chapterId, text) {
+    const validId = validators.sanitizeChapterId(chapterId);
+    const validText = validators.sanitizeCommentText(text);
+    logger.debug(`Комментарий к главе ${validId}`);
+
+    return this.request('/api/v2/activity/comments/', {
+      method: 'POST',
+      body: {
+        text: validText,
+        chapter: validId
+      }
+    });
+  }
+
   /**
    * Получение информации о главах
    */

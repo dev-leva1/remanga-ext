@@ -30,6 +30,7 @@ const files = [
   'src/features/RandomTitleNavigator.js',
   'src/features/TitleCoverPreview.js',
   'src/features/ChapterManager.js',
+  'src/features/AutoCommenter.js',
   'src/features/AutoLiker.js',
   'src/main.js'
 ];

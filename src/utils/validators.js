@@ -90,6 +90,43 @@ const validators = {
     return trimmed;
   },
 
+  sanitizeOptionalCommentText(value) {
+    if (value === null || value === undefined) {
+      return '';
+    }
+
+    if (typeof value !== 'string') {
+      throw new Error('Текст комментария должен быть строкой');
+    }
+
+    const textWithoutControlCharacters = [...value].filter(character => {
+      const code = character.charCodeAt(0);
+      return !((code >= 0 && code <= 8) || code === 11 || code === 12 || (code >= 14 && code <= 31) || code === 127);
+    }).join('');
+
+    const normalized = textWithoutControlCharacters
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
+      .replace(/[ \t]+\n/g, '\n')
+      .trim();
+
+    if (normalized.length > 500) {
+      throw new Error('Текст комментария не должен быть длиннее 500 символов');
+    }
+
+    return normalized;
+  },
+
+  sanitizeCommentText(value) {
+    const text = this.sanitizeOptionalCommentText(value);
+
+    if (text.length === 0) {
+      throw new Error('Текст комментария не может быть пустым');
+    }
+
+    return text;
+  },
+
   /**
    * Санитизация настроек
    */
@@ -102,6 +139,14 @@ const validators = {
 
     if ('autoLike' in settings) {
       sanitized.autoLike = Boolean(settings.autoLike);
+    }
+
+    if ('autoCommentEnabled' in settings) {
+      sanitized.autoCommentEnabled = Boolean(settings.autoCommentEnabled);
+    }
+
+    if ('autoCommentText' in settings) {
+      sanitized.autoCommentText = this.sanitizeOptionalCommentText(settings.autoCommentText);
     }
 
     if ('notificationsEnabled' in settings) {

@@ -271,6 +271,8 @@ class SettingsPage {
    * Вкладка "Автоматизация"
    */
   renderAutomationTab() {
+    const autoCommentText = this.escapeAttribute(this.config.get('autoCommentText') || '');
+
     return `
       <section style="background: ${DESIGN_TOKENS.colors.bg.secondary}; padding: ${DESIGN_TOKENS.spacing.xl}; border-radius: ${DESIGN_TOKENS.radius.lg};">
         <h2 style="margin: 0 0 ${DESIGN_TOKENS.spacing.lg} 0; font-size: ${DESIGN_TOKENS.typography.fontSize.xl}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.semibold}; color: ${DESIGN_TOKENS.colors.text.primary};">
@@ -286,6 +288,36 @@ class SettingsPage {
               <div style="font-size: ${DESIGN_TOKENS.typography.fontSize.sm}; color: ${DESIGN_TOKENS.colors.text.muted};">Автоматически ставить лайк при открытии главы</div>
             </div>
           </label>
+
+          <label style="display: flex; align-items: center; gap: ${DESIGN_TOKENS.spacing.md}; cursor: pointer;">
+            <input type="checkbox" id="autoCommentEnabled" ${this.config.get('autoCommentEnabled') ? 'checked' : ''}
+                   style="width: 20px; height: 20px; cursor: pointer;">
+            <div>
+              <div style="font-weight: ${DESIGN_TOKENS.typography.fontWeight.medium}; color: ${DESIGN_TOKENS.colors.text.primary};">Автокомментарий главы</div>
+              <div style="font-size: ${DESIGN_TOKENS.typography.fontSize.sm}; color: ${DESIGN_TOKENS.colors.text.muted};">Отправлять комментарий после дочитывания главы до конца, максимум 4 комментария в минуту</div>
+            </div>
+          </label>
+
+          <div>
+            <label for="autoCommentText" style="display: block; margin-bottom: ${DESIGN_TOKENS.spacing.sm}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.medium}; color: ${DESIGN_TOKENS.colors.text.primary};">
+              Текст автокомментария
+            </label>
+            <textarea id="autoCommentText" maxlength="500" rows="4" style="
+              width: 100%;
+              box-sizing: border-box;
+              resize: vertical;
+              padding: ${DESIGN_TOKENS.spacing.md};
+              background: ${DESIGN_TOKENS.colors.bg.primary};
+              color: ${DESIGN_TOKENS.colors.text.primary};
+              border: 1px solid #374151;
+              border-radius: ${DESIGN_TOKENS.radius.md};
+              font-size: ${DESIGN_TOKENS.typography.fontSize.md};
+              font-family: ${DESIGN_TOKENS.typography.fontFamily};
+            ">${autoCommentText}</textarea>
+            <div style="margin-top: ${DESIGN_TOKENS.spacing.xs}; font-size: ${DESIGN_TOKENS.typography.fontSize.sm}; color: ${DESIGN_TOKENS.colors.text.muted};">
+              Пустой текст не сохраняется при включенной опции
+            </div>
+          </div>
 
           <label style="display: flex; align-items: center; gap: ${DESIGN_TOKENS.spacing.md}; cursor: pointer;">
             <input type="checkbox" id="skipProcessed" ${this.config.get('skipProcessed') ? 'checked' : ''}
@@ -464,6 +496,7 @@ class SettingsPage {
           <div style="display: flex; flex-direction: column; gap: ${DESIGN_TOKENS.spacing.md}; color: ${DESIGN_TOKENS.colors.text.secondary};">
             <div>Прочитано глав: <span style="color: ${DESIGN_TOKENS.colors.text.primary}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.semibold};">${stats.chaptersRead}</span></div>
             <div>Лайков поставлено: <span style="color: ${DESIGN_TOKENS.colors.text.primary}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.semibold};">${stats.chaptersLiked}</span></div>
+            <div>Комментариев отправлено: <span style="color: ${DESIGN_TOKENS.colors.text.primary}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.semibold};">${stats.chaptersCommented}</span></div>
             <div>Дата установки: <span style="color: ${DESIGN_TOKENS.colors.text.primary};">${installDate}</span></div>
           </div>
           <button id="reset-stats" style="
@@ -659,8 +692,18 @@ class SettingsPage {
         hideProfileBlocks[checkbox.dataset.block] = checkbox.checked;
       });
 
+      const autoCommentEnabled = this.container.querySelector('#autoCommentEnabled')?.checked ?? this.config.get('autoCommentEnabled');
+      const autoCommentText = this.container.querySelector('#autoCommentText')?.value ?? this.config.get('autoCommentText');
+
+      if (autoCommentEnabled && !String(autoCommentText).trim()) {
+        this.notifications.error('Укажите текст автокомментария');
+        return;
+      }
+
       const settings = {
         autoLike: this.container.querySelector('#autoLike')?.checked ?? this.config.get('autoLike'),
+        autoCommentEnabled,
+        autoCommentText,
         skipProcessed: this.container.querySelector('#skipProcessed')?.checked ?? this.config.get('skipProcessed'),
         batchSize: Number(String(this.container.querySelector('#batchSize')?.value ?? this.config.get('batchSize')).trim()),
         notificationsEnabled: this.container.querySelector('#notificationsEnabled')?.checked ?? this.config.get('notificationsEnabled'),
@@ -713,6 +756,15 @@ class SettingsPage {
     } else {
       lastCheckInfo.textContent = 'Информация недоступна';
     }
+  }
+
+  escapeAttribute(value) {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   /**

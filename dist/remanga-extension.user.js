@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Remanga Enhanced
 // @namespace    remanga.ext
-// @version      1.7.0
+// @version      1.8.0
 // @description  Автоматизация действий на remanga.org: автолайк, массовая отметка глав
 // @author       dev-leva1
 // @match        https://remanga.org/*
@@ -17,6 +17,13 @@
 
 /**
  * CHANGELOG
+ *
+ * v1.8.0 - Автокомментарии глав
+ * - Добавлен автокомментарий главы после дочитывания до конца с настраиваемым текстом
+ * - Добавлен лимит автокомментариев: максимум 4 комментария в минуту с сохранением состояния в GM storage
+ * - Добавлена валидация и санитизация текста комментария, включая fail-safe отключение при пустом тексте
+ * - Добавлена статистика отправленных комментариев и настройки автокомментария во вкладке автоматизации
+ * - Добавлен API-вызов `POST /api/v2/activity/comments/` и включение AutoCommenter в сборку userscript
  *
  * v1.7.0 - Усиление runtime-границ и feedback-bot
  * - Усилена валидация API-запросов, deep link контекста обратной связи и пользовательских данных
@@ -220,6 +227,43 @@ const validators = {
     return trimmed;
   },
 
+  sanitizeOptionalCommentText(value) {
+    if (value === null || value === undefined) {
+      return '';
+    }
+
+    if (typeof value !== 'string') {
+      throw new Error('Текст комментария должен быть строкой');
+    }
+
+    const textWithoutControlCharacters = [...value].filter(character => {
+      const code = character.charCodeAt(0);
+      return !((code >= 0 && code <= 8) || code === 11 || code === 12 || (code >= 14 && code <= 31) || code === 127);
+    }).join('');
+
+    const normalized = textWithoutControlCharacters
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
+      .replace(/[ \t]+\n/g, '\n')
+      .trim();
+
+    if (normalized.length > 500) {
+      throw new Error('Текст комментария не должен быть длиннее 500 символов');
+    }
+
+    return normalized;
+  },
+
+  sanitizeCommentText(value) {
+    const text = this.sanitizeOptionalCommentText(value);
+
+    if (text.length === 0) {
+      throw new Error('Текст комментария не может быть пустым');
+    }
+
+    return text;
+  },
+
   /**
    * Санитизация настроек
    */
@@ -232,6 +276,14 @@ const validators = {
 
     if ('autoLike' in settings) {
       sanitized.autoLike = Boolean(settings.autoLike);
+    }
+
+    if ('autoCommentEnabled' in settings) {
+      sanitized.autoCommentEnabled = Boolean(settings.autoCommentEnabled);
+    }
+
+    if ('autoCommentText' in settings) {
+      sanitized.autoCommentText = this.sanitizeOptionalCommentText(settings.autoCommentText);
     }
 
     if ('notificationsEnabled' in settings) {
@@ -806,6 +858,8 @@ class Config {
 
     this.defaults = {
       autoLike: false,
+      autoCommentEnabled: false,
+      autoCommentText: '',
       notificationsEnabled: true,
       notificationDuration: 3,
       batchSize: 10,
@@ -869,7 +923,7 @@ class Config {
       ? settings
       : {};
 
-    return {
+    const merged = {
       ...this.defaults,
       ...source,
       hideProfileBlocks: {
@@ -877,6 +931,12 @@ class Config {
         ...(source.hideProfileBlocks || {})
       }
     };
+
+    if (merged.autoCommentEnabled && !merged.autoCommentText) {
+      merged.autoCommentEnabled = false;
+    }
+
+    return merged;
   }
 
   /**
@@ -934,7 +994,7 @@ class Config {
    */
   export() {
     const exportData = {
-      version: '1.7.0',
+      version: '1.8.0',
       exportDate: new Date().toISOString(),
       settings: this.settings
     };
@@ -989,6 +1049,7 @@ class Statistics {
     this.stats = {
       chaptersRead: 0,
       chaptersLiked: 0,
+      chaptersCommented: 0,
       installDate: null
     };
 
@@ -1013,10 +1074,12 @@ class Statistics {
 
         const validRead = Number(String(parsed.chaptersRead).trim());
         const validLiked = Number(String(parsed.chaptersLiked).trim());
+        const validCommented = Number(String(parsed.chaptersCommented).trim());
 
         this.stats = {
           chaptersRead: (Number.isInteger(validRead) && validRead >= 0) ? validRead : 0,
           chaptersLiked: (Number.isInteger(validLiked) && validLiked >= 0) ? validLiked : 0,
+          chaptersCommented: (Number.isInteger(validCommented) && validCommented >= 0) ? validCommented : 0,
           installDate: parsed.installDate || new Date().toISOString()
         };
       } else {
@@ -1072,6 +1135,15 @@ class Statistics {
     await this.save();
   }
 
+  async incrementComments(count = 1) {
+    const validCount = Number(String(count).trim());
+    if (!Number.isInteger(validCount) || validCount < 0) {
+      throw new Error(`Невалидное значение count: ${count}`);
+    }
+    this.stats.chaptersCommented += validCount;
+    await this.save();
+  }
+
   /**
    * Получить статистику
    */
@@ -1086,6 +1158,7 @@ class Statistics {
     this.stats = {
       chaptersRead: 0,
       chaptersLiked: 0,
+      chaptersCommented: 0,
       installDate: new Date().toISOString()
     };
     await this.save();
@@ -1270,6 +1343,20 @@ class ApiClient {
     });
   }
 
+  async commentChapter(chapterId, text) {
+    const validId = validators.sanitizeChapterId(chapterId);
+    const validText = validators.sanitizeCommentText(text);
+    logger.debug(`Комментарий к главе ${validId}`);
+
+    return this.request('/api/v2/activity/comments/', {
+      method: 'POST',
+      body: {
+        text: validText,
+        chapter: validId
+      }
+    });
+  }
+
   /**
    * Получение информации о главах
    */
@@ -1373,7 +1460,7 @@ class UpdateChecker {
     this.config = config;
     this.notifications = notifications;
     this.updateURL = 'https://ext.nexee.ru/remanga-extension.user.js';
-    this.currentVersion = '1.7.0';
+    this.currentVersion = '1.8.0';
     this.checkInterval = 12 * 60 * 60 * 1000;
     this.isChecking = false;
     this.modal = null;
@@ -2377,7 +2464,7 @@ class SettingsPage {
     this.notifications = notifications;
     this.statistics = statistics;
     this.container = null;
-    this.currentVersion = '1.7.0';
+    this.currentVersion = '1.8.0';
     this.activeTab = 'automation';
     this.controller = collaborators instanceof SettingsPageController
       ? collaborators
@@ -2639,6 +2726,8 @@ class SettingsPage {
    * Вкладка "Автоматизация"
    */
   renderAutomationTab() {
+    const autoCommentText = this.escapeAttribute(this.config.get('autoCommentText') || '');
+
     return `
       <section style="background: ${DESIGN_TOKENS.colors.bg.secondary}; padding: ${DESIGN_TOKENS.spacing.xl}; border-radius: ${DESIGN_TOKENS.radius.lg};">
         <h2 style="margin: 0 0 ${DESIGN_TOKENS.spacing.lg} 0; font-size: ${DESIGN_TOKENS.typography.fontSize.xl}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.semibold}; color: ${DESIGN_TOKENS.colors.text.primary};">
@@ -2654,6 +2743,36 @@ class SettingsPage {
               <div style="font-size: ${DESIGN_TOKENS.typography.fontSize.sm}; color: ${DESIGN_TOKENS.colors.text.muted};">Автоматически ставить лайк при открытии главы</div>
             </div>
           </label>
+
+          <label style="display: flex; align-items: center; gap: ${DESIGN_TOKENS.spacing.md}; cursor: pointer;">
+            <input type="checkbox" id="autoCommentEnabled" ${this.config.get('autoCommentEnabled') ? 'checked' : ''}
+                   style="width: 20px; height: 20px; cursor: pointer;">
+            <div>
+              <div style="font-weight: ${DESIGN_TOKENS.typography.fontWeight.medium}; color: ${DESIGN_TOKENS.colors.text.primary};">Автокомментарий главы</div>
+              <div style="font-size: ${DESIGN_TOKENS.typography.fontSize.sm}; color: ${DESIGN_TOKENS.colors.text.muted};">Отправлять комментарий после дочитывания главы до конца, максимум 4 комментария в минуту</div>
+            </div>
+          </label>
+
+          <div>
+            <label for="autoCommentText" style="display: block; margin-bottom: ${DESIGN_TOKENS.spacing.sm}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.medium}; color: ${DESIGN_TOKENS.colors.text.primary};">
+              Текст автокомментария
+            </label>
+            <textarea id="autoCommentText" maxlength="500" rows="4" style="
+              width: 100%;
+              box-sizing: border-box;
+              resize: vertical;
+              padding: ${DESIGN_TOKENS.spacing.md};
+              background: ${DESIGN_TOKENS.colors.bg.primary};
+              color: ${DESIGN_TOKENS.colors.text.primary};
+              border: 1px solid #374151;
+              border-radius: ${DESIGN_TOKENS.radius.md};
+              font-size: ${DESIGN_TOKENS.typography.fontSize.md};
+              font-family: ${DESIGN_TOKENS.typography.fontFamily};
+            ">${autoCommentText}</textarea>
+            <div style="margin-top: ${DESIGN_TOKENS.spacing.xs}; font-size: ${DESIGN_TOKENS.typography.fontSize.sm}; color: ${DESIGN_TOKENS.colors.text.muted};">
+              Пустой текст не сохраняется при включенной опции
+            </div>
+          </div>
 
           <label style="display: flex; align-items: center; gap: ${DESIGN_TOKENS.spacing.md}; cursor: pointer;">
             <input type="checkbox" id="skipProcessed" ${this.config.get('skipProcessed') ? 'checked' : ''}
@@ -2832,6 +2951,7 @@ class SettingsPage {
           <div style="display: flex; flex-direction: column; gap: ${DESIGN_TOKENS.spacing.md}; color: ${DESIGN_TOKENS.colors.text.secondary};">
             <div>Прочитано глав: <span style="color: ${DESIGN_TOKENS.colors.text.primary}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.semibold};">${stats.chaptersRead}</span></div>
             <div>Лайков поставлено: <span style="color: ${DESIGN_TOKENS.colors.text.primary}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.semibold};">${stats.chaptersLiked}</span></div>
+            <div>Комментариев отправлено: <span style="color: ${DESIGN_TOKENS.colors.text.primary}; font-weight: ${DESIGN_TOKENS.typography.fontWeight.semibold};">${stats.chaptersCommented}</span></div>
             <div>Дата установки: <span style="color: ${DESIGN_TOKENS.colors.text.primary};">${installDate}</span></div>
           </div>
           <button id="reset-stats" style="
@@ -3027,8 +3147,18 @@ class SettingsPage {
         hideProfileBlocks[checkbox.dataset.block] = checkbox.checked;
       });
 
+      const autoCommentEnabled = this.container.querySelector('#autoCommentEnabled')?.checked ?? this.config.get('autoCommentEnabled');
+      const autoCommentText = this.container.querySelector('#autoCommentText')?.value ?? this.config.get('autoCommentText');
+
+      if (autoCommentEnabled && !String(autoCommentText).trim()) {
+        this.notifications.error('Укажите текст автокомментария');
+        return;
+      }
+
       const settings = {
         autoLike: this.container.querySelector('#autoLike')?.checked ?? this.config.get('autoLike'),
+        autoCommentEnabled,
+        autoCommentText,
         skipProcessed: this.container.querySelector('#skipProcessed')?.checked ?? this.config.get('skipProcessed'),
         batchSize: Number(String(this.container.querySelector('#batchSize')?.value ?? this.config.get('batchSize')).trim()),
         notificationsEnabled: this.container.querySelector('#notificationsEnabled')?.checked ?? this.config.get('notificationsEnabled'),
@@ -3081,6 +3211,15 @@ class SettingsPage {
     } else {
       lastCheckInfo.textContent = 'Информация недоступна';
     }
+  }
+
+  escapeAttribute(value) {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   /**
@@ -3447,7 +3586,7 @@ class FeedbackButton {
    * Получение версии расширения
    */
   getVersion() {
-    return '1.7.0'; // Заменяется при сборке
+    return '1.8.0'; // Заменяется при сборке
   }
 
   resolveBotUsername() {
@@ -5301,6 +5440,233 @@ class ChapterManager {
   }
 }
 
+class CommentRateLimiter {
+  constructor(storageKey = 'autoCommentRateLimitTimestamps', maxActions = 4, windowMs = 60000) {
+    this.storageKey = storageKey;
+    this.maxActions = maxActions;
+    this.windowMs = windowMs;
+    this.timestamps = [];
+    this.loaded = false;
+  }
+
+  async load() {
+    if (this.loaded) {
+      return;
+    }
+
+    try {
+      const stored = await GM.getValue(this.storageKey, '[]');
+      const parsed = JSON.parse(stored);
+      this.timestamps = this.normalizeTimestamps(parsed);
+      this.loaded = true;
+    } catch (error) {
+      logger.warn('Не удалось загрузить лимит автокомментариев:', error);
+      this.timestamps = [];
+      this.loaded = true;
+      await this.save();
+    }
+  }
+
+  normalizeTimestamps(values) {
+    if (!Array.isArray(values)) {
+      return [];
+    }
+
+    const now = Date.now();
+    return values
+      .map(value => Number(String(value).trim()))
+      .filter(value => Number.isInteger(value) && value > 0 && now - value < this.windowMs)
+      .sort((a, b) => a - b);
+  }
+
+  getRecent(now = Date.now()) {
+    return this.timestamps.filter(timestamp => now - timestamp < this.windowMs);
+  }
+
+  async save() {
+    await GM.setValue(this.storageKey, JSON.stringify(this.timestamps));
+  }
+
+  async tryReserve() {
+    await this.load();
+
+    const now = Date.now();
+    this.timestamps = this.getRecent(now);
+
+    if (this.timestamps.length >= this.maxActions) {
+      await this.save();
+      return false;
+    }
+
+    this.timestamps.push(now);
+    await this.save();
+    return true;
+  }
+
+  getRetryAfterMs() {
+    const now = Date.now();
+    const recent = this.getRecent(now);
+
+    if (recent.length < this.maxActions) {
+      return 0;
+    }
+
+    return Math.max(0, recent[0] + this.windowMs - now);
+  }
+}
+
+class AutoCommenter {
+  constructor(chapterManager, apiClient, config, notifications, statistics, rateLimiter = new CommentRateLimiter()) {
+    this.chapterManager = chapterManager;
+    this.api = apiClient;
+    this.config = config;
+    this.notifications = notifications;
+    this.statistics = statistics;
+    this.rateLimiter = rateLimiter;
+    this.storageKey = 'autoCommentedChapters';
+    this.commentedChapters = new Set();
+    this.currentChapterId = null;
+    this.commentText = '';
+    this.initialized = false;
+    this.commenting = false;
+    this.bottomTimer = null;
+    this.retryTimer = null;
+    this.scrollHandler = this.handleScroll.bind(this);
+  }
+
+  async init() {
+    this.cleanup();
+
+    if (!this.config.get('autoCommentEnabled')) {
+      logger.debug('Автокомментарии отключены');
+      return;
+    }
+
+    try {
+      this.commentText = validators.sanitizeCommentText(this.config.get('autoCommentText'));
+      this.currentChapterId = validators.sanitizeChapterId(this.chapterManager.getCurrentChapterId());
+      await this.loadCommentedChapters();
+
+      if (this.commentedChapters.has(this.currentChapterId)) {
+        logger.debug(`Глава ${this.currentChapterId} уже была прокомментирована`);
+        return;
+      }
+
+      this.initialized = true;
+      window.addEventListener('scroll', this.scrollHandler, { passive: true });
+      window.addEventListener('resize', this.scrollHandler, { passive: true });
+      this.handleScroll();
+    } catch (error) {
+      logger.warn('Автокомментарии не инициализированы:', error);
+    }
+  }
+
+  async loadCommentedChapters() {
+    try {
+      const stored = await GM.getValue(this.storageKey, '[]');
+      const parsed = JSON.parse(stored);
+      const ids = Array.isArray(parsed)
+        ? parsed
+          .filter(value => validators.isChapterId(value))
+          .map(value => validators.sanitizeChapterId(value))
+        : [];
+
+      this.commentedChapters = new Set(ids);
+    } catch (error) {
+      logger.warn('Не удалось загрузить историю автокомментариев:', error);
+      this.commentedChapters = new Set();
+      await this.saveCommentedChapters();
+    }
+  }
+
+  async saveCommentedChapters() {
+    await GM.setValue(this.storageKey, JSON.stringify([...this.commentedChapters]));
+  }
+
+  handleScroll() {
+    if (!this.initialized || this.commenting || !domUtils.isAtPageBottom(300)) {
+      return;
+    }
+
+    if (this.bottomTimer) {
+      clearTimeout(this.bottomTimer);
+    }
+
+    this.bottomTimer = setTimeout(() => {
+      this.bottomTimer = null;
+      this.tryComment();
+    }, 800);
+  }
+
+  async tryComment() {
+    if (!this.initialized || this.commenting || !domUtils.isAtPageBottom(300)) {
+      return;
+    }
+
+    if (this.commentedChapters.has(this.currentChapterId)) {
+      this.cleanup();
+      return;
+    }
+
+    this.commenting = true;
+
+    try {
+      const reserved = await this.rateLimiter.tryReserve();
+
+      if (!reserved) {
+        const retryAfterMs = this.rateLimiter.getRetryAfterMs();
+        this.notifications.warning('Лимит автокомментариев: максимум 4 комментария в минуту');
+        this.scheduleRetry(retryAfterMs);
+        return;
+      }
+
+      await this.api.commentChapter(this.currentChapterId, this.commentText);
+      this.commentedChapters.add(this.currentChapterId);
+      await this.saveCommentedChapters();
+      await this.statistics.incrementComments(1);
+      this.notifications.success('Глава автоматически прокомментирована');
+      this.cleanup();
+    } catch (error) {
+      logger.error('Ошибка автокомментария:', error);
+      this.notifications.error('Не удалось автоматически отправить комментарий');
+    } finally {
+      this.commenting = false;
+    }
+  }
+
+  scheduleRetry(delayMs) {
+    if (this.retryTimer) {
+      clearTimeout(this.retryTimer);
+    }
+
+    const safeDelay = Math.max(1000, Number(String(delayMs).trim()) || 1000);
+    this.retryTimer = setTimeout(() => {
+      this.retryTimer = null;
+      this.tryComment();
+    }, safeDelay);
+  }
+
+  cleanup() {
+    window.removeEventListener('scroll', this.scrollHandler);
+    window.removeEventListener('resize', this.scrollHandler);
+
+    if (this.bottomTimer) {
+      clearTimeout(this.bottomTimer);
+      this.bottomTimer = null;
+    }
+
+    if (this.retryTimer) {
+      clearTimeout(this.retryTimer);
+      this.retryTimer = null;
+    }
+
+    this.initialized = false;
+    this.commenting = false;
+    this.currentChapterId = null;
+    this.commentText = '';
+  }
+}
+
 /**
  * Автолайк глав при открытии
  */
@@ -5388,6 +5754,7 @@ class RemangaExtension {
     this.statistics = null;
     this.chapterManager = null;
     this.autoLiker = null;
+    this.autoCommenter = null;
     this.notifications = null;
     this.settingsPanel = null;
     this.updateChecker = null;
@@ -5432,6 +5799,7 @@ class RemangaExtension {
 
       this.chapterManager = new ChapterManager(this.api, this.config, this.notifications, this.statistics);
       this.autoLiker = new AutoLiker(this.chapterManager, this.config, this.notifications);
+      this.autoCommenter = new AutoCommenter(this.chapterManager, this.api, this.config, this.notifications, this.statistics);
       this.settingsPanel = new SettingsPanel(this.config, this.notifications, this.statistics, {
         onOpenSettings: () => {
           if (this.settingsPage) {
@@ -5556,6 +5924,10 @@ class RemangaExtension {
     if (this.settingsPage) {
       this.settingsPage.cleanup();
     }
+
+    if (this.autoCommenter) {
+      this.autoCommenter.cleanup();
+    }
   }
 
   disconnectPageObservers() {
@@ -5600,6 +5972,9 @@ class RemangaExtension {
     if (this.titleCoverPreview) {
       this.titleCoverPreview.cleanup();
     }
+    if (this.autoCommenter) {
+      this.autoCommenter.cleanup();
+    }
     window.removeEventListener('beforeunload', this.boundCleanup);
     logger.info('Ресурсы расширения очищены');
   }
@@ -5633,6 +6008,10 @@ class RemangaExtension {
     if (pageType === 'title') {
       this.cleanupTitlePage();
       this.initTitlePage();
+    }
+
+    if (pageType === 'reader') {
+      await this.initReaderPage();
     }
 
     if (this.randomTitleNavigator) {
@@ -5763,6 +6142,10 @@ class RemangaExtension {
 
     if (this.config.get('autoLike')) {
       await this.autoLiker.init();
+    }
+
+    if (this.config.get('autoCommentEnabled')) {
+      await this.autoCommenter.init();
     }
   }
 

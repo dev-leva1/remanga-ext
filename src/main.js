@@ -10,6 +10,7 @@ class RemangaExtension {
     this.statistics = null;
     this.chapterManager = null;
     this.autoLiker = null;
+    this.autoCommenter = null;
     this.notifications = null;
     this.settingsPanel = null;
     this.updateChecker = null;
@@ -54,6 +55,7 @@ class RemangaExtension {
 
       this.chapterManager = new ChapterManager(this.api, this.config, this.notifications, this.statistics);
       this.autoLiker = new AutoLiker(this.chapterManager, this.config, this.notifications);
+      this.autoCommenter = new AutoCommenter(this.chapterManager, this.api, this.config, this.notifications, this.statistics);
       this.settingsPanel = new SettingsPanel(this.config, this.notifications, this.statistics, {
         onOpenSettings: () => {
           if (this.settingsPage) {
@@ -178,6 +180,10 @@ class RemangaExtension {
     if (this.settingsPage) {
       this.settingsPage.cleanup();
     }
+
+    if (this.autoCommenter) {
+      this.autoCommenter.cleanup();
+    }
   }
 
   disconnectPageObservers() {
@@ -222,6 +228,9 @@ class RemangaExtension {
     if (this.titleCoverPreview) {
       this.titleCoverPreview.cleanup();
     }
+    if (this.autoCommenter) {
+      this.autoCommenter.cleanup();
+    }
     window.removeEventListener('beforeunload', this.boundCleanup);
     logger.info('Ресурсы расширения очищены');
   }
@@ -255,6 +264,10 @@ class RemangaExtension {
     if (pageType === 'title') {
       this.cleanupTitlePage();
       this.initTitlePage();
+    }
+
+    if (pageType === 'reader') {
+      await this.initReaderPage();
     }
 
     if (this.randomTitleNavigator) {
@@ -385,6 +398,10 @@ class RemangaExtension {
 
     if (this.config.get('autoLike')) {
       await this.autoLiker.init();
+    }
+
+    if (this.config.get('autoCommentEnabled')) {
+      await this.autoCommenter.init();
     }
   }
 

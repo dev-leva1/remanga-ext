@@ -14,6 +14,7 @@ class Statistics {
     this.stats = {
       chaptersRead: 0,
       chaptersLiked: 0,
+      chaptersCommented: 0,
       installDate: null
     };
 
@@ -38,10 +39,12 @@ class Statistics {
 
         const validRead = Number(String(parsed.chaptersRead).trim());
         const validLiked = Number(String(parsed.chaptersLiked).trim());
+        const validCommented = Number(String(parsed.chaptersCommented).trim());
 
         this.stats = {
           chaptersRead: (Number.isInteger(validRead) && validRead >= 0) ? validRead : 0,
           chaptersLiked: (Number.isInteger(validLiked) && validLiked >= 0) ? validLiked : 0,
+          chaptersCommented: (Number.isInteger(validCommented) && validCommented >= 0) ? validCommented : 0,
           installDate: parsed.installDate || new Date().toISOString()
         };
       } else {
@@ -97,6 +100,15 @@ class Statistics {
     await this.save();
   }
 
+  async incrementComments(count = 1) {
+    const validCount = Number(String(count).trim());
+    if (!Number.isInteger(validCount) || validCount < 0) {
+      throw new Error(`Невалидное значение count: ${count}`);
+    }
+    this.stats.chaptersCommented += validCount;
+    await this.save();
+  }
+
   /**
    * Получить статистику
    */
@@ -111,6 +123,7 @@ class Statistics {
     this.stats = {
       chaptersRead: 0,
       chaptersLiked: 0,
+      chaptersCommented: 0,
       installDate: new Date().toISOString()
     };
     await this.save();

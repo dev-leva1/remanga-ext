@@ -13,12 +13,14 @@ src/
 │   ├── Statistics.js
 │   └── UpdateChecker.js
 ├── features/
+│   ├── AutoCommenter.js
 │   ├── AutoLiker.js
 │   ├── ChapterManager.js
 │   ├── GuildHighlighter.js
 │   ├── HeaderCustomizer.js
 │   ├── ProfileCustomizer.js
 │   ├── RandomTitleNavigator.js
+│   ├── TitleCoverPreview.js
 │   └── UserTooltip.js
 ├── ui/
 │   ├── FeedbackButton.js
@@ -73,12 +75,12 @@ feedback-bot/
 - инициализируется методом `init()`;
 - выполняет запросы через `GM.xmlHttpRequest`;
 - имеет встроенный rate limiting;
-- предоставляет доменные методы: чтение/лайк глав, загрузка глав, пользователя и случайного тайтла.
+- предоставляет доменные методы: чтение, лайк и комментирование глав, загрузка глав, пользователя и случайного тайтла.
 
 ### 2.3 Statistics
 
 Singleton-менеджер статистики:
-- хранит `chaptersRead`, `chaptersLiked`, `installDate`;
+- хранит `chaptersRead`, `chaptersLiked`, `chaptersCommented`, `installDate`;
 - загружает/сохраняет статистику в userscript-хранилище;
 - обеспечивает последовательное сохранение через очередь `saveQueue`;
 - поддерживает инкременты и сброс статистики.
@@ -107,6 +109,7 @@ Singleton-менеджер статистики:
 
 - **ChapterManager** — операции с главами (поиск/обработка, пакетные действия, интеграция с API и статистикой).
 - **AutoLiker** — автоматизация лайков глав в поддерживаемых контекстах.
+- **AutoCommenter** — автоматизация комментария главы после дочитывания до конца с дедупликацией и лимитом 4 комментария в минуту.
 - **HeaderCustomizer** — настройки и модификации элементов header.
 - **ProfileCustomizer** — кастомизация блоков профиля пользователя.
 - **GuildHighlighter** — подсветка гильдий на релевантных страницах.
@@ -161,7 +164,7 @@ Singleton-менеджер статистики:
 ```
 
 Кратко по группам:
-- Автоматизация: `autoLike`, `batchSize`, `skipProcessed`.
+- Автоматизация: `autoLike`, `autoCommentEnabled`, `autoCommentText`, `batchSize`, `skipProcessed`.
 - Уведомления: `notificationsEnabled`, `notificationDuration`.
 - Обновления: `autoUpdateEnabled`.
 - UI/кастомизация: `blockCustomThemes`, `hideChatIndicator`, `hideProfileBlocks`.

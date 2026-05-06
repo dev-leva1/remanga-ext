@@ -13,6 +13,8 @@ class Config {
 
     this.defaults = {
       autoLike: false,
+      autoCommentEnabled: false,
+      autoCommentText: '',
       notificationsEnabled: true,
       notificationDuration: 3,
       batchSize: 10,
@@ -76,7 +78,7 @@ class Config {
       ? settings
       : {};
 
-    return {
+    const merged = {
       ...this.defaults,
       ...source,
       hideProfileBlocks: {
@@ -84,6 +86,12 @@ class Config {
         ...(source.hideProfileBlocks || {})
       }
     };
+
+    if (merged.autoCommentEnabled && !merged.autoCommentText) {
+      merged.autoCommentEnabled = false;
+    }
+
+    return merged;
   }
 
   /**

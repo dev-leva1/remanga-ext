@@ -17,6 +17,7 @@ Tampermonkey расширение для автоматизации действ
 
 - **ChapterManager** — отметка глав как прочитанных, массовые операции, расчёт ETA и обновление кнопок в DOM
 - **AutoLiker** — автолайк текущей главы при открытии ридера
+- **AutoCommenter** — автокомментарий главы после дочитывания до конца с настраиваемым текстом и лимитом 4 комментария в минуту
 - **SettingsPanel + SettingsPage** — кнопка настроек в header и полноценная страница настроек с вкладками, логотипом и названием расширения
 - **Notifications** — toast-уведомления и очередь уведомлений
 - **HeaderCustomizer** — скрытие индикатора непрочитанных сообщений в чате
@@ -56,7 +57,7 @@ Tampermonkey расширение для автоматизации действ
 1. Нажмите кнопку `#remanga-ext-settings-btn` в `header` (иконка молнии).
 2. Откроется `SettingsPage` в виде полноэкранного модального окна с карточкой бренда, логотипом и текущей версией.
 3. Выберите нужную вкладку:
-   - **automation** — автолайк, пропуск уже обработанных глав, размер batch для массовых операций;
+   - **automation** — автолайк, автокомментарий главы, пропуск уже обработанных глав, размер batch для массовых операций;
    - **interface** — блокировка кастомных тем, скрытие индикатора чата, подсветка гильдий, тултип пользователя, кнопка случайного тайтла, полноэкранный просмотр обложки;
    - **general** — обратная связь, уведомления и их длительность, автообновление, статистика и ручная проверка обновлений.
 4. Нажмите «Сохранить изменения» (применение происходит с перезагрузкой страницы).
@@ -76,6 +77,7 @@ Tampermonkey расширение для автоматизации действ
 При открытии главы (если включено в настройках):
 - Автоматически ставится лайк
 - Автоматически отмечается как прочитанная
+- После дочитывания до конца автоматически отправляется настроенный комментарий с лимитом 4 комментария в минуту
 
 ### Страница тайтла
 
@@ -92,7 +94,7 @@ Tampermonkey расширение для автоматизации действ
 ```
 src/
 ├── core/           # Ядро (Config, ApiClient)
-├── features/       # Функционал (ChapterManager, AutoLiker)
+├── features/       # Функционал (ChapterManager, AutoLiker, AutoCommenter)
 ├── ui/             # UI компоненты (SettingsPanel, Notifications)
 └── utils/          # Утилиты (validators, logger, dom)
 ```
@@ -100,7 +102,7 @@ src/
 #### Модули по назначению
 
 - `src/core/`: `Config`, `ApiClient`, `Statistics`, `UpdateChecker`
-- `src/features/`: `ChapterManager`, `AutoLiker`, `HeaderCustomizer`, `ProfileCustomizer`, `GuildHighlighter`, `UserTooltip`, `RandomTitleNavigator`
+- `src/features/`: `ChapterManager`, `AutoLiker`, `AutoCommenter`, `HeaderCustomizer`, `ProfileCustomizer`, `GuildHighlighter`, `UserTooltip`, `RandomTitleNavigator`
 - `src/ui/`: `SettingsPanel`, `SettingsPage`, `Notifications`, `TooltipRenderer`, `FeedbackButton`
 - `src/main.js`: оркестрация и инициализация модулей в зависимости от типа страницы
 
@@ -155,7 +157,8 @@ remanga-ext/
 │   │   └── ApiClient.js        # HTTP клиент для API
 │   ├── features/
 │   │   ├── ChapterManager.js   # Логика работы с главами
-│   │   └── AutoLiker.js        # Автоматические лайки
+│   │   ├── AutoLiker.js        # Автоматические лайки
+│   │   └── AutoCommenter.js    # Автоматические комментарии глав
 │   ├── ui/
 │   │   ├── SettingsPanel.js    # Панель настроек
 │   │   └── Notifications.js    # Уведомления
@@ -185,6 +188,7 @@ remanga-ext/
 
 - `POST /api/activity/views/` - отметка главы как прочитанной
 - `POST /api/activity/votes/` - лайк глав (поддерживает массивы)
+- `POST /api/v2/activity/comments/` - комментарий к главе
 - `GET /api/v2/titles/chapters/` - получение информации о главах
 
 ## Отладка
