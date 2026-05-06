@@ -22,7 +22,10 @@ class RemangaExtension {
     this.userTooltip = null;
     this.randomTitleNavigator = null;
     this.titleCoverPreview = null;
+    this.navigationCoordinator = null;
+    this.routeChangeTimer = null;
     this.observers = [];
+    this.boundCleanup = this.cleanup.bind(this);
   }
 
   /**
@@ -51,13 +54,23 @@ class RemangaExtension {
 
       this.chapterManager = new ChapterManager(this.api, this.config, this.notifications, this.statistics);
       this.autoLiker = new AutoLiker(this.chapterManager, this.config, this.notifications);
-      this.settingsPanel = new SettingsPanel(this.config, this.notifications, this.statistics);
+      this.settingsPanel = new SettingsPanel(this.config, this.notifications, this.statistics, {
+        onOpenSettings: () => {
+          if (this.settingsPage) {
+            this.settingsPage.init();
+          }
+        }
+      });
       this.updateChecker = new UpdateChecker(this.config, this.notifications);
       this.headerCustomizer = new HeaderCustomizer(this.config);
       this.profileCustomizer = new ProfileCustomizer(this.config);
-      this.settingsPage = new SettingsPage(this.config, this.notifications, this.statistics);
       this.guildHighlighter = new GuildHighlighter(this.config);
       this.feedbackButton = new FeedbackButton(this.config, this.notifications);
+      this.settingsPage = new SettingsPage(this.config, this.notifications, this.statistics, {
+        updateChecker: this.updateChecker,
+        feedbackButton: this.feedbackButton,
+        onSettingsChanged: this.applySettingsChanges.bind(this)
+      });
       this.randomTitleNavigator = new RandomTitleNavigator(this.api, this.config, this.notifications);
       this.titleCoverPreview = new TitleCoverPreview(this.config);
 
@@ -70,17 +83,7 @@ class RemangaExtension {
       const pageType = this.detectPageType();
       logger.info(`Тип страницы: ${pageType}`);
 
-      if (pageType === 'chapters') {
-        this.initChaptersPage();
-      } else if (pageType === 'reader') {
-        this.initReaderPage();
-      } else if (pageType === 'title') {
-        this.initTitlePage();
-      } else if (pageType === 'profile') {
-        this.initProfilePage();
-      } else if (pageType === 'forum' || pageType === 'guild-top') {
-        this.initGuildPages(pageType);
-      }
+      this.initPageType(pageType);
 
       this.settingsPanel.inject();
       this.headerCustomizer.init();
@@ -93,11 +96,14 @@ class RemangaExtension {
 
       logger.info('Расширение успешно инициализировано');
 
-      window.addEventListener('beforeunload', () => {
-        this.cleanup();
-      });
+      window.addEventListener('beforeunload', this.boundCleanup);
     } catch (error) {
       logger.error('Ошибка инициализации:', error);
+      try {
+        this.cleanup();
+      } catch (cleanupError) {
+        logger.error('Ошибка очистки после неудачной инициализации:', cleanupError);
+      }
     }
   }
 
@@ -105,34 +111,8 @@ class RemangaExtension {
    * Отслеживание навигации в SPA
    */
   setupNavigationListener() {
-    let lastUrl = location.href;
-
-    const checkUrlChange = () => {
-      const currentUrl = location.href;
-      if (currentUrl !== lastUrl) {
-        lastUrl = currentUrl;
-        this.handleUrlChange();
-      }
-    };
-
-    // Перехват pushState и replaceState
-    const originalPushState = history.pushState;
-    const originalReplaceState = history.replaceState;
-
-    history.pushState = function(...args) {
-      originalPushState.apply(this, args);
-      checkUrlChange();
-    };
-
-    history.replaceState = function(...args) {
-      originalReplaceState.apply(this, args);
-      checkUrlChange();
-    };
-
-    // Отслеживание popstate (кнопки назад/вперед)
-    window.addEventListener('popstate', checkUrlChange);
-
-    logger.info('Navigation listener активирован');
+    this.navigationCoordinator = new NavigationCoordinator(this);
+    this.navigationCoordinator.start();
   }
 
   /**
@@ -144,33 +124,35 @@ class RemangaExtension {
     const pageType = this.detectPageType();
     logger.info(`URL изменен, новый тип страницы: ${pageType}`);
 
-    if (pageType === 'chapters') {
-      setTimeout(() => {
-        this.initChaptersPage();
-      }, 300);
-    } else if (pageType === 'reader') {
-      setTimeout(() => {
-        this.initReaderPage();
-      }, 300);
-    } else if (pageType === 'title') {
-      setTimeout(() => {
-        this.initTitlePage();
-      }, 300);
-    } else if (pageType === 'profile') {
-      setTimeout(() => {
-        this.initProfilePage();
-      }, 300);
-    } else if (pageType === 'forum' || pageType === 'guild-top') {
-      setTimeout(() => {
-        this.initGuildPages(pageType);
-      }, 300);
+    this.scheduleRouteInit(pageType);
+  }
+
+  scheduleRouteInit(pageType) {
+    if (this.routeChangeTimer) {
+      clearTimeout(this.routeChangeTimer);
     }
 
-    setTimeout(() => {
+    this.routeChangeTimer = setTimeout(() => {
+      this.routeChangeTimer = null;
+      this.initPageType(pageType);
       if (this.randomTitleNavigator) {
         this.randomTitleNavigator.init();
       }
     }, 300);
+  }
+
+  initPageType(pageType) {
+    if (pageType === 'chapters') {
+      this.initChaptersPage();
+    } else if (pageType === 'reader') {
+      this.initReaderPage();
+    } else if (pageType === 'title') {
+      this.initTitlePage();
+    } else if (pageType === 'profile') {
+      this.initProfilePage();
+    } else if (pageType === 'forum' || pageType === 'guild-top') {
+      this.initGuildPages(pageType);
+    }
   }
 
   cleanupRouteState() {
@@ -207,7 +189,18 @@ class RemangaExtension {
    * Очистка ресурсов
    */
   cleanup() {
+    if (this.routeChangeTimer) {
+      clearTimeout(this.routeChangeTimer);
+      this.routeChangeTimer = null;
+    }
+
     this.cleanupRouteState();
+
+    if (this.navigationCoordinator) {
+      this.navigationCoordinator.stop();
+      this.navigationCoordinator = null;
+    }
+
     if (this.userTooltip) {
       this.userTooltip.cleanup();
     }
@@ -229,7 +222,45 @@ class RemangaExtension {
     if (this.titleCoverPreview) {
       this.titleCoverPreview.cleanup();
     }
+    window.removeEventListener('beforeunload', this.boundCleanup);
     logger.info('Ресурсы расширения очищены');
+  }
+
+  async applySettingsChanges() {
+    if (this.userTooltip) {
+      const tooltipEnabled = this.config.get('userTooltipEnabled');
+      this.userTooltip.setEnabled(tooltipEnabled);
+      if (tooltipEnabled) {
+        this.userTooltip.init();
+      }
+    }
+
+    if (this.headerCustomizer) {
+      this.headerCustomizer.cleanup();
+      this.headerCustomizer.init();
+    }
+
+    const pageType = this.detectPageType();
+
+    if (pageType === 'profile') {
+      this.cleanupProfilePage();
+      this.initProfilePage();
+    }
+
+    if (pageType === 'forum' || pageType === 'guild-top') {
+      this.cleanupGuildPages();
+      this.initGuildPages(pageType);
+    }
+
+    if (pageType === 'title') {
+      this.cleanupTitlePage();
+      this.initTitlePage();
+    }
+
+    if (this.randomTitleNavigator) {
+      this.randomTitleNavigator.cleanup();
+      this.randomTitleNavigator.init();
+    }
   }
 
   /**

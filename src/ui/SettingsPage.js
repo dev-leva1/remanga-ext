@@ -4,13 +4,16 @@
  */
 
 class SettingsPage {
-  constructor(config, notifications, statistics) {
+  constructor(config, notifications, statistics, collaborators = {}) {
     this.config = config;
     this.notifications = notifications;
     this.statistics = statistics;
     this.container = null;
     this.currentVersion = '__VERSION__';
     this.activeTab = 'automation';
+    this.controller = collaborators instanceof SettingsPageController
+      ? collaborators
+      : new SettingsPageController(config, notifications, statistics, collaborators);
   }
 
   /**
@@ -73,7 +76,6 @@ class SettingsPage {
    */
   close() {
     this.cleanup();
-    window.location.reload();
   }
 
   /**
@@ -254,14 +256,14 @@ class SettingsPage {
    */
   renderTabContent() {
     switch (this.activeTab) {
-      case 'automation':
-        return this.renderAutomationTab();
-      case 'interface':
-        return this.renderInterfaceTab();
-      case 'general':
-        return this.renderGeneralTab();
-      default:
-        return '';
+    case 'automation':
+      return this.renderAutomationTab();
+    case 'interface':
+      return this.renderInterfaceTab();
+    case 'general':
+      return this.renderGeneralTab();
+    default:
+      return '';
     }
   }
 
@@ -558,24 +560,30 @@ class SettingsPage {
 
     const resetBtn = this.container.querySelector('#reset-settings');
     if (resetBtn) {
-      resetBtn.onclick = () => {
+      resetBtn.onclick = async () => {
         if (confirm('Сбросить все настройки к значениям по умолчанию?')) {
-          this.config.reset().then(() => {
-            this.notifications.success('Настройки сброшены. Перезагрузка...');
-            setTimeout(() => window.location.reload(), 1000);
-          });
+          try {
+            await this.controller.resetSettings();
+            this.updateContent();
+          } catch (error) {
+            logger.error('Ошибка сброса настроек:', error);
+            this.notifications.error('Ошибка сброса настроек');
+          }
         }
       };
     }
 
     const resetStatsBtn = this.container.querySelector('#reset-stats');
     if (resetStatsBtn) {
-      resetStatsBtn.onclick = () => {
+      resetStatsBtn.onclick = async () => {
         if (confirm('Сбросить всю статистику?')) {
-          this.statistics.reset().then(() => {
-            this.notifications.success('Статистика сброшена. Перезагрузка...');
-            setTimeout(() => window.location.reload(), 1000);
-          });
+          try {
+            await this.controller.resetStatistics();
+            this.updateContent();
+          } catch (error) {
+            logger.error('Ошибка сброса статистики:', error);
+            this.notifications.error('Ошибка сброса статистики');
+          }
         }
       };
     }
@@ -586,12 +594,12 @@ class SettingsPage {
         checkUpdatesBtn.disabled = true;
         checkUpdatesBtn.textContent = 'Проверка...';
 
-        if (window.remangaExtension && window.remangaExtension.updateChecker) {
-          await window.remangaExtension.updateChecker.checkForUpdates(true);
+        try {
+          await this.controller.checkForUpdates();
+        } finally {
+          checkUpdatesBtn.disabled = false;
+          checkUpdatesBtn.textContent = 'Проверить обновления';
         }
-
-        checkUpdatesBtn.disabled = false;
-        checkUpdatesBtn.textContent = 'Проверить обновления';
       };
     }
 
@@ -614,9 +622,7 @@ class SettingsPage {
     const feedbackBtn = this.container.querySelector('#open-feedback-modal');
     if (feedbackBtn) {
       feedbackBtn.onclick = () => {
-        if (window.remangaExtension && window.remangaExtension.feedbackButton) {
-          window.remangaExtension.feedbackButton.openContextModal();
-        }
+        this.controller.openFeedback();
       };
     }
 
@@ -629,7 +635,7 @@ class SettingsPage {
    * Обновление контента при переключении вкладок
    */
   updateContent() {
-    const contentContainer = this.container.querySelector('div[style*="flex: 1"]');
+    const contentContainer = this.container.querySelector('#remanga-ext-settings-content');
     if (contentContainer) {
       contentContainer.innerHTML = this.renderTabContent();
     }
@@ -648,7 +654,7 @@ class SettingsPage {
    */
   async saveSettings() {
     try {
-      const hideProfileBlocks = {};
+      const hideProfileBlocks = { ...(this.config.get('hideProfileBlocks') || {}) };
       this.container.querySelectorAll('.profile-block-checkbox').forEach(checkbox => {
         hideProfileBlocks[checkbox.dataset.block] = checkbox.checked;
       });
@@ -656,9 +662,9 @@ class SettingsPage {
       const settings = {
         autoLike: this.container.querySelector('#autoLike')?.checked ?? this.config.get('autoLike'),
         skipProcessed: this.container.querySelector('#skipProcessed')?.checked ?? this.config.get('skipProcessed'),
-        batchSize: parseInt(this.container.querySelector('#batchSize')?.value ?? this.config.get('batchSize')),
+        batchSize: Number(String(this.container.querySelector('#batchSize')?.value ?? this.config.get('batchSize')).trim()),
         notificationsEnabled: this.container.querySelector('#notificationsEnabled')?.checked ?? this.config.get('notificationsEnabled'),
-        notificationDuration: parseInt(this.container.querySelector('#notificationDuration')?.value ?? this.config.get('notificationDuration')),
+        notificationDuration: Number(String(this.container.querySelector('#notificationDuration')?.value ?? this.config.get('notificationDuration')).trim()),
         autoUpdateEnabled: this.container.querySelector('#autoUpdateEnabled')?.checked ?? this.config.get('autoUpdateEnabled'),
         blockCustomThemes: this.container.querySelector('#blockCustomThemes')?.checked ?? this.config.get('blockCustomThemes'),
         hideChatIndicator: this.container.querySelector('#hideChatIndicator')?.checked ?? this.config.get('hideChatIndicator'),
@@ -669,15 +675,8 @@ class SettingsPage {
         hideProfileBlocks
       };
 
-      await this.config.save(settings);
-      this.notifications.success('Настройки сохранены. Перезагрузка...');
-
-      setTimeout(() => {
-        this.cleanup();
-        window.location.reload();
-      }, 1000);
-
-      logger.info('Настройки успешно сохранены');
+      await this.controller.saveSettings(settings);
+      this.updateContent();
     } catch (error) {
       logger.error('Ошибка сохранения настроек:', error);
       this.notifications.error('Ошибка сохранения настроек');
@@ -690,25 +689,27 @@ class SettingsPage {
   async updateLastCheckInfo() {
     const lastCheckInfo = this.container.querySelector('#last-check-info');
 
-    if (window.remangaExtension && window.remangaExtension.updateChecker) {
-      const lastCheck = await window.remangaExtension.updateChecker.getLastCheckTime();
+    if (!lastCheckInfo) {
+      return;
+    }
 
-      if (lastCheck > 0) {
-        const date = new Date(lastCheck);
-        const now = Date.now();
-        const diff = now - lastCheck;
-        const hours = Math.floor(diff / (1000 * 60 * 60));
+    const lastCheck = await this.controller.getLastCheckTime();
 
-        if (hours < 1) {
-          lastCheckInfo.textContent = 'Последняя проверка: только что';
-        } else if (hours < 24) {
-          lastCheckInfo.textContent = `Последняя проверка: ${hours} ч. назад`;
-        } else {
-          lastCheckInfo.textContent = `Последняя проверка: ${date.toLocaleDateString('ru-RU')}`;
-        }
+    if (lastCheck > 0) {
+      const date = new Date(lastCheck);
+      const now = Date.now();
+      const diff = now - lastCheck;
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+
+      if (hours < 1) {
+        lastCheckInfo.textContent = 'Последняя проверка: только что';
+      } else if (hours < 24) {
+        lastCheckInfo.textContent = `Последняя проверка: ${hours} ч. назад`;
       } else {
-        lastCheckInfo.textContent = 'Обновления еще не проверялись';
+        lastCheckInfo.textContent = `Последняя проверка: ${date.toLocaleDateString('ru-RU')}`;
       }
+    } else if (lastCheck === 0) {
+      lastCheckInfo.textContent = 'Обновления еще не проверялись';
     } else {
       lastCheckInfo.textContent = 'Информация недоступна';
     }

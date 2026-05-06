@@ -36,8 +36,8 @@ class Statistics {
           throw new Error('Невалидная структура статистики');
         }
 
-        const validRead = parseInt(parsed.chaptersRead);
-        const validLiked = parseInt(parsed.chaptersLiked);
+        const validRead = Number(String(parsed.chaptersRead).trim());
+        const validLiked = Number(String(parsed.chaptersLiked).trim());
 
         this.stats = {
           chaptersRead: (Number.isInteger(validRead) && validRead >= 0) ? validRead : 0,
@@ -77,7 +77,7 @@ class Statistics {
    * Увеличить счетчик прочитанных глав
    */
   async incrementReads(count = 1) {
-    const validCount = parseInt(count);
+    const validCount = Number(String(count).trim());
     if (!Number.isInteger(validCount) || validCount < 0) {
       throw new Error(`Невалидное значение count: ${count}`);
     }
@@ -89,7 +89,7 @@ class Statistics {
    * Увеличить счетчик лайкнутых глав
    */
   async incrementLikes(count = 1) {
-    const validCount = parseInt(count);
+    const validCount = Number(String(count).trim());
     if (!Number.isInteger(validCount) || validCount < 0) {
       throw new Error(`Невалидное значение count: ${count}`);
     }

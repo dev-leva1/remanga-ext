@@ -4,11 +4,12 @@
  */
 
 class SettingsPanel {
-  constructor(config, notifications, statistics) {
+  constructor(config, notifications, statistics, options = {}) {
     this.config = config;
     this.notifications = notifications;
     this.statistics = statistics;
     this.observer = null;
+    this.onOpenSettings = typeof options.onOpenSettings === 'function' ? options.onOpenSettings : null;
   }
 
   /**
@@ -109,8 +110,8 @@ class SettingsPanel {
       e.preventDefault();
       e.stopPropagation();
 
-      if (window.remangaExtension && window.remangaExtension.settingsPage) {
-        window.remangaExtension.settingsPage.init();
+      if (this.onOpenSettings) {
+        this.onOpenSettings();
       }
 
       logger.info('Открытие страницы настроек');

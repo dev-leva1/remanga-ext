@@ -3,12 +3,15 @@ const path = require('path');
 
 const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
 const version = packageJson.version;
+const changelogPath = path.join(__dirname, 'CHANGELOG.md');
+const changelogMarkdown = fs.readFileSync(changelogPath, 'utf8');
 
 const files = [
   'src/utils/logger.js',
   'src/utils/validators.js',
   'src/utils/dom.js',
   'src/utils/changelog-parser.js',
+  'src/core/NavigationCoordinator.js',
   'src/ui/styles.js',
   'src/core/Config.js',
   'src/core/Statistics.js',
@@ -17,6 +20,7 @@ const files = [
   'src/ui/Notifications.js',
   'src/ui/TooltipRenderer.js',
   'src/ui/SettingsPanel.js',
+  'src/ui/SettingsPageController.js',
   'src/ui/SettingsPage.js',
   'src/ui/FeedbackButton.js',
   'src/features/HeaderCustomizer.js',
@@ -47,98 +51,21 @@ const header = `// ==UserScript==
 // @run-at       document-idle
 // ==/UserScript==
 
-/**
- * CHANGELOG
- *
- * v1.6.10 - Обновление брендинга настроек
- * - Добавлены логотип и название Remanga Enhanced в страницу настроек
- * - Улучшена мобильная адаптация SettingsPage для экранов до 768px
- *
- * v1.6.9 - Полноэкранный просмотр обложки
- * - Клик по обложке тайтла открывает overlay без перехода на другую страницу
- * - Добавлена настройка включения и выключения полноэкранного просмотра обложки
- * - Добавлена поддержка SPA-переинициализации и cleanup для preview обложки
- *
- * v1.6.8 - Исправления cleanup SPA-навигации
- * - Закрытие тултипов профилей при смене подстраницы внутри SPA
- * - Очистка progress/update/feedback/settings overlays при route change
- * - Сброс route-scoped observers и cleanup состояния перед переинициализацией страницы
- *
- * v1.6.7 - Случайный тайтл в каталоге
- * - Добавлена кнопка "Рандомный тайтл" на странице каталога /manga
- * - Добавлена настройка для включения/выключения кнопки в интерфейсе расширения
- * - Реализован переход к случайному доступному тайтлу через API каталога с fallback логикой
- *
- * v1.6.6 - Исправления безопасности и стабильности
- * - Исправлены XSS/HTML injection в тултипах, модальном окне обновления и окне обратной связи
- * - Усилена валидация URL для remanga.org в feedback-bot
- * - Исправлен reverse tabnabbing при открытии внешних ссылок и Telegram бота
- * - Исправлено дублирование обработчиков во вкладках настроек
- * - Исправлена работа clipboard fallback в обратной связи
- * - Снято ограничение на большие инкременты статистики в массовых операциях
- * - Исправлена порча dist userscript при сборке
- *
- * v1.6.5 - Тултипы профилей
- * - Добавлены тултипы пользователей, отображающие краткую информацию о пользователе при наведении на аватар
- * - Добавлена настройка для включения/выключения тултипов пользователей
- *
- * v1.6.4 - Telegram бот обратной связи
- * - Добавлен Telegram бот для сообщений об ошибках и предложений
- * - Кнопка "Обратная связь" в настройках (вкладка "Общее")
- * - Модальное окно выбора контекста (версия, браузер, URL страницы)
- * - Deep link интеграция с ботом для автоматической передачи данных
- * - Обновлен лендинг: секция "Обратная связь" вместо контактов
- *
- * v1.6.3 - Вкладки в окне настроек
- * - Окно настроек разбито на 3 вкладки: Автоматизация, Интерфейс, Общее
- * - Вертикальное меню вкладок слева (стили с remanga.org/user/settings)
- *
- * v1.6.2 - Выделение гильдий на форуме и в топе
- * - Автоматическое выделение постов от определенных гильдий на /forum
- * - Выделение гильдий в топе на /guild/top
- * - Эффект свечения для лучшей видимости выделенных элементов
- * - Оптимизация производительности через IntersectionObserver
- *
- * v1.6.1 - Улучшения UI настроек
- * - Убрана боковая панель с категориями из окна настроек
- * - Исправлен z-index модального окна обновлений (теперь поверх настроек)
- *
- * v1.6.0 - Кастомизация интерфейса и новая страница настроек
- * - Блокировка кастомных тем в профилях пользователей
- * - Скрытие блоков профиля (статистика, бейджи, ачивки, друзья и т.д.)
- * - Скрытие индикатора непрочитанных сообщений чата в header
- * - Страница настроек открывается как overlay модальное окно
- * - Стилизованная кнопка настроек в header
- *
- * v1.5.0 - Полное обновление UI и лендинг
- * - Полностью переработан UI согласно DESIGN.md
- * - Монохромная цветовая палитра (rgb(19,20,22), rgb(24,25,27))
- * - Централизованные design tokens в styles.js
- * - Pill-кнопки с анимациями (hover, active)
- * - Шрифт Exo 2 во всех компонентах
- * - Создан лендинг ext.nexee.ru с инструкцией по установке
- * - Динамический парсинг changelog на лендинге
- */
+${formatUserscriptChangelog(changelogMarkdown)}
 
 `;
 
-function extractChangelogVersions(headerText) {
-  const changelogMatch = headerText.match(/\/\*\*[\s\S]*?CHANGELOG\s*\n([\s\S]*?)\*\//);
-
-  if (!changelogMatch) {
-    return [];
-  }
-
-  const lines = changelogMatch[1]
+function parseChangelogMarkdown(markdown) {
+  const lines = markdown
     .split('\n')
-    .map(line => line.replace(/^\s*\*\s?/, '').trim())
+    .map(line => line.trim())
     .filter(Boolean);
 
   const versions = [];
   let currentVersion = null;
 
   lines.forEach(line => {
-    const versionMatch = line.match(/^v([\d.]+)\s+-\s+(.+)$/);
+    const versionMatch = line.match(/^##\s+v([\d.]+)\s+-\s+(.+)$/);
 
     if (versionMatch) {
       currentVersion = {
@@ -156,6 +83,29 @@ function extractChangelogVersions(headerText) {
   });
 
   return versions;
+}
+
+function formatUserscriptChangelog(markdown) {
+  const versions = parseChangelogMarkdown(markdown);
+  const lines = [
+    '/**',
+    ' * CHANGELOG',
+    ' *'
+  ];
+
+  versions.forEach((entry, index) => {
+    lines.push(` * v${entry.version} - ${entry.title}`);
+    entry.changes.forEach(change => {
+      lines.push(` * - ${change}`);
+    });
+
+    if (index < versions.length - 1) {
+      lines.push(' *');
+    }
+  });
+
+  lines.push(' */');
+  return lines.join('\n');
 }
 
 function syncLandingChangelog(versions) {
@@ -187,58 +137,160 @@ function syncLandingVersion(versionValue) {
   fs.writeFileSync(landingIndexPath, updatedLandingIndex, 'utf8');
 }
 
-syncLandingVersion(version);
-console.log('🔨 Начало сборки...\n');
-console.log(`📌 Версия: ${version}\n`);
-
-let output = header + '(function(){\n\'use strict\';\n';
-
-files.forEach(file => {
-  const filePath = path.join(__dirname, file);
-
-  if (!fs.existsSync(filePath)) {
-    console.error(`❌ Файл не найден: ${file}`);
-    process.exit(1);
-  }
-
-  console.log(`📦 Добавление: ${file}`);
-
-  let content = fs.readFileSync(filePath, 'utf8');
-
-  content = content
-    .replace(/^import .+$/gm, '')
-    .replace(/^export .+$/gm, '')
-    .replace(/^export default .+$/gm, '');
-
-  content = content.replace(/__VERSION__/g, version);
-  content = content.replace(/\/\*\*[\s\S]*?\*\//g, '');
-  content = content.replace(/^\s*\/\/.*$/gm, '');
-  content = content.replace(/^\s*[\r\n]/gm, '');
-  content = content.replace(/^[ \t]+/gm, '');
-  content = content.replace(/ {2,}/g, ' ');
-
-  output += content + '\n';
-});
-
-output += '})();';
-
-const distDir = path.join(__dirname, 'dist');
-if (!fs.existsSync(distDir)) {
-  fs.mkdirSync(distDir, { recursive: true });
+function findSourceFiles(dir) {
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
+    const entryPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      return findSourceFiles(entryPath);
+    }
+    if (!entry.name.endsWith('.js')) {
+      return [];
+    }
+    return [path.relative(__dirname, entryPath).replace(/\\/g, '/')];
+  });
 }
 
-const outputPath = path.join(distDir, 'remanga-extension.user.js');
-fs.writeFileSync(outputPath, output, 'utf8');
+function validateManifest() {
+  const uniqueFiles = new Set(files);
+  if (uniqueFiles.size !== files.length) {
+    throw new Error('Build manifest contains duplicate files');
+  }
 
-const changelogVersions = extractChangelogVersions(header);
-syncLandingChangelog(changelogVersions);
+  files.forEach(file => {
+    const filePath = path.join(__dirname, file);
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`Build manifest references missing file: ${file}`);
+    }
+  });
 
-const stats = fs.statSync(outputPath);
-const sizeKB = (stats.size / 1024).toFixed(2);
-const lines = output.split('\n').length;
+  const manifestFiles = new Set(files.map(file => file.replace(/\\/g, '/')));
+  const sourceFiles = findSourceFiles(path.join(__dirname, 'src'));
+  const missingFromManifest = sourceFiles.filter(file => !manifestFiles.has(file));
 
-console.log('\n✅ Сборка завершена!');
-console.log(`📄 Файл: ${outputPath}`);
-console.log(`📊 Размер: ${sizeKB} KB`);
-console.log(`📝 Строк кода: ${lines}`);
-console.log(`🔖 Версия: ${version}`);
+  if (missingFromManifest.length > 0) {
+    throw new Error(`Build manifest does not include source files: ${missingFromManifest.join(', ')}`);
+  }
+}
+
+function prepareSource(content) {
+  return content
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .replace(/^import .+$/gm, '')
+    .replace(/^export default .+$/gm, '')
+    .replace(/^export .+$/gm, '')
+    .replace(/__VERSION__/g, version);
+}
+
+function assertBalancedBraces(script) {
+  const pairs = [
+    ['{', '}'],
+    ['(', ')'],
+    ['[', ']']
+  ];
+
+  pairs.forEach(([open, close]) => {
+    const opened = (script.match(new RegExp(`\\${open}`, 'g')) || []).length;
+    const closed = (script.match(new RegExp(`\\${close}`, 'g')) || []).length;
+    if (opened !== closed) {
+      throw new Error(`Built script has unbalanced ${open}${close}: ${opened}/${closed}`);
+    }
+  });
+}
+
+function assertExpectedClasses(script) {
+  [
+    'Config',
+    'ApiClient',
+    'UpdateChecker',
+    'SettingsPage',
+    'FeedbackButton',
+    'NavigationCoordinator',
+    'RemangaExtension'
+  ].forEach(className => {
+    if (!script.includes(`class ${className}`)) {
+      throw new Error(`Built script does not contain class ${className}`);
+    }
+  });
+}
+
+function smokeCheck(script) {
+  assertBalancedBraces(script);
+  assertExpectedClasses(script);
+}
+
+function buildUserscript() {
+  validateManifest();
+
+  console.log('🔨 Начало сборки userscript...\n');
+  console.log(`📌 Версия: ${version}\n`);
+
+  let output = header + '(function(){\n\'use strict\';\n';
+
+  files.forEach(file => {
+    const filePath = path.join(__dirname, file);
+
+    console.log(`📦 Добавление: ${file}`);
+
+    const content = prepareSource(fs.readFileSync(filePath, 'utf8'));
+    output += content + '\n';
+  });
+
+  output += '})();';
+
+  smokeCheck(output);
+
+  const distDir = path.join(__dirname, 'dist');
+  if (!fs.existsSync(distDir)) {
+    fs.mkdirSync(distDir, { recursive: true });
+  }
+
+  const outputPath = path.join(distDir, 'remanga-extension.user.js');
+  fs.writeFileSync(outputPath, output, 'utf8');
+
+  const stats = fs.statSync(outputPath);
+  const sizeKB = (stats.size / 1024).toFixed(2);
+  const lines = output.split('\n').length;
+
+  console.log('\n✅ Сборка userscript завершена!');
+  console.log(`📄 Файл: ${outputPath}`);
+  console.log(`📊 Размер: ${sizeKB} KB`);
+  console.log(`📝 Строк кода: ${lines}`);
+  console.log(`🔖 Версия: ${version}`);
+}
+
+function syncLanding() {
+  const changelogVersions = parseChangelogMarkdown(changelogMarkdown);
+  syncLandingVersion(version);
+  syncLandingChangelog(changelogVersions);
+  console.log('✅ Landing assets синхронизированы');
+}
+
+function run() {
+  const command = process.argv[2] || 'all';
+
+  if (command === 'userscript') {
+    buildUserscript();
+    return;
+  }
+
+  if (command === 'landing') {
+    syncLanding();
+    return;
+  }
+
+  if (command === 'all') {
+    buildUserscript();
+    syncLanding();
+    return;
+  }
+
+  throw new Error(`Unknown build command: ${command}`);
+}
+
+try {
+  run();
+} catch (error) {
+  console.error(`❌ ${error.message}`);
+  process.exit(1);
+}

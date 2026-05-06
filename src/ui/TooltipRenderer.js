@@ -155,7 +155,9 @@ class TooltipRenderer {
    * Позиционирование тултипа
    */
   position(targetElement) {
-    if (!this.tooltip) return;
+    if (!this.tooltip) {
+      return;
+    }
 
     const rect = targetElement.getBoundingClientRect();
     const tooltipRect = this.tooltip.getBoundingClientRect();
@@ -192,14 +194,18 @@ class TooltipRenderer {
    * Удаление тултипа
    */
   remove() {
-    if (this.tooltip && this.tooltip.parentNode) {
-      this.tooltip.style.animation = 'remanga-tooltip-fade-out 0.15s ease';
+    const tooltip = this.tooltip;
+
+    if (tooltip && tooltip.parentNode) {
+      tooltip.style.animation = 'remanga-tooltip-fade-out 0.15s ease';
       setTimeout(() => {
-        if (this.tooltip && this.tooltip.parentNode) {
-          this.tooltip.parentNode.removeChild(this.tooltip);
+        if (tooltip.parentNode) {
+          tooltip.parentNode.removeChild(tooltip);
         }
-        this.tooltip = null;
-        this.currentTarget = null;
+        if (this.tooltip === tooltip) {
+          this.tooltip = null;
+          this.currentTarget = null;
+        }
       }, 150);
     } else {
       this.tooltip = null;
@@ -248,7 +254,9 @@ class TooltipRenderer {
    * Форматирование числа
    */
   formatNumber(num) {
-    if (!num) return '0';
+    if (!num) {
+      return '0';
+    }
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
   }
 

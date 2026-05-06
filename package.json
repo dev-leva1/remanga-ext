@@ -5,6 +5,8 @@
   "main": "src/main.js",
   "scripts": {
     "build": "node build.js",
+    "build:userscript": "node build.js userscript",
+    "sync:landing": "node build.js landing",
     "dev": "node build.js && echo 'Готово! Установите dist/remanga-extension.user.js в Tampermonkey'",
     "lint": "eslint src/**/*.js",
     "lint:fix": "eslint src/**/*.js --fix"

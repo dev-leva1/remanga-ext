@@ -205,6 +205,7 @@ class ChapterManager {
   async loadAllChaptersByScroll(onProgress = null) {
     logger.info('Начало загрузки глав через скролл');
 
+    const expectedCount = this.getExpectedChapterCount();
     let previousCount = 0;
     let stableCount = 0;
     let scrollAttempts = 0;
@@ -252,8 +253,31 @@ class ChapterManager {
     await this.delay(300);
 
     const finalIds = this.getChapterIdsFromPage();
+    if (expectedCount && finalIds.length < expectedCount) {
+      const message = `Загружено ${finalIds.length} из ${expectedCount} глав. Возможна неполная загрузка.`;
+      logger.warn(message);
+      this.notifications.warning(message);
+    }
+
     logger.info(`Итого загружено глав: ${finalIds.length}`);
     return finalIds;
+  }
+
+  getExpectedChapterCount() {
+    const candidates = Array.from(document.querySelectorAll('a, button, span, div'));
+
+    for (const element of candidates) {
+      const text = element.textContent ? element.textContent.trim() : '';
+      const match = text.match(/^главы?\s*\(?(\d{1,5})\)?$/i);
+      if (match) {
+        const count = Number(match[1]);
+        if (Number.isInteger(count) && count > 0) {
+          return count;
+        }
+      }
+    }
+
+    return null;
   }
 
   /**

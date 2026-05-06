@@ -68,7 +68,7 @@ const domUtils = {
    */
   extractChapterIdFromUrl() {
     const match = window.location.pathname.match(/\/manga\/[^/]+\/(\d+)/);
-    return match ? parseInt(match[1]) : null;
+    return match ? Number(match[1]) : null;
   },
 
   /**
@@ -118,7 +118,7 @@ const domUtils = {
     elements.forEach(el => {
       const match = el.dataset.testid.match(/chapter_(\d+)/);
       if (match) {
-        ids.push(parseInt(match[1]));
+        ids.push(Number(match[1]));
       }
     });
 

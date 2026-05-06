@@ -8,7 +8,7 @@ const validators = {
    * Проверка ID главы
    */
   isChapterId(value) {
-    const num = parseInt(value);
+    const num = typeof value === 'number' ? value : Number(String(value).trim());
     return Number.isInteger(num) && num > 0 && num < Number.MAX_SAFE_INTEGER;
   },
 
@@ -29,7 +29,7 @@ const validators = {
    * Проверка задержки (мс)
    */
   isDelay(value) {
-    const num = parseInt(value);
+    const num = typeof value === 'number' ? value : Number(String(value).trim());
     return Number.isInteger(num) && num >= 1000 && num <= 60000;
   },
 
@@ -50,7 +50,7 @@ const validators = {
    * Санитизация ID главы
    */
   sanitizeChapterId(value) {
-    const num = parseInt(value);
+    const num = typeof value === 'number' ? value : Number(String(value).trim());
     if (!this.isChapterId(num)) {
       throw new Error(`Невалидный ID главы: ${value}`);
     }
@@ -94,30 +94,29 @@ const validators = {
    * Санитизация настроек
    */
   sanitizeSettings(settings) {
+    if (typeof settings !== 'object' || settings === null || Array.isArray(settings)) {
+      throw new Error('Настройки должны быть объектом');
+    }
+
     const sanitized = {};
 
     if ('autoLike' in settings) {
       sanitized.autoLike = Boolean(settings.autoLike);
     }
 
-    if ('autoMarkAsRead' in settings) {
-      sanitized.autoMarkAsRead = Boolean(settings.autoMarkAsRead);
-    }
-
     if ('notificationsEnabled' in settings) {
       sanitized.notificationsEnabled = Boolean(settings.notificationsEnabled);
     }
-
     if ('notificationDuration' in settings) {
-      const duration = parseInt(settings.notificationDuration);
-      if (duration >= 1 && duration <= 10) {
+      const duration = Number(String(settings.notificationDuration).trim());
+      if (Number.isInteger(duration) && duration >= 1 && duration <= 10) {
         sanitized.notificationDuration = duration;
       }
     }
 
     if ('batchSize' in settings) {
-      const batchSize = parseInt(settings.batchSize);
-      if (batchSize >= 1 && batchSize <= 50) {
+      const batchSize = Number(String(settings.batchSize).trim());
+      if (Number.isInteger(batchSize) && batchSize >= 1 && batchSize <= 50) {
         sanitized.batchSize = batchSize;
       }
     }
@@ -153,6 +152,17 @@ const validators = {
 
     if ('highlightGuilds' in settings) {
       sanitized.highlightGuilds = Boolean(settings.highlightGuilds);
+    }
+
+    if ('feedbackBotUsername' in settings) {
+      const username = String(settings.feedbackBotUsername).trim().replace(/^@/, '');
+      if (/^[a-zA-Z0-9_]{5,32}$/.test(username)) {
+        sanitized.feedbackBotUsername = username;
+      }
+    }
+
+    if ('userTooltipEnabled' in settings) {
+      sanitized.userTooltipEnabled = Boolean(settings.userTooltipEnabled);
     }
 
     if ('randomTitleButtonEnabled' in settings) {

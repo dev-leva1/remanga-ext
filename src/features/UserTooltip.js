@@ -13,6 +13,9 @@ class UserTooltip {
     this.isEnabled = true;
     this.requestId = 0;
     this.listenersAttached = false;
+    this.cacheTtlMs = 5 * 60 * 1000;
+    this.maxCacheSize = 100;
+    this.consecutiveFailures = 0;
     this.boundHandleMouseOver = this.handleMouseOver.bind(this);
     this.boundHandleMouseOut = this.handleMouseOut.bind(this);
   }
@@ -58,13 +61,19 @@ class UserTooltip {
    * Обработка наведения мыши
    */
   handleMouseOver(event) {
-    if (!this.isEnabled) return;
+    if (!this.isEnabled) {
+      return;
+    }
 
     const avatarLink = this.findAvatarLink(event.target);
-    if (!avatarLink) return;
+    if (!avatarLink) {
+      return;
+    }
 
     const userId = this.extractUserId(avatarLink);
-    if (!userId) return;
+    if (!userId) {
+      return;
+    }
 
     this.currentHoveredElement = avatarLink;
 
@@ -84,7 +93,9 @@ class UserTooltip {
    */
   handleMouseOut(event) {
     const avatarLink = this.findAvatarLink(event.target);
-    if (!avatarLink) return;
+    if (!avatarLink) {
+      return;
+    }
 
     if (this.currentHoveredElement === avatarLink) {
       this.clearHoverTimeout();
@@ -117,9 +128,11 @@ class UserTooltip {
    */
   extractUserId(link) {
     const match = link.href.match(/\/user\/(\d+)\//);
-    if (!match) return null;
+    if (!match) {
+      return null;
+    }
 
-    const userId = parseInt(match[1]);
+    const userId = Number(match[1]);
 
     if (!Number.isInteger(userId) || userId <= 0) {
       logger.warn(`Невалидный ID пользователя: ${userId}`);
@@ -157,7 +170,7 @@ class UserTooltip {
       const cached = this.cache.get(userId);
       const now = Date.now();
 
-      if (now - cached.timestamp < 5 * 60 * 1000) {
+      if (now - cached.timestamp < this.cacheTtlMs) {
         logger.debug(`Данные пользователя ${userId} взяты из кеша`);
         return cached.data;
       } else {
@@ -182,17 +195,46 @@ class UserTooltip {
         is_online: data.is_online
       };
 
-      this.cache.set(userId, {
-        data: userData,
-        timestamp: Date.now()
-      });
+      this.consecutiveFailures = 0;
+      this.setCacheEntry(userId, userData);
 
       logger.debug(`Данные пользователя ${userId} загружены и закешированы`);
       return userData;
     } catch (error) {
+      this.consecutiveFailures++;
       logger.error(`Ошибка загрузки данных пользователя ${userId}:`, error);
+      if (this.consecutiveFailures >= 3) {
+        logger.warn('Повторяющиеся ошибки загрузки тултипов пользователей', {
+          consecutiveFailures: this.consecutiveFailures
+        });
+      }
       return null;
     }
+  }
+
+  setCacheEntry(userId, userData) {
+    this.pruneExpiredCache();
+
+    if (this.cache.size >= this.maxCacheSize) {
+      const oldestKey = this.cache.keys().next().value;
+      if (oldestKey !== undefined) {
+        this.cache.delete(oldestKey);
+      }
+    }
+
+    this.cache.set(userId, {
+      data: userData,
+      timestamp: Date.now()
+    });
+  }
+
+  pruneExpiredCache() {
+    const now = Date.now();
+    this.cache.forEach((entry, key) => {
+      if (now - entry.timestamp >= this.cacheTtlMs) {
+        this.cache.delete(key);
+      }
+    });
   }
 
   /**

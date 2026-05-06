@@ -6,7 +6,7 @@ class FeedbackButton {
   constructor(config, notifications) {
     this.config = config;
     this.notifications = notifications;
-    this.botUsername = 'remanga_extension_bot'; // TODO: заменить на реальное имя бота
+    this.botUsername = this.resolveBotUsername();
     this.modal = null;
   }
 
@@ -151,8 +151,7 @@ class FeedbackButton {
 
       const deepLink = this.generateDeepLink(type, context);
 
-      // Копируем команду в буфер обмена (если поддерживается)
-      const command = `/start ${deepLink.split('?start=')[1]}`;
+      const command = `/start ${new URL(deepLink).searchParams.get('start')}`;
       if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
         navigator.clipboard.writeText(command).then(() => {
           this.notifications.success('Команда скопирована! Вставьте её в бота.');
@@ -179,9 +178,18 @@ class FeedbackButton {
    * Генерация deep link
    */
   generateDeepLink(type, context) {
+    this.botUsername = this.resolveBotUsername();
+
+    const allowedTypes = ['bug', 'feature', 'question', 'other'];
+    if (!allowedTypes.includes(type)) {
+      throw new Error('Невалидный тип обращения');
+    }
+
+    const safeContext = this.sanitizeContext(context);
     const payload = {
+      s: 1,
       type,
-      ...context
+      ...safeContext
     };
 
     const json = JSON.stringify(payload);
@@ -198,18 +206,72 @@ class FeedbackButton {
     return '__VERSION__'; // Заменяется при сборке
   }
 
+  resolveBotUsername() {
+    const configuredUsername = this.config?.get('feedbackBotUsername') || 'remanga_extension_bot';
+    const username = String(configuredUsername).trim().replace(/^@/, '');
+
+    if (!/^[a-zA-Z0-9_]{5,32}$/.test(username)) {
+      return 'remanga_extension_bot';
+    }
+
+    return username;
+  }
+
+  sanitizeContext(context) {
+    const source = typeof context === 'object' && context !== null && !Array.isArray(context)
+      ? context
+      : {};
+
+    const safeContext = {
+      v: null,
+      b: null,
+      u: null
+    };
+
+    if (typeof source.v === 'string' && /^\d+\.\d+\.\d+$/.test(source.v)) {
+      safeContext.v = source.v;
+    }
+
+    if (typeof source.b === 'string') {
+      const browser = source.b.toLowerCase();
+      safeContext.b = ['chrome', 'firefox', 'safari', 'edge', 'other'].includes(browser) ? browser : 'other';
+    }
+
+    if (typeof source.u === 'string') {
+      try {
+        const url = new URL(source.u);
+        const hostname = url.hostname.toLowerCase();
+        if (hostname === 'remanga.org' || hostname.endsWith('.remanga.org')) {
+          safeContext.u = url.toString();
+        }
+      } catch (error) {
+        logger.warn('Невалидный URL контекста обратной связи:', error);
+      }
+    }
+
+    return safeContext;
+  }
+
   /**
    * Определение браузера
    */
   detectBrowser() {
     const ua = navigator.userAgent;
 
-    if (ua.includes('Firefox')) return 'Firefox';
-    if (ua.includes('Edg')) return 'Edge';
-    if (ua.includes('Chrome')) return 'Chrome';
-    if (ua.includes('Safari')) return 'Safari';
+    if (ua.includes('Firefox')) {
+      return 'firefox';
+    }
+    if (ua.includes('Edg')) {
+      return 'edge';
+    }
+    if (ua.includes('Chrome')) {
+      return 'chrome';
+    }
+    if (ua.includes('Safari')) {
+      return 'safari';
+    }
 
-    return 'Unknown';
+    return 'other';
   }
 
   /**

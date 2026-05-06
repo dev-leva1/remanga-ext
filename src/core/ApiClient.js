@@ -61,6 +61,19 @@ class ApiClient {
    * Базовый метод для выполнения запросов
    */
   async request(endpoint, options = {}) {
+    if (typeof endpoint !== 'string' || !endpoint.startsWith('/')) {
+      throw new Error('Невалидный API endpoint');
+    }
+
+    if (typeof options !== 'object' || options === null || Array.isArray(options)) {
+      throw new Error('Невалидные параметры API запроса');
+    }
+
+    const responseType = options.responseType || 'json';
+    if (!['json', 'text'].includes(responseType)) {
+      throw new Error('Невалидный responseType');
+    }
+
     await this.rateLimit();
 
     const url = `${this.baseURL}${endpoint}`;
@@ -79,19 +92,15 @@ class ApiClient {
         timeout: 15000,
         onload: (response) => {
           if (response.status >= 200 && response.status < 300) {
-            if (response.status === 204) {
-              resolve(null);
-            } else {
-              try {
-                const data = JSON.parse(response.responseText);
-                resolve(data);
-              } catch (e) {
-                resolve(response.responseText);
-              }
+            try {
+              resolve(this.parseResponse(response, responseType));
+            } catch (error) {
+              reject(error);
             }
           } else {
-            logger.error(`API ошибка ${response.status}:`, response.statusText);
-            reject(new Error(`API ошибка: ${response.status}`));
+            const error = this.createApiError(response);
+            logger.error('API ошибка:', error.message);
+            reject(error);
           }
         },
         onerror: (error) => {
@@ -104,6 +113,40 @@ class ApiClient {
         }
       });
     });
+  }
+
+  parseResponse(response, responseType) {
+    if (response.status === 204 || response.responseText === '') {
+      return null;
+    }
+
+    if (responseType === 'text') {
+      return response.responseText;
+    }
+
+    try {
+      return JSON.parse(response.responseText);
+    } catch (error) {
+      throw new Error(`API вернул невалидный JSON: ${this.sanitizeResponseBody(response.responseText)}`);
+    }
+  }
+
+  createApiError(response) {
+    const body = this.sanitizeResponseBody(response.responseText);
+    const suffix = body ? `: ${body}` : '';
+    return new Error(`API ошибка ${response.status}${suffix}`);
+  }
+
+  sanitizeResponseBody(body) {
+    if (typeof body !== 'string') {
+      return '';
+    }
+
+    return body
+      .replace(/[\r\n\t]+/g, ' ')
+      .replace(/\s{2,}/g, ' ')
+      .trim()
+      .slice(0, 500);
   }
 
   /**
@@ -136,11 +179,18 @@ class ApiClient {
    * Получение информации о главах
    */
   async getChapters(branchId, page = 1) {
+    const validBranchId = validators.sanitizeChapterId(branchId);
+    const validPage = Number(String(page).trim());
+
+    if (!Number.isInteger(validPage) || validPage < 1 || validPage > 9999) {
+      throw new Error(`Невалидная страница глав: ${page}`);
+    }
+
     const params = new URLSearchParams({
-      branch_id: branchId,
+      branch_id: validBranchId.toString(),
       user_data: '1',
       ordering: '-index',
-      page: page.toString()
+      page: validPage.toString()
     });
 
     return this.request(`/api/v2/titles/chapters/?${params.toString()}`);
@@ -154,8 +204,8 @@ class ApiClient {
   }
 
   async getCatalogPage(page = 1, count = 1) {
-    const validPage = parseInt(page);
-    const validCount = parseInt(count);
+    const validPage = Number(String(page).trim());
+    const validCount = Number(String(count).trim());
 
     if (!Number.isInteger(validPage) || validPage < 1 || validPage > 999) {
       throw new Error(`Невалидная страница каталога: ${page}`);

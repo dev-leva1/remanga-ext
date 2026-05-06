@@ -19,8 +19,12 @@ const changelogParser = {
     const parseRemote = remote.split('.').map(Number);
 
     for (let i = 0; i < 3; i++) {
-      if (parseRemote[i] > parseCurrent[i]) return 1;
-      if (parseRemote[i] < parseCurrent[i]) return -1;
+      if (parseRemote[i] > parseCurrent[i]) {
+        return 1;
+      }
+      if (parseRemote[i] < parseCurrent[i]) {
+        return -1;
+      }
     }
     return 0;
   },
@@ -48,7 +52,9 @@ const changelogParser = {
    * Валидация версии
    */
   isValidVersion(version) {
-    if (typeof version !== 'string') return false;
+    if (typeof version !== 'string') {
+      return false;
+    }
     return /^\d+\.\d+\.\d+$/.test(version);
   }
 };

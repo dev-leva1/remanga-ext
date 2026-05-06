@@ -38,7 +38,7 @@ class Config {
       titleCoverPreviewEnabled: true
     };
 
-    this.settings = { ...this.defaults };
+    this.settings = this.mergeSettings();
     Config.instance = this;
   }
 
@@ -56,18 +56,34 @@ class Config {
           throw new Error('Невалидная структура настроек');
         }
 
-        this.settings = { ...this.defaults, ...parsed };
+        const sanitized = validators.sanitizeSettings(parsed);
+        this.settings = this.mergeSettings(sanitized);
       } else {
-        this.settings = { ...this.defaults };
+        this.settings = this.mergeSettings();
       }
 
       logger.info('Настройки загружены:', this.settings);
       return this.settings;
     } catch (error) {
       logger.error('Ошибка загрузки настроек:', error);
-      this.settings = { ...this.defaults };
+      this.settings = this.mergeSettings();
       return this.settings;
     }
+  }
+
+  mergeSettings(settings = {}) {
+    const source = typeof settings === 'object' && settings !== null && !Array.isArray(settings)
+      ? settings
+      : {};
+
+    return {
+      ...this.defaults,
+      ...source,
+      hideProfileBlocks: {
+        ...this.defaults.hideProfileBlocks,
+        ...(source.hideProfileBlocks || {})
+      }
+    };
   }
 
   /**
@@ -76,7 +92,14 @@ class Config {
   async save(newSettings) {
     try {
       const sanitized = validators.sanitizeSettings(newSettings);
-      this.settings = { ...this.settings, ...sanitized };
+      this.settings = this.mergeSettings({
+        ...this.settings,
+        ...sanitized,
+        hideProfileBlocks: {
+          ...(this.settings.hideProfileBlocks || {}),
+          ...(sanitized.hideProfileBlocks || {})
+        }
+      });
       await GM.setValue('settings', JSON.stringify(this.settings));
       logger.info('Настройки сохранены:', this.settings);
       return true;
@@ -108,7 +131,7 @@ class Config {
    * Сброс к значениям по умолчанию
    */
   async reset() {
-    this.settings = { ...this.defaults };
+    this.settings = this.mergeSettings();
     await GM.setValue('settings', JSON.stringify(this.settings));
     logger.info('Настройки сброшены к значениям по умолчанию');
   }
@@ -118,7 +141,7 @@ class Config {
    */
   export() {
     const exportData = {
-      version: '1.2.0',
+      version: '__VERSION__',
       exportDate: new Date().toISOString(),
       settings: this.settings
     };
