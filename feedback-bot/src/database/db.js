@@ -9,18 +9,23 @@ const { Pool } = pg;
 
 class Database {
   static instance = null;
+  static config = null;
 
-  constructor() {
+  constructor(config = Database.config) {
     if (Database.instance) {
       return Database.instance;
     }
 
+    if (!config || typeof config !== 'object') {
+      throw new Error('Database config is not initialized');
+    }
+
     this.pool = new Pool({
-      host: process.env.DB_HOST,
-      port: parseInt(process.env.DB_PORT),
-      database: process.env.DB_NAME,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
+      host: config.host,
+      port: config.port,
+      database: config.database,
+      user: config.user,
+      password: config.password,
       max: 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 10000
@@ -33,7 +38,23 @@ class Database {
     Database.instance = this;
   }
 
-  static getInstance() {
+  static configure(config) {
+    if (!config || typeof config !== 'object') {
+      throw new Error('Invalid database config');
+    }
+
+    if (Database.instance) {
+      throw new Error('Database is already initialized');
+    }
+
+    Database.config = config;
+  }
+
+  static getInstance(config = null) {
+    if (config) {
+      Database.configure(config);
+    }
+
     if (!Database.instance) {
       Database.instance = new Database();
     }

@@ -84,6 +84,55 @@ export const validators = {
     }
   },
 
+  validateDeepLinkContext(parsed) {
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+      throw new Error('Невалидный контекст');
+    }
+
+    const schemaVersion = Number(parsed.s ?? 1);
+    if (schemaVersion !== 1) {
+      throw new Error('Неподдерживаемая версия контекста');
+    }
+
+    return {
+      v: this.validateVersion(parsed.v),
+      b: this.validateBrowser(parsed.b),
+      u: this.validateUrl(parsed.u)
+    };
+  },
+
+  parseContextText(text) {
+    if (typeof text !== 'string') {
+      throw new Error('Контекст должен быть строкой');
+    }
+
+    const context = {
+      extension_version: null,
+      browser: null,
+      page_url: null
+    };
+
+    const lines = text.split('\n').slice(0, 20);
+
+    for (const line of lines) {
+      const versionMatch = line.match(/версия[:\s]+([0-9.]+)/i);
+      const browserMatch = line.match(/браузер[:\s]+([a-zа-я0-9 _.-]+)/i);
+      const urlMatch = line.match(/(https?:\/\/[^\s]+)/i);
+
+      if (versionMatch) {
+        context.extension_version = this.validateVersion(versionMatch[1]);
+      }
+      if (browserMatch) {
+        context.browser = this.validateBrowser(browserMatch[1]);
+      }
+      if (urlMatch) {
+        context.page_url = this.validateUrl(urlMatch[1]);
+      }
+    }
+
+    return context;
+  },
+
   /**
    * Валидация статуса
    */
@@ -118,9 +167,9 @@ export const validators = {
    * Санитизация Telegram user ID
    */
   sanitizeTelegramUserId(userId) {
-    const id = parseInt(userId);
+    const id = typeof userId === 'number' ? userId : Number(String(userId).trim());
 
-    if (isNaN(id) || id <= 0) {
+    if (!Number.isInteger(id) || id <= 0) {
       throw new Error('Невалидный Telegram user ID');
     }
 

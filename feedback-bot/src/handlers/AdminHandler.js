@@ -8,11 +8,24 @@ import { logger } from '../utils/logger.js';
 import { validators } from '../utils/validators.js';
 
 class AdminHandler {
-  constructor(bot) {
+  constructor(bot, options = {}) {
     this.bot = bot;
     this.feedbackService = new FeedbackService();
-    this.notificationService = new NotificationService(bot);
-    this.adminIds = process.env.ADMIN_IDS.split(',').map(id => parseInt(id.trim()));
+    this.adminIds = this.resolveAdminIds(options.adminIds);
+    this.notificationService = new NotificationService(bot, { adminIds: this.adminIds });
+  }
+
+  resolveAdminIds(adminIds) {
+    if (!Array.isArray(adminIds) || adminIds.length === 0) {
+      throw new Error('AdminHandler требует список adminIds');
+    }
+
+    const normalized = adminIds.filter(id => Number.isInteger(id) && id > 0);
+    if (normalized.length === 0) {
+      throw new Error('AdminHandler требует валидные adminIds');
+    }
+
+    return normalized;
   }
 
   /**
@@ -76,16 +89,16 @@ class AdminHandler {
         const status = data.replace('admin_list_', '');
         await this.handleList(ctx, status);
       } else if (data.startsWith('admin_view_')) {
-        const id = parseInt(data.replace('admin_view_', ''));
-        if (isNaN(id) || id <= 0) {
+        const id = Number(data.replace('admin_view_', ''));
+        if (!Number.isInteger(id) || id <= 0) {
           await ctx.answerCbQuery('Невалидный ID');
           return;
         }
         await this.handleView(ctx, id);
       } else if (data.startsWith('admin_status_')) {
         const parts = data.split('_');
-        const id = parseInt(parts[2]);
-        if (isNaN(id) || id <= 0) {
+        const id = Number(parts[2]);
+        if (!Number.isInteger(id) || id <= 0) {
           await ctx.answerCbQuery('Невалидный ID');
           return;
         }
@@ -177,20 +190,20 @@ class AdminHandler {
       };
 
       let message = `${typeEmoji[feedback.type]} <b>Обращение #${feedback.id}</b>\n\n`;
-      message += `👤 <b>От:</b> ${feedback.username ? '@' + feedback.username : 'Аноним'}\n`;
+      message += `👤 <b>От:</b> ${feedback.username ? '@' + validators.sanitizeHtml(feedback.username) : 'Аноним'}\n`;
       message += `📋 <b>Тип:</b> ${this.translateType(feedback.type)}\n`;
       message += `${statusEmoji[feedback.status]} <b>Статус:</b> ${this.translateStatus(feedback.status)}\n`;
 
       if (feedback.extension_version) {
-        message += `📦 <b>Версия:</b> ${feedback.extension_version}\n`;
+        message += `📦 <b>Версия:</b> ${validators.sanitizeHtml(feedback.extension_version)}\n`;
       }
 
       if (feedback.browser) {
-        message += `🌐 <b>Браузер:</b> ${feedback.browser}\n`;
+        message += `🌐 <b>Браузер:</b> ${validators.sanitizeHtml(feedback.browser)}\n`;
       }
 
       if (feedback.page_url) {
-        message += `🔗 <b>Страница:</b> ${feedback.page_url}\n`;
+        message += `🔗 <b>Страница:</b> ${validators.sanitizeHtml(feedback.page_url)}\n`;
       }
 
       message += `\n💬 <b>Сообщение:</b>\n${validators.sanitizeHtml(feedback.message)}`;

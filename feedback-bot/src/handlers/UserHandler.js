@@ -8,11 +8,16 @@ import { logger } from '../utils/logger.js';
 import { validators } from '../utils/validators.js';
 
 class UserHandler {
-  constructor(bot) {
+  constructor(bot, options = {}) {
     this.bot = bot;
     this.feedbackService = new FeedbackService();
-    this.notificationService = new NotificationService(bot);
-    this.sessions = new Map(); // { userId: { step, data } }
+    this.notificationService = new NotificationService(bot, { adminIds: options.adminIds });
+    this.sessions = new Map();
+    this.sessionTtlMs = options.sessionTtlMs || 30 * 60 * 1000;
+    this.cleanupTimer = setInterval(() => this.sweepSessions(), 5 * 60 * 1000);
+    if (typeof this.cleanupTimer.unref === 'function') {
+      this.cleanupTimer.unref();
+    }
   }
 
   /**
@@ -28,7 +33,7 @@ class UserHandler {
         try {
           const context = this.decodeContext(startPayload);
 
-          this.sessions.set(userId, {
+          this.setSession(userId, {
             step: 'type',
             data: {
               extension_version: context.v || null,
@@ -72,7 +77,7 @@ class UserHandler {
   async showTypeSelection(ctx) {
     const userId = ctx.from.id;
 
-    this.sessions.set(userId, {
+    this.setSession(userId, {
       step: 'type',
       data: {}
     });
@@ -119,21 +124,21 @@ class UserHandler {
    */
   async handleTypeSelection(ctx, type) {
     const userId = ctx.from.id;
-    const session = this.sessions.get(userId) || { data: {} };
+    const session = this.getSession(userId) || { data: {} };
 
     session.data.type = type;
 
     // Если контекст уже есть (deep link), сразу запрашиваем сообщение
     if (session.data.extension_version || session.data.browser || session.data.page_url) {
       session.step = 'message';
-      this.sessions.set(userId, session);
+      this.setSession(userId, session);
 
       await ctx.editMessageText('Опишите вашу проблему или предложение:');
       await ctx.answerCbQuery();
     } else {
       // Иначе предлагаем добавить контекст
       session.step = 'context';
-      this.sessions.set(userId, session);
+      this.setSession(userId, session);
 
       await ctx.editMessageText(
         'Хотите добавить технические данные (версия расширения, браузер, страница)?',
@@ -156,7 +161,7 @@ class UserHandler {
    */
   async handleSkipContext(ctx) {
     const userId = ctx.from.id;
-    const session = this.sessions.get(userId);
+    const session = this.getSession(userId);
 
     if (!session) {
       await ctx.answerCbQuery('Сессия истекла. Начните заново с /start');
@@ -164,7 +169,7 @@ class UserHandler {
     }
 
     session.step = 'message';
-    this.sessions.set(userId, session);
+    this.setSession(userId, session);
 
     await ctx.editMessageText('Опишите вашу проблему или предложение:');
     await ctx.answerCbQuery();
@@ -175,7 +180,7 @@ class UserHandler {
    */
   async handleAddContext(ctx) {
     const userId = ctx.from.id;
-    const session = this.sessions.get(userId);
+    const session = this.getSession(userId);
 
     if (!session) {
       await ctx.answerCbQuery('Сессия истекла. Начните заново с /start');
@@ -191,7 +196,7 @@ class UserHandler {
     );
 
     session.step = 'context_input';
-    this.sessions.set(userId, session);
+    this.setSession(userId, session);
 
     await ctx.answerCbQuery();
   }
@@ -202,7 +207,7 @@ class UserHandler {
   async handleText(ctx) {
     try {
       const userId = ctx.from.id;
-      const session = this.sessions.get(userId);
+      const session = this.getSession(userId);
 
       if (!session) {
         await ctx.reply('Начните с команды /start');
@@ -210,22 +215,14 @@ class UserHandler {
       }
 
       if (session.step === 'context_input') {
-        // Парсинг контекста из текста
-        const text = ctx.message.text;
-        const lines = text.split('\n');
-
-        for (const line of lines) {
-          const versionMatch = line.match(/версия[:\s]+([0-9.]+)/i);
-          const browserMatch = line.match(/браузер[:\s]+(\w+)/i);
-          const urlMatch = line.match(/(https?:\/\/[^\s]+)/i);
-
-          if (versionMatch) session.data.extension_version = versionMatch[1];
-          if (browserMatch) session.data.browser = browserMatch[1].toLowerCase();
-          if (urlMatch) session.data.page_url = urlMatch[1];
-        }
+        const parsedContext = validators.parseContextText(ctx.message.text);
+        session.data = {
+          ...session.data,
+          ...parsedContext
+        };
 
         session.step = 'message';
-        this.sessions.set(userId, session);
+        this.setSession(userId, session);
 
         await ctx.reply('Опишите вашу проблему или предложение:');
       } else if (session.step === 'message') {
@@ -246,11 +243,18 @@ class UserHandler {
           `Мы рассмотрим его в ближайшее время.`
         );
 
-        // Уведомление админов
-        await this.notificationService.notifyAdmins(feedback);
+        try {
+          await this.notificationService.notifyAdmins(feedback);
+        } catch (error) {
+          logger.error('Admin notification failed after feedback submit', {
+            userId,
+            feedbackId: feedback.id,
+            error: error.message
+          });
+        }
 
         // Очистка сессии
-        this.sessions.delete(userId);
+        this.deleteSession(userId);
 
         logger.info('Feedback submitted', { userId, feedbackId: feedback.id });
       }
@@ -265,6 +269,41 @@ class UserHandler {
     }
   }
 
+  setSession(userId, session) {
+    this.sessions.set(userId, {
+      ...session,
+      updatedAt: Date.now()
+    });
+  }
+
+  getSession(userId) {
+    const session = this.sessions.get(userId);
+    if (!session) {
+      return null;
+    }
+
+    if (Date.now() - session.updatedAt > this.sessionTtlMs) {
+      this.sessions.delete(userId);
+      return null;
+    }
+
+    session.updatedAt = Date.now();
+    return session;
+  }
+
+  deleteSession(userId) {
+    this.sessions.delete(userId);
+  }
+
+  sweepSessions() {
+    const now = Date.now();
+    this.sessions.forEach((session, userId) => {
+      if (now - session.updatedAt > this.sessionTtlMs) {
+        this.sessions.delete(userId);
+      }
+    });
+  }
+
   /**
    * Декодирование контекста из deep link
    */
@@ -275,17 +314,7 @@ class UserHandler {
       const json = Buffer.from(base64, 'base64').toString('utf-8');
       const parsed = JSON.parse(json);
 
-      // Валидация структуры
-      if (typeof parsed !== 'object' || parsed === null) {
-        throw new Error('Невалидный контекст');
-      }
-
-      // Валидация и санитизация полей
-      return {
-        v: validators.validateVersion(parsed.v),
-        b: validators.validateBrowser(parsed.b),
-        u: validators.validateUrl(parsed.u)
-      };
+      return validators.validateDeepLinkContext(parsed);
     } catch (error) {
       throw new Error('Невалидный контекст');
     }

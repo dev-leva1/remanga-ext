@@ -112,8 +112,10 @@ class FeedbackService {
       query += ' ORDER BY created_at DESC';
 
       // Пагинация с валидацией
-      const limit = Math.max(1, Math.min(100, parseInt(pagination.limit) || 10));
-      const offset = Math.max(0, parseInt(pagination.offset) || 0);
+      const parsedLimit = Number(String(pagination.limit).trim());
+      const parsedOffset = Number(String(pagination.offset).trim());
+      const limit = Number.isInteger(parsedLimit) ? Math.max(1, Math.min(100, parsedLimit)) : 10;
+      const offset = Number.isInteger(parsedOffset) ? Math.max(0, parsedOffset) : 0;
       query += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
       values.push(limit, offset);
 
@@ -208,8 +210,9 @@ class FeedbackService {
       };
 
       result.rows.forEach(row => {
-        stats[row.status] = parseInt(row.count);
-        stats.total += parseInt(row.count);
+        const count = Number(row.count);
+        stats[row.status] = Number.isInteger(count) ? count : 0;
+        stats.total += stats[row.status];
       });
 
       return stats;

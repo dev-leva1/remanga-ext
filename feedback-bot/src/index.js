@@ -4,6 +4,7 @@
 
 import dotenv from 'dotenv';
 import { Telegraf } from 'telegraf';
+import AppConfig from './config/AppConfig.js';
 import Database from './database/db.js';
 import UserHandler from './handlers/UserHandler.js';
 import AdminHandler from './handlers/AdminHandler.js';
@@ -12,23 +13,21 @@ import { logger } from './utils/logger.js';
 // Загрузка переменных окружения
 dotenv.config();
 
-// Валидация env переменных
-if (!process.env.BOT_TOKEN) {
-  logger.error('BOT_TOKEN not found in environment');
-  process.exit(1);
-}
-
-if (!process.env.ADMIN_IDS) {
-  logger.error('ADMIN_IDS not found in environment');
+let appConfig;
+try {
+  appConfig = AppConfig.fromEnv(process.env);
+  Database.configure(appConfig.database);
+} catch (error) {
+  logger.error('Invalid application config', { error: error.message });
   process.exit(1);
 }
 
 // Инициализация бота
-const bot = new Telegraf(process.env.BOT_TOKEN);
+const bot = new Telegraf(appConfig.botToken);
 
 // Инициализация handlers
-const userHandler = new UserHandler(bot);
-const adminHandler = new AdminHandler(bot);
+const userHandler = new UserHandler(bot, { adminIds: appConfig.adminIds });
+const adminHandler = new AdminHandler(bot, { adminIds: appConfig.adminIds });
 
 // Middleware для логирования
 bot.use(async (ctx, next) => {
