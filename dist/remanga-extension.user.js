@@ -5515,6 +5515,98 @@ class CommentRateLimiter {
   }
 }
 
+class CommentSectionDetector {
+  constructor(onReached) {
+    if (typeof onReached !== 'function') {
+      throw new Error('CommentSectionDetector требует callback');
+    }
+
+    this.onReached = onReached;
+    this.selectors = [
+      'button[data-testid="comment_input"]',
+      '.cs-comment-input-section',
+      '.cs-comment-button-trigger'
+    ];
+    this.mutationObserver = null;
+    this.scrollHandler = this.handleViewportChange.bind(this);
+  }
+
+  start() {
+    this.stop();
+    window.addEventListener('scroll', this.scrollHandler, { passive: true });
+    window.addEventListener('resize', this.scrollHandler, { passive: true });
+
+    if (document.body) {
+      this.mutationObserver = new MutationObserver(() => this.handleViewportChange());
+      this.mutationObserver.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+    }
+
+    this.handleViewportChange();
+  }
+
+  stop() {
+    window.removeEventListener('scroll', this.scrollHandler);
+    window.removeEventListener('resize', this.scrollHandler);
+
+    if (this.mutationObserver) {
+      this.mutationObserver.disconnect();
+      this.mutationObserver = null;
+    }
+  }
+
+  handleViewportChange() {
+    if (this.isReached()) {
+      this.onReached();
+    }
+  }
+
+  isReached() {
+    const candidates = this.getCandidates();
+
+    if (candidates.length === 0) {
+      return domUtils.isAtPageBottom(300);
+    }
+
+    return candidates.some(element => this.isElementReached(element));
+  }
+
+  getCandidates() {
+    const elements = new Set();
+
+    this.selectors.forEach(selector => {
+      document.querySelectorAll(selector).forEach(element => elements.add(element));
+    });
+
+    return [...elements];
+  }
+
+  isElementReached(element) {
+    if (!(element instanceof Element)) {
+      return false;
+    }
+
+    const rect = element.getBoundingClientRect();
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+    const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+
+    if (rect.width <= 0 || rect.height <= 0 || viewportHeight <= 0 || viewportWidth <= 0) {
+      return false;
+    }
+
+    const topLimit = -Math.min(120, viewportHeight * 0.2);
+    const bottomLimit = viewportHeight * 0.9;
+
+    return rect.top >= topLimit &&
+      rect.top <= bottomLimit &&
+      rect.bottom > 0 &&
+      rect.left < viewportWidth &&
+      rect.right > 0;
+  }
+}
+
 class AutoCommenter {
   constructor(chapterManager, apiClient, config, notifications, statistics, rateLimiter = new CommentRateLimiter()) {
     this.chapterManager = chapterManager;
@@ -5525,13 +5617,16 @@ class AutoCommenter {
     this.rateLimiter = rateLimiter;
     this.storageKey = 'autoCommentedChapters';
     this.commentedChapters = new Set();
+    this.pendingChapters = new Set();
+    this.currentUserId = null;
+    this.currentUserLoaded = false;
     this.currentChapterId = null;
     this.commentText = '';
     this.initialized = false;
     this.commenting = false;
-    this.bottomTimer = null;
+    this.triggerTimer = null;
     this.retryTimer = null;
-    this.scrollHandler = this.handleScroll.bind(this);
+    this.commentSectionDetector = new CommentSectionDetector(() => this.handleCommentSectionReached());
   }
 
   async init() {
@@ -5547,15 +5642,19 @@ class AutoCommenter {
       this.currentChapterId = validators.sanitizeChapterId(this.chapterManager.getCurrentChapterId());
       await this.loadCommentedChapters();
 
-      if (this.commentedChapters.has(this.currentChapterId)) {
+      if (this.hasHandledChapter(this.currentChapterId)) {
         logger.debug(`Глава ${this.currentChapterId} уже была прокомментирована`);
         return;
       }
 
+      if (await this.hasVisibleOwnComment(this.currentChapterId, this.commentText)) {
+        await this.markChapterCommented(this.currentChapterId);
+        logger.debug(`Глава ${this.currentChapterId} уже содержит автокомментарий текущего пользователя`);
+        return;
+      }
+
       this.initialized = true;
-      window.addEventListener('scroll', this.scrollHandler, { passive: true });
-      window.addEventListener('resize', this.scrollHandler, { passive: true });
-      this.handleScroll();
+      this.commentSectionDetector.start();
     } catch (error) {
       logger.warn('Автокомментарии не инициализированы:', error);
     }
@@ -5583,46 +5682,163 @@ class AutoCommenter {
     await GM.setValue(this.storageKey, JSON.stringify([...this.commentedChapters]));
   }
 
-  handleScroll() {
-    if (!this.initialized || this.commenting || !domUtils.isAtPageBottom(300)) {
+  hasHandledChapter(chapterId) {
+    const validId = validators.sanitizeChapterId(chapterId);
+    return this.commentedChapters.has(validId) || this.pendingChapters.has(validId);
+  }
+
+  async markChapterCommented(chapterId) {
+    const validId = validators.sanitizeChapterId(chapterId);
+    this.commentedChapters.add(validId);
+    await this.saveCommentedChapters();
+  }
+
+  async hasVisibleOwnComment(chapterId, commentText) {
+    validators.sanitizeChapterId(chapterId);
+    const validText = validators.sanitizeCommentText(commentText);
+    const currentUserId = await this.getCurrentUserId();
+
+    if (!currentUserId) {
+      return false;
+    }
+
+    return this.findVisibleOwnComment(currentUserId, validText);
+  }
+
+  async getCurrentUserId() {
+    if (this.currentUserLoaded) {
+      return this.currentUserId;
+    }
+
+    this.currentUserLoaded = true;
+
+    try {
+      const user = await this.api.getCurrentUser();
+      const userId = this.extractCurrentUserId(user);
+      this.currentUserId = userId;
+      return userId;
+    } catch (error) {
+      logger.warn('Не удалось определить текущего пользователя для проверки автокомментария:', error);
+      this.currentUserId = null;
+      return null;
+    }
+  }
+
+  extractCurrentUserId(user) {
+    const value = user?.id ?? user?.user?.id ?? user?.data?.id;
+    const userId = Number(String(value).trim());
+
+    if (!Number.isInteger(userId) || userId <= 0 || userId >= Number.MAX_SAFE_INTEGER) {
+      throw new Error(`Невалидный ID текущего пользователя: ${value}`);
+    }
+
+    return userId;
+  }
+
+  findVisibleOwnComment(userId, commentText) {
+    const validUserId = this.sanitizeUserId(userId);
+    const normalizedText = this.normalizeCommentText(commentText);
+    const comments = Array.from(document.querySelectorAll('.cs-comment-item'));
+
+    return comments.some(comment => {
+      const authorLink = comment.querySelector(`a[href="/user/${validUserId}/about"], a[href^="/user/${validUserId}/about?"]`);
+      if (!authorLink) {
+        return false;
+      }
+
+      return this.getCommentTextCandidates(comment).some(text => this.normalizeCommentText(text) === normalizedText);
+    });
+  }
+
+  getCommentTextCandidates(commentElement) {
+    if (!(commentElement instanceof Element)) {
+      return [];
+    }
+
+    const selectors = [
+      '[data-sentry-component="ActivityItemContent"]',
+      '[data-sentry-component="SpoiledText"]',
+      '.break-words'
+    ];
+    const values = new Set();
+
+    selectors.forEach(selector => {
+      commentElement.querySelectorAll(selector).forEach(element => {
+        const text = element.textContent ? element.textContent.trim() : '';
+        if (text) {
+          values.add(text);
+        }
+      });
+    });
+
+    return [...values];
+  }
+
+  normalizeCommentText(value) {
+    return validators.sanitizeCommentText(value).replace(/\s+/g, ' ');
+  }
+
+  sanitizeUserId(value) {
+    const userId = Number(String(value).trim());
+
+    if (!Number.isInteger(userId) || userId <= 0 || userId >= Number.MAX_SAFE_INTEGER) {
+      throw new Error(`Невалидный ID пользователя: ${value}`);
+    }
+
+    return userId;
+  }
+
+  handleCommentSectionReached() {
+    if (!this.initialized || this.commenting || this.retryTimer) {
       return;
     }
 
-    if (this.bottomTimer) {
-      clearTimeout(this.bottomTimer);
+    if (this.triggerTimer) {
+      clearTimeout(this.triggerTimer);
     }
 
-    this.bottomTimer = setTimeout(() => {
-      this.bottomTimer = null;
+    this.triggerTimer = setTimeout(() => {
+      this.triggerTimer = null;
       this.tryComment();
-    }, 800);
+    }, 150);
   }
 
   async tryComment() {
-    if (!this.initialized || this.commenting || !domUtils.isAtPageBottom(300)) {
+    if (!this.initialized || this.commenting || this.retryTimer || !this.commentSectionDetector.isReached()) {
       return;
     }
 
-    if (this.commentedChapters.has(this.currentChapterId)) {
+    const chapterId = validators.sanitizeChapterId(this.currentChapterId);
+    const commentText = validators.sanitizeCommentText(this.commentText);
+
+    if (this.hasHandledChapter(chapterId)) {
       this.cleanup();
       return;
     }
 
     this.commenting = true;
+    this.pendingChapters.add(chapterId);
 
     try {
-      const reserved = await this.rateLimiter.tryReserve();
-
-      if (!reserved) {
-        const retryAfterMs = this.rateLimiter.getRetryAfterMs();
-        this.notifications.warning('Лимит автокомментариев: максимум 4 комментария в минуту');
-        this.scheduleRetry(retryAfterMs);
+      if (await this.hasVisibleOwnComment(chapterId, commentText)) {
+        await this.markChapterCommented(chapterId);
+        this.cleanup();
         return;
       }
 
-      await this.api.commentChapter(this.currentChapterId, this.commentText);
-      this.commentedChapters.add(this.currentChapterId);
-      await this.saveCommentedChapters();
+      const reserved = await this.rateLimiter.tryReserve();
+
+      if (!reserved) {
+        this.pendingChapters.delete(chapterId);
+        const retryAfterMs = this.rateLimiter.getRetryAfterMs();
+        if (this.scheduleRetry(retryAfterMs)) {
+          this.notifications.warning('Лимит автокомментариев: максимум 4 комментария в минуту');
+        }
+        return;
+      }
+
+      await this.api.commentChapter(chapterId, commentText);
+      await this.markChapterCommented(chapterId);
       await this.statistics.incrementComments(1);
       this.notifications.success('Глава автоматически прокомментирована');
       this.cleanup();
@@ -5630,13 +5846,14 @@ class AutoCommenter {
       logger.error('Ошибка автокомментария:', error);
       this.notifications.error('Не удалось автоматически отправить комментарий');
     } finally {
+      this.pendingChapters.delete(chapterId);
       this.commenting = false;
     }
   }
 
   scheduleRetry(delayMs) {
     if (this.retryTimer) {
-      clearTimeout(this.retryTimer);
+      return false;
     }
 
     const safeDelay = Math.max(1000, Number(String(delayMs).trim()) || 1000);
@@ -5644,15 +5861,16 @@ class AutoCommenter {
       this.retryTimer = null;
       this.tryComment();
     }, safeDelay);
+
+    return true;
   }
 
   cleanup() {
-    window.removeEventListener('scroll', this.scrollHandler);
-    window.removeEventListener('resize', this.scrollHandler);
+    this.commentSectionDetector.stop();
 
-    if (this.bottomTimer) {
-      clearTimeout(this.bottomTimer);
-      this.bottomTimer = null;
+    if (this.triggerTimer) {
+      clearTimeout(this.triggerTimer);
+      this.triggerTimer = null;
     }
 
     if (this.retryTimer) {
