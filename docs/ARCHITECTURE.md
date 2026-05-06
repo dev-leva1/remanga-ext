@@ -9,6 +9,7 @@ src/
 ├── core/
 │   ├── ApiClient.js
 │   ├── Config.js
+│   ├── NavigationCoordinator.js
 │   ├── Statistics.js
 │   └── UpdateChecker.js
 ├── features/
@@ -23,6 +24,7 @@ src/
 │   ├── FeedbackButton.js
 │   ├── Notifications.js
 │   ├── SettingsPage.js
+│   ├── SettingsPageController.js
 │   ├── SettingsPanel.js
 │   ├── TooltipRenderer.js
 │   └── styles.js
@@ -32,6 +34,24 @@ src/
 │   ├── logger.js
 │   └── validators.js
 └── main.js
+
+feedback-bot/
+├── src/
+│   ├── config/
+│   │   └── AppConfig.js
+│   ├── database/
+│   │   ├── db.js
+│   │   └── migrations/
+│   ├── handlers/
+│   │   ├── AdminHandler.js
+│   │   └── UserHandler.js
+│   ├── services/
+│   │   ├── FeedbackService.js
+│   │   └── NotificationService.js
+│   └── utils/
+│       ├── logger.js
+│       └── validators.js
+└── package.json
 ```
 
 ---
@@ -72,6 +92,13 @@ Singleton-менеджер статистики:
 - показывает модальное окно с changelog;
 - запускает обновление переходом на URL скрипта.
 
+### 2.5 NavigationCoordinator
+
+Координатор SPA-навигации:
+- изолирует перехват `history.pushState` / `history.replaceState`;
+- восстанавливает оригинальные методы при cleanup;
+- защищает runtime от повторного patching при повторной инициализации userscript.
+
 ---
 
 ## 3. Features-модуль
@@ -85,6 +112,18 @@ Singleton-менеджер статистики:
 - **GuildHighlighter** — подсветка гильдий на релевантных страницах.
 - **UserTooltip** — tooltip по пользователю с данными из API и рендерером.
 - **RandomTitleNavigator** — кнопка/действие перехода к случайному тайтлу.
+- **TitleCoverPreview** — полноэкранный просмотр обложки тайтла.
+
+---
+
+## 3.1 Feedback-bot runtime
+
+`feedback-bot` — отдельный Node.js runtime для Telegram-обратной связи:
+- `AppConfig` валидирует `BOT_TOKEN`, `ADMIN_IDS` и PostgreSQL-переменные на старте;
+- `Database` получает уже проверенный config, не читает `process.env` напрямую;
+- `UserHandler` ведет пользовательский flow и чистит stale sessions по TTL;
+- `AdminHandler` проверяет права по typed `adminIds`;
+- `NotificationService` возвращает delivery summary и бросает ошибку, если уведомления не доставлены ни одному админу.
 
 ---
 
@@ -116,7 +155,8 @@ Singleton-менеджер статистики:
   highlightGuilds: true,
   feedbackBotUsername: 'remanga_extension_bot',
   userTooltipEnabled: true,
-  randomTitleButtonEnabled: true
+  randomTitleButtonEnabled: true,
+  titleCoverPreviewEnabled: true
 }
 ```
 
@@ -125,7 +165,7 @@ Singleton-менеджер статистики:
 - Уведомления: `notificationsEnabled`, `notificationDuration`.
 - Обновления: `autoUpdateEnabled`.
 - UI/кастомизация: `blockCustomThemes`, `hideChatIndicator`, `hideProfileBlocks`.
-- Социальные/навигационные фичи: `highlightGuilds`, `userTooltipEnabled`, `randomTitleButtonEnabled`.
+- Социальные/навигационные фичи: `highlightGuilds`, `userTooltipEnabled`, `randomTitleButtonEnabled`, `titleCoverPreviewEnabled`.
 - Обратная связь: `feedbackBotUsername`.
 
 ---

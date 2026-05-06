@@ -4,9 +4,10 @@
 
 ## Актуально
 
-- [ARCHITECTURE.md](./ARCHITECTURE.md) — целевая архитектура расширения.
+- [ARCHITECTURE.md](./ARCHITECTURE.md) — целевая архитектура userscript и feedback-bot runtime.
 - [ROADMAP.md](./ROADMAP.md) — план развития функций и задач.
 - [API_LIKES_ENDPOINT.md](./API_LIKES_ENDPOINT.md) — описание лайк-эндпоинта и особенностей использования.
+- [../feedback-bot/README.md](../feedback-bot/README.md) — запуск, env config и эксплуатация Telegram feedback-bot.
 
 ## Исследование
 

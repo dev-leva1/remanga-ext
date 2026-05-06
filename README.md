@@ -130,6 +130,8 @@ src/
 ### Требования
 
 - Node.js (для сборки)
+- Node.js для `feedback-bot`
+- PostgreSQL для локального запуска `feedback-bot`
 
 ### Сборка
 
@@ -139,10 +141,18 @@ npm run build
 
 Результат: `dist/remanga-extension.user.js`
 
+Отдельные команды:
+
+```bash
+npm run build:userscript
+npm run sync:landing
+```
+
 ### Структура проекта
 
 ```
 remanga-ext/
+├── CHANGELOG.md                 # Единый changelog для userscript header и лендинга
 ├── src/
 │   ├── core/
 │   │   ├── Config.js           # Управление настройками
@@ -158,8 +168,17 @@ remanga-ext/
 │   │   ├── validators.js       # Валидация данных
 │   │   └── logger.js           # Логирование
 │   └── main.js                 # Точка входа
+├── feedback-bot/
+│   ├── src/
+│   │   ├── config/             # Валидация переменных окружения
+│   │   ├── database/           # PostgreSQL connection и миграции
+│   │   ├── handlers/           # Telegram handlers
+│   │   ├── services/           # Бизнес-логика обращений и уведомлений
+│   │   └── utils/              # Валидация и логирование
+│   └── package.json
 ├── dist/
-│   └── remanga-extension.user.js  # Собранный скрипт
+│   ├── remanga-extension.user.js  # Собранный скрипт
+│   └── index.html                 # Лендинг
 ├── build.js                    # Сборщик
 └── package.json
 ```
@@ -185,7 +204,7 @@ localStorage.setItem('remanga_ext_debug', 'true');
 ## Ограничения и особенности поведения
 
 - **SPA-навигация**: расширение отслеживает изменения URL через перехват `history.pushState`, `history.replaceState` и `popstate`, закрывает временные тултипы/overlay UI и переинициализирует функциональность под новую страницу.
-- **Закрытие/сохранение настроек**: при закрытии `SettingsPage`, сохранении или сбросе настроек выполняется `window.location.reload()` для гарантированного применения изменений.
+- **Закрытие/сохранение настроек**: `SettingsPage` закрывается без перезагрузки, а сохранение/сброс настроек применяет изменения через явные collaborators расширения.
 - **Массовые операции**:
   - отметка прочитанного выполняется последовательно по одной главе;
   - лайки выполняются батчами (`batchSize`);
