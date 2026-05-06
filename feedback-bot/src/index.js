@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import { Telegraf } from 'telegraf';
 import AppConfig from './config/AppConfig.js';
 import Database from './database/db.js';
+import MigrationRunner from './database/MigrationRunner.js';
 import UserHandler from './handlers/UserHandler.js';
 import AdminHandler from './handlers/AdminHandler.js';
 import { logger } from './utils/logger.js';
@@ -69,6 +70,7 @@ async function start() {
     const db = Database.getInstance();
     await db.query('SELECT 1');
     logger.info('Database connected');
+    await new MigrationRunner(db).run();
 
     // Запуск бота
     await bot.launch();

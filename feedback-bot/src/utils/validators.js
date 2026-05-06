@@ -176,6 +176,18 @@ export const validators = {
     return id;
   },
 
+  validateTelegramUsername(username) {
+    if (!username) return null;
+
+    const value = String(username).trim();
+
+    if (!/^[A-Za-z0-9_]{5,32}$/.test(value)) {
+      return null;
+    }
+
+    return value;
+  },
+
   /**
    * Санитизация HTML (базовая защита от XSS)
    */

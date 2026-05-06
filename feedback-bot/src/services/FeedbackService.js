@@ -23,6 +23,7 @@ class FeedbackService {
       const version = validators.validateVersion(data.extension_version);
       const browser = validators.validateBrowser(data.browser);
       const pageUrl = validators.validateUrl(data.page_url);
+      const username = validators.validateTelegramUsername(data.username);
 
       // Вставка в БД
       const query = `
@@ -36,7 +37,7 @@ class FeedbackService {
 
       const values = [
         telegramUserId,
-        data.username || null,
+        username,
         type,
         message,
         version,

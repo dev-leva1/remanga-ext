@@ -4,7 +4,7 @@ class AppConfig {
       throw new Error('Environment config is required');
     }
 
-    this.botToken = this.readRequiredString(env, 'BOT_TOKEN');
+    this.botToken = this.validateBotToken(this.readRequiredString(env, 'BOT_TOKEN'));
     this.adminIds = this.parseAdminIds(this.readRequiredString(env, 'ADMIN_IDS'));
     this.database = Object.freeze({
       host: this.readRequiredString(env, 'DB_HOST'),
@@ -59,6 +59,14 @@ class AppConfig {
     }
 
     return port;
+  }
+
+  validateBotToken(value) {
+    if (!/^\d+:[A-Za-z0-9_-]{30,}$/.test(value)) {
+      throw new Error('BOT_TOKEN has invalid Telegram token format');
+    }
+
+    return value;
   }
 }
 
