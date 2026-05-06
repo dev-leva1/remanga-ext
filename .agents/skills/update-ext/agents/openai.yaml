@@ -1,0 +1,4 @@
+interface:
+  display_name: Update Ext
+  short_description: Release workflow for remanga-ext version bumps, changelog, docs, and build artifacts.
+  default_prompt: Используй Update Ext, чтобы обновить версию remanga-ext, changelog, релизную документацию и собрать артефакты.
