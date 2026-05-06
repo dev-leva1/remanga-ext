@@ -4,6 +4,7 @@ services:
     restart: unless-stopped
     environment:
       - BOT_TOKEN=${BOT_TOKEN}
+      - TELEGRAM_API_ROOT=${TELEGRAM_API_ROOT:-https://api.telegram.org}
       - ADMIN_IDS=${ADMIN_IDS}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}

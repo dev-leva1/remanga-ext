@@ -9,6 +9,37 @@ const LOG_LEVELS = {
   ERROR: 3
 };
 
+function redactSecrets(value) {
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  return value.replace(/\/bot\d+:[A-Za-z0-9_-]+/g, '/bot[REDACTED]');
+}
+
+export function serializeError(error) {
+  if (!(error instanceof Error)) {
+    return { message: redactSecrets(String(error)) };
+  }
+
+  const serialized = {
+    name: error.name,
+    message: redactSecrets(error.message)
+  };
+
+  for (const key of ['type', 'code', 'errno', 'syscall', 'address', 'port']) {
+    if (Object.prototype.hasOwnProperty.call(error, key)) {
+      serialized[key] = redactSecrets(error[key]);
+    }
+  }
+
+  if (error.cause) {
+    serialized.cause = serializeError(error.cause);
+  }
+
+  return serialized;
+}
+
 class Logger {
   constructor() {
     this.level = process.env.NODE_ENV === 'production' ? LOG_LEVELS.INFO : LOG_LEVELS.DEBUG;

@@ -5,6 +5,7 @@ class AppConfig {
     }
 
     this.botToken = this.validateBotToken(this.readRequiredString(env, 'BOT_TOKEN'));
+    this.telegramApiRoot = this.validateTelegramApiRoot(env.TELEGRAM_API_ROOT);
     this.adminIds = this.parseAdminIds(this.readRequiredString(env, 'ADMIN_IDS'));
     this.database = Object.freeze({
       host: this.readRequiredString(env, 'DB_HOST'),
@@ -67,6 +68,27 @@ class AppConfig {
     }
 
     return value;
+  }
+
+  validateTelegramApiRoot(value) {
+    if (typeof value !== 'string' || value.trim().length === 0) {
+      return 'https://api.telegram.org';
+    }
+
+    const normalized = value.trim();
+    let url;
+
+    try {
+      url = new URL(normalized);
+    } catch {
+      throw new Error('TELEGRAM_API_ROOT must be a valid URL');
+    }
+
+    if (url.protocol !== 'https:') {
+      throw new Error('TELEGRAM_API_ROOT must use HTTPS');
+    }
+
+    return normalized.replace(/\/+$/, '');
   }
 }
 

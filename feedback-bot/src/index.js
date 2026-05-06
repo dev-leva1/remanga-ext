@@ -9,7 +9,7 @@ import Database from './database/db.js';
 import MigrationRunner from './database/MigrationRunner.js';
 import UserHandler from './handlers/UserHandler.js';
 import AdminHandler from './handlers/AdminHandler.js';
-import { logger } from './utils/logger.js';
+import { logger, serializeError } from './utils/logger.js';
 
 // Загрузка переменных окружения
 dotenv.config();
@@ -24,7 +24,11 @@ try {
 }
 
 // Инициализация бота
-const bot = new Telegraf(appConfig.botToken);
+const bot = new Telegraf(appConfig.botToken, {
+  telegram: {
+    apiRoot: appConfig.telegramApiRoot
+  }
+});
 
 // Инициализация handlers
 const userHandler = new UserHandler(bot, { adminIds: appConfig.adminIds });
@@ -80,7 +84,7 @@ async function start() {
     process.once('SIGINT', () => shutdown('SIGINT'));
     process.once('SIGTERM', () => shutdown('SIGTERM'));
   } catch (error) {
-    logger.error('Failed to start bot', { error: error.message });
+    logger.error('Failed to start bot', { error: serializeError(error) });
     process.exit(1);
   }
 }
