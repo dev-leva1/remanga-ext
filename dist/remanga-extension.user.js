@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Remanga Enhanced
 // @namespace    remanga.ext
-// @version      1.6.10
+// @version      1.7.0
 // @description  Автоматизация действий на remanga.org: автолайк, массовая отметка глав
 // @author       dev-leva1
 // @match        https://remanga.org/*
@@ -17,6 +17,14 @@
 
 /**
  * CHANGELOG
+ *
+ * v1.7.0 - Усиление runtime-границ и feedback-bot
+ * - Усилена валидация API-запросов, deep link контекста обратной связи и пользовательских данных
+ * - Добавлены NavigationCoordinator и SettingsPageController для изоляции SPA-навигации и применения настроек без перезагрузки
+ * - Добавлена строгая валидация startup config для feedback-bot, включая BOT_TOKEN, ADMIN_IDS и PostgreSQL-переменные
+ * - Обновлена архитектурная документация userscript и feedback-bot
+ * - Пересобран userscript dist/remanga-extension.user.js
+ * - Workflow update-ext перенесён в .agents/skills/update-ext
  *
  * v1.6.10 - Обновление брендинга настроек
  * - Добавлены логотип и название Remanga Enhanced в страницу настроек
@@ -926,7 +934,7 @@ class Config {
    */
   export() {
     const exportData = {
-      version: '1.6.10',
+      version: '1.7.0',
       exportDate: new Date().toISOString(),
       settings: this.settings
     };
@@ -1365,7 +1373,7 @@ class UpdateChecker {
     this.config = config;
     this.notifications = notifications;
     this.updateURL = 'https://ext.nexee.ru/remanga-extension.user.js';
-    this.currentVersion = '1.6.10';
+    this.currentVersion = '1.7.0';
     this.checkInterval = 12 * 60 * 60 * 1000;
     this.isChecking = false;
     this.modal = null;
@@ -2369,7 +2377,7 @@ class SettingsPage {
     this.notifications = notifications;
     this.statistics = statistics;
     this.container = null;
-    this.currentVersion = '1.6.10';
+    this.currentVersion = '1.7.0';
     this.activeTab = 'automation';
     this.controller = collaborators instanceof SettingsPageController
       ? collaborators
@@ -3439,7 +3447,7 @@ class FeedbackButton {
    * Получение версии расширения
    */
   getVersion() {
-    return '1.6.10'; // Заменяется при сборке
+    return '1.7.0'; // Заменяется при сборке
   }
 
   resolveBotUsername() {

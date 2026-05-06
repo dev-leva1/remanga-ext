@@ -1,5 +1,17 @@
 const CHANGELOG_DATA = [
   {
+    "version": "1.7.0",
+    "title": "Усиление runtime-границ и feedback-bot",
+    "changes": [
+      "Усилена валидация API-запросов, deep link контекста обратной связи и пользовательских данных",
+      "Добавлены NavigationCoordinator и SettingsPageController для изоляции SPA-навигации и применения настроек без перезагрузки",
+      "Добавлена строгая валидация startup config для feedback-bot, включая BOT_TOKEN, ADMIN_IDS и PostgreSQL-переменные",
+      "Обновлена архитектурная документация userscript и feedback-bot",
+      "Пересобран userscript dist/remanga-extension.user.js",
+      "Workflow update-ext перенесён в .agents/skills/update-ext"
+    ]
+  },
+  {
     "version": "1.6.10",
     "title": "Обновление брендинга настроек",
     "changes": [
