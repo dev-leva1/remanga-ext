@@ -50,7 +50,7 @@ class RandomTitleNavigator {
   }
 
   isCatalogPage() {
-    return window.location.pathname === '/manga';
+    return ['/manga', '/catalog'].includes(window.location.pathname);
   }
 
   ensureButtonExists() {
