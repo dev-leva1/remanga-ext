@@ -5,7 +5,7 @@ Telegram бот для обратной связи по расширению Rem
 ## Быстрый старт
 
 ```bash
-npm install
+npm ci
 cp .env.example .env
 # Отредактировать .env
 ```
@@ -40,34 +40,35 @@ npm run dev
 
 | Переменная | По умолчанию | Описание |
 |---|---|---|
+| `TELEGRAM_API_ROOT` | `https://api.telegram.org` | HTTPS endpoint Telegram API; необязательное переопределение. |
 | `NODE_ENV` | `development` (локально) / `production` (в compose) | Режим запуска приложения. |
 
 Все обязательные переменные валидируются при старте через `src/config/AppConfig.js`. Некорректный `DB_PORT`, пустые DB-поля или пустой список `ADMIN_IDS` останавливают запуск до подключения к Telegram и PostgreSQL.
 
 ## Запуск через Docker Compose
 
-1. Убедитесь, что рядом с `docker-compose.yml` создан `.env` с нужными переменными.
+1. Убедитесь, что рядом с `docker-compose.yml` создан `.env` с нужными переменными. Compose запускает только bot; PostgreSQL должен быть доступен отдельно. Не коммитьте `.env`.
 2. Запустите контейнер:
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 3. Посмотреть логи:
 
 ```bash
-docker-compose logs -f bot
+docker compose logs -f bot
 ```
 
 4. Остановить:
 
 ```bash
-docker-compose down
+docker compose down
 ```
 
 ## Инициализация БД и миграций
 
-Схема БД хранится в миграции:
+При запуске `MigrationRunner` автоматически применяет миграции после проверки подключения и до старта Telegram-бота. Схема БД хранится в миграции:
 
 - `src/database/migrations/001_initial.sql`
 
@@ -78,7 +79,7 @@ docker-compose down
 - таблица `users` (резерв для сценариев авторизации/активации),
 - триггер автообновления `updated_at` на `feedbacks`.
 
-Пример применения миграции вручную:
+Для диагностики в собственной тестовой БД можно применить миграцию вручную:
 
 ```bash
 psql "postgresql://DB_USER:DB_PASSWORD@DB_HOST:DB_PORT/DB_NAME" \
@@ -150,7 +151,7 @@ psql "postgresql://DB_USER:DB_PASSWORD@DB_HOST:DB_PORT/DB_NAME" -c "\dt"
   Создайте БД заранее или измените `DB_NAME` на существующую.
 
 - `relation "feedbacks" does not exist`  
-  Не применена миграция `001_initial.sql`.
+  Проверьте логи `MigrationRunner`, права пользователя БД и состояние схемы.
 
 ### Ошибки Telegram API
 
