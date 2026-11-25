@@ -43,6 +43,7 @@ feedback-bot/
 │   │   └── AppConfig.js
 │   ├── database/
 │   │   ├── db.js
+│   │   ├── MigrationRunner.js
 │   │   └── migrations/
 │   ├── handlers/
 │   │   ├── AdminHandler.js
@@ -114,7 +115,7 @@ Singleton-менеджер статистики:
 - **ProfileCustomizer** — кастомизация блоков профиля пользователя.
 - **GuildHighlighter** — подсветка гильдий на релевантных страницах.
 - **UserTooltip** — tooltip по пользователю с данными из API и рендерером.
-- **RandomTitleNavigator** — кнопка/действие перехода к случайному тайтлу.
+- **RandomTitleNavigator** — переход к случайному тайтлу на страницах `/catalog` и `/manga`.
 - **TitleCoverPreview** — полноэкранный просмотр обложки тайтла.
 
 ---
@@ -124,6 +125,7 @@ Singleton-менеджер статистики:
 `feedback-bot` — отдельный Node.js runtime для Telegram-обратной связи:
 - `AppConfig` валидирует `BOT_TOKEN`, `ADMIN_IDS` и PostgreSQL-переменные на старте;
 - `Database` получает уже проверенный config, не читает `process.env` напрямую;
+- `MigrationRunner` выполняет SQL-миграции после проверки подключения к PostgreSQL и перед запуском Telegram-бота;
 - `UserHandler` ведет пользовательский flow и чистит stale sessions по TTL;
 - `AdminHandler` проверяет права по typed `adminIds`;
 - `NotificationService` возвращает delivery summary и бросает ошибку, если уведомления не доставлены ни одному админу.
@@ -137,6 +139,8 @@ Singleton-менеджер статистики:
 ```js
 {
   autoLike: false,
+  autoCommentEnabled: false,
+  autoCommentText: '',
   notificationsEnabled: true,
   notificationDuration: 3,
   batchSize: 10,

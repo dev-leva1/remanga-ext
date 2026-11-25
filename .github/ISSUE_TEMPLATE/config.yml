@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Telegram — обратная связь
+    url: https://t.me/remanga_extension_bot
+    about: Вопросы по расширению и обратная связь без GitHub.
+  - name: Документация
+    url: https://github.com/dev-leva1/remanga-ext/tree/main/docs
+    about: Установка, настройки, разработка и устранение проблем.
+  - name: Безопасность
+    url: https://github.com/dev-leva1/remanga-ext/blob/main/SECURITY.md
+    about: Как сообщить об уязвимости без публичного раскрытия.

@@ -1,0 +1,31 @@
+name: Идея / Feature request
+description: Предложить улучшение или новую функцию.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Проблема или сценарий
+      description: Что неудобно сейчас и в каком контексте?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Предлагаемое решение
+      description: Как должна работать функция с точки зрения пользователя?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Альтернативы и ограничения
+      description: Укажите возможные ограничения API, приватности или правил платформы.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Перед отправкой
+      options:
+        - label: Я проверил существующие Issues и roadmap.
+          required: true
