@@ -18,8 +18,7 @@
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Runtime userscript, SPA, feedback-bot |
 | [API_LIKES_ENDPOINT.md](API_LIKES_ENDPOINT.md) | Исследование API лайков; проверяйте актуальность по коду |
 | [feedback-bot/README.md](../feedback-bot/README.md) | Отдельный Telegram-сервис |
-| [RELEASE.md](RELEASE.md) | Версии, публикация релизов и деплой |
-| [dist/README.md](../dist/README.md) | Развёртывание лендинга и userscript |
+| [RELEASE.md](RELEASE.md) | Версии, публикация релизов и обновления |
 | [CONTRIBUTING.md](../CONTRIBUTING.md) | Правила участия |
 | [DESIGN.md](../DESIGN.md) / [PRODUCT.md](../PRODUCT.md) | Дизайн и продуктовый контекст |
 

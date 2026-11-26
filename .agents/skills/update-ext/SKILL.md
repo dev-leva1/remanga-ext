@@ -11,7 +11,7 @@ description: Release workflow for remanga-ext. Use when the user asks to prepare
 
 Синхронно обновить:
 - версию в `package.json`
-- changelog в `build.js`
+- `CHANGELOG.md` и версию в `package-lock.json`
 - публичную документацию только там, где это действительно требуется
 - собранные артефакты через `npm run build`
 
@@ -43,7 +43,9 @@ update-ext 1.7.0 Заголовок релиза; - Изменение 1; - Из
 
 Всегда опирайся на эти файлы:
 - `package.json` - текущая версия
-- `build.js` - userscript header и основной changelog
+- `CHANGELOG.md` - единственный источник истории изменений
+- `build.js` - userscript header и URL распространения через GitHub Raw
+- `package-lock.json` - синхронизированная версия
 - `README.md` - публичные возможности, использование и установка
 - `docs/ROADMAP.md` - completed roadmap items с `✅ vX.Y.Z`
 - `docs/*.md` - менять точечно, только если там уже есть релевантное описание feature или release-пункта
@@ -80,18 +82,18 @@ update-ext 1.7.0 Заголовок релиза; - Изменение 1; - Из
 
 ### 3. Построение changelog entry
 
-Новый entry всегда вставляй в начало CHANGELOG-блока в `build.js` в текущем формате:
+Новый entry всегда вставляй в начало `CHANGELOG.md` в текущем формате:
 
 ```text
- * vX.Y.Z - Заголовок
- * - Изменение 1
- * - Изменение 2
+## vX.Y.Z - Заголовок
+- Изменение 1
+- Изменение 2
 ```
 
 Правила:
 - newest first
 - существующие записи не переписывай без причины
-- regex и функции `extractChangelogVersions()` / `syncLandingChangelog()` не меняй, если нет явной поломки
+- формат секций CHANGELOG и функции `parseChangelogMarkdown()` / `formatUserscriptChangelog()` сохраняй без изменений, если нет необходимости менять парсер
 - заголовок и bullets бери из ввода пользователя, либо из явного подтвержденного контекста и фактических изменений, если пользователь явно разрешил составить changelog самостоятельно
 
 ### 4. Решение по документации
@@ -143,8 +145,8 @@ update-ext 1.7.0 Заголовок релиза; - Изменение 1; - Из
 ### 6. Применение
 
 После подтверждения:
-1. Обнови `package.json`
-2. Обнови CHANGELOG-блок в `build.js`
+1. Обнови `package.json` и `package-lock.json` (версия корневого пакета и верхнеуровневое поле)
+2. Обнови `CHANGELOG.md`
 3. Обнови только релевантные docs
 4. Не трогай лишние файлы
 
@@ -163,7 +165,9 @@ npm run build
 2. Проверь результат:
 - `dist/remanga-extension.user.js` содержит новую `@version`
 - `dist/remanga-extension.user.js` содержит новый changelog entry
-- `dist/script.js` содержит новый entry в `CHANGELOG_DATA`
+- `node --check dist/remanga-extension.user.js` проходит
+- метаданные `@updateURL`, `@downloadURL`, разрешение `@connect` и runtime URL проверки обновлений согласованы
+- используй [docs/RELEASE.md](../../../docs/RELEASE.md) для публикации GitHub Releases; не публикуй без разрешения
 
 3. Если менялся `README.md` или `docs/*`, перечитай измененные участки и убедись, что текст согласован с релизом.
 
@@ -179,7 +183,7 @@ npm run build
 ## Ограничения
 
 - Не придумывай release notes без данных пользователя или без явного разрешения пользователя составить их по фактическим изменениям.
-- Не меняй `dist/*` вручную.
+- Не меняй `dist/*` вручную: генерируй userscript сборщиком.
 - Не создавай новые markdown-документы без явной необходимости.
 - Не обновляй unrelated docs.
 - Не делай commit или push без прямой просьбы пользователя.

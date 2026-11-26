@@ -3,6 +3,7 @@ const path = require('path');
 
 const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
 const version = packageJson.version;
+const updateURL = 'https://raw.githubusercontent.com/dev-leva1/remanga-ext/main/dist/remanga-extension.user.js';
 const changelogPath = path.join(__dirname, 'CHANGELOG.md');
 const changelogMarkdown = fs.readFileSync(changelogPath, 'utf8');
 
@@ -46,9 +47,11 @@ const header = `// ==UserScript==
 // @grant        GM.setValue
 // @grant        GM.xmlHttpRequest
 // @connect      api.remanga.org
-// @connect      ext.nexee.ru
-// @updateURL    https://ext.nexee.ru/remanga-extension.user.js
-// @downloadURL  https://ext.nexee.ru/remanga-extension.user.js
+// @connect      ${updateURL.split('/')[2]}
+// @homepageURL  https://github.com/dev-leva1/remanga-ext
+// @supportURL   https://github.com/dev-leva1/remanga-ext/issues
+// @updateURL    ${updateURL}
+// @downloadURL  ${updateURL}
 // @run-at       document-idle
 // ==/UserScript==
 
@@ -109,35 +112,6 @@ function formatUserscriptChangelog(markdown) {
   return lines.join('\n');
 }
 
-function syncLandingChangelog(versions) {
-  const landingScriptPath = path.join(__dirname, 'dist', 'script.js');
-
-  if (!fs.existsSync(landingScriptPath)) {
-    return;
-  }
-
-  const replacement = `const CHANGELOG_DATA = ${JSON.stringify(versions, null, 2)};`;
-  const landingScript = fs.readFileSync(landingScriptPath, 'utf8');
-  const updatedLandingScript = landingScript.replace(/const CHANGELOG_DATA = \[[\s\S]*?\];/, replacement);
-
-  fs.writeFileSync(landingScriptPath, updatedLandingScript, 'utf8');
-}
-
-function syncLandingVersion(versionValue) {
-  const landingIndexPath = path.join(__dirname, 'dist', 'index.html');
-
-  if (!fs.existsSync(landingIndexPath)) {
-    return;
-  }
-
-  const landingIndex = fs.readFileSync(landingIndexPath, 'utf8');
-  const updatedLandingIndex = landingIndex
-    .replace(/aria-label="Remanga Enhanced(?: v[\d.]+| __LANDING_VERSION__)?"/, `aria-label="Remanga Enhanced v${versionValue}"`)
-    .replace(/<span class="brand-version">(?:v[\d.]+|__LANDING_VERSION__)<\/span>/, `<span class="brand-version">v${versionValue}</span>`);
-
-  fs.writeFileSync(landingIndexPath, updatedLandingIndex, 'utf8');
-}
-
 function findSourceFiles(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
     const entryPath = path.join(dir, entry.name);
@@ -180,7 +154,8 @@ function prepareSource(content) {
     .replace(/^import .+$/gm, '')
     .replace(/^export default .+$/gm, '')
     .replace(/^export .+$/gm, '')
-    .replace(/__VERSION__/g, version);
+    .replace(/__VERSION__/g, version)
+    .replace(/__UPDATE_URL__/g, updateURL);
 }
 
 function assertBalancedBraces(script) {
@@ -260,29 +235,11 @@ function buildUserscript() {
   console.log(`🔖 Версия: ${version}`);
 }
 
-function syncLanding() {
-  const changelogVersions = parseChangelogMarkdown(changelogMarkdown);
-  syncLandingVersion(version);
-  syncLandingChangelog(changelogVersions);
-  console.log('✅ Landing assets синхронизированы');
-}
-
 function run() {
-  const command = process.argv[2] || 'all';
+  const command = process.argv[2] || 'userscript';
 
-  if (command === 'userscript') {
+  if (command === 'userscript' || command === 'all') {
     buildUserscript();
-    return;
-  }
-
-  if (command === 'landing') {
-    syncLanding();
-    return;
-  }
-
-  if (command === 'all') {
-    buildUserscript();
-    syncLanding();
     return;
   }
 

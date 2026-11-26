@@ -1,5 +1,5 @@
 name: Ошибка / Bug report
-description: Сообщить о воспроизводимой ошибке расширения, лендинга или feedback-bot.
+description: Сообщить о воспроизводимой ошибке расширения, установки или feedback-bot.
 title: "[Bug]: "
 labels: ["bug"]
 body:
@@ -13,7 +13,7 @@ body:
       label: Компонент
       options:
         - Userscript
-        - Лендинг / установка
+        - Установка / обновление
         - Telegram feedback-bot
         - Документация
         - Другое
@@ -23,7 +23,7 @@ body:
     id: version
     attributes:
       label: Версия или commit SHA
-      placeholder: "v1.8.0"
+      placeholder: "v1.8.1"
     validations:
       required: true
   - type: input

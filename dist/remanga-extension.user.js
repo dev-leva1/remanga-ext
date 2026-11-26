@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Remanga Enhanced
 // @namespace    remanga.ext
-// @version      1.8.0
+// @version      1.8.1
 // @description  Автоматизация действий на remanga.org: автолайк, массовая отметка глав
 // @author       dev-leva1
 // @match        https://remanga.org/*
@@ -9,14 +9,22 @@
 // @grant        GM.setValue
 // @grant        GM.xmlHttpRequest
 // @connect      api.remanga.org
-// @connect      ext.nexee.ru
-// @updateURL    https://ext.nexee.ru/remanga-extension.user.js
-// @downloadURL  https://ext.nexee.ru/remanga-extension.user.js
+// @connect      raw.githubusercontent.com
+// @homepageURL  https://github.com/dev-leva1/remanga-ext
+// @supportURL   https://github.com/dev-leva1/remanga-ext/issues
+// @updateURL    https://raw.githubusercontent.com/dev-leva1/remanga-ext/main/dist/remanga-extension.user.js
+// @downloadURL  https://raw.githubusercontent.com/dev-leva1/remanga-ext/main/dist/remanga-extension.user.js
 // @run-at       document-idle
 // ==/UserScript==
 
 /**
  * CHANGELOG
+ *
+ * v1.8.1 - Установка и обновления через GitHub
+ * - Установка и встроенная проверка обновлений используют userscript из репозитория GitHub
+ * - Убраны отдельный лендинг и его сборка; инструкции перенесены в документацию
+ * - Исправлено отображение кнопки случайного тайтла на новом маршруте /catalog
+ * - Улучшено определение секции комментариев и проверка уже отправленных автокомментариев
  *
  * v1.8.0 - Автокомментарии глав
  * - Добавлен автокомментарий главы после дочитывания до конца с настраиваемым текстом
@@ -70,7 +78,7 @@
  * - Кнопка "Обратная связь" в настройках (вкладка "Общее")
  * - Модальное окно выбора контекста (версия, браузер, URL страницы)
  * - Deep link интеграция с ботом для автоматической передачи данных
- * - Обновлен лендинг: секция "Обратная связь" вместо контактов
+ * - Обновлена публичная информация об обратной связи
  *
  * v1.6.3 - Вкладки в окне настроек
  * - Окно настроек разбито на 3 вкладки: Автоматизация, Интерфейс, Общее
@@ -93,14 +101,14 @@
  * - Страница настроек открывается как overlay модальное окно
  * - Стилизованная кнопка настроек в header
  *
- * v1.5.0 - Полное обновление UI и лендинг
+ * v1.5.0 - Полное обновление UI и инструкции по установке
  * - Полностью переработан UI согласно DESIGN.md
  * - Монохромная цветовая палитра (rgb(19,20,22), rgb(24,25,27))
  * - Централизованные design tokens в styles.js
  * - Pill-кнопки с анимациями (hover, active)
  * - Шрифт Exo 2 во всех компонентах
- * - Создан лендинг ext.nexee.ru с инструкцией по установке
- * - Динамический парсинг changelog на лендинге
+ * - Добавлены инструкции по установке расширения
+ * - Добавлен динамический вывод истории изменений
  */
 
 (function(){
@@ -994,7 +1002,7 @@ class Config {
    */
   export() {
     const exportData = {
-      version: '1.8.0',
+      version: '1.8.1',
       exportDate: new Date().toISOString(),
       settings: this.settings
     };
@@ -1459,8 +1467,8 @@ class UpdateChecker {
   constructor(config, notifications) {
     this.config = config;
     this.notifications = notifications;
-    this.updateURL = 'https://ext.nexee.ru/remanga-extension.user.js';
-    this.currentVersion = '1.8.0';
+    this.updateURL = 'https://raw.githubusercontent.com/dev-leva1/remanga-ext/main/dist/remanga-extension.user.js';
+    this.currentVersion = '1.8.1';
     this.checkInterval = 12 * 60 * 60 * 1000;
     this.isChecking = false;
     this.modal = null;
@@ -1622,8 +1630,8 @@ class UpdateChecker {
         font-size: 13px;
         color: #9ca3af;
       ">
-        ℹ️ После нажатия "Обновить" Tampermonkey автоматически загрузит новую версию.
-        Страница будет перезагружена.
+        ℹ️ После нажатия "Обновить" откроется файл userscript на GitHub.
+        Подтвердите обновление в менеджере userscript.
       </div>
 
       <div style="display: flex; gap: ${DESIGN_TOKENS.spacing.md}; justify-content: flex-end;">
@@ -1693,7 +1701,7 @@ class UpdateChecker {
    * Выполнить обновление
    */
   performUpdate() {
-    this.notifications.info('Обновление начато. Tampermonkey загрузит новую версию...');
+    this.notifications.info('Открываем файл обновления на GitHub...');
 
     setTimeout(() => {
       window.location.href = this.updateURL;
@@ -2464,7 +2472,7 @@ class SettingsPage {
     this.notifications = notifications;
     this.statistics = statistics;
     this.container = null;
-    this.currentVersion = '1.8.0';
+    this.currentVersion = '1.8.1';
     this.activeTab = 'automation';
     this.controller = collaborators instanceof SettingsPageController
       ? collaborators
@@ -3586,7 +3594,7 @@ class FeedbackButton {
    * Получение версии расширения
    */
   getVersion() {
-    return '1.8.0'; // Заменяется при сборке
+    return '1.8.1'; // Заменяется при сборке
   }
 
   resolveBotUsername() {

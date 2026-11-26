@@ -6,7 +6,7 @@ class UpdateChecker {
   constructor(config, notifications) {
     this.config = config;
     this.notifications = notifications;
-    this.updateURL = 'https://ext.nexee.ru/remanga-extension.user.js';
+    this.updateURL = '__UPDATE_URL__';
     this.currentVersion = '__VERSION__';
     this.checkInterval = 12 * 60 * 60 * 1000;
     this.isChecking = false;
@@ -169,8 +169,8 @@ class UpdateChecker {
         font-size: 13px;
         color: #9ca3af;
       ">
-        ℹ️ После нажатия "Обновить" Tampermonkey автоматически загрузит новую версию.
-        Страница будет перезагружена.
+        ℹ️ После нажатия "Обновить" откроется файл userscript на GitHub.
+        Подтвердите обновление в менеджере userscript.
       </div>
 
       <div style="display: flex; gap: ${DESIGN_TOKENS.spacing.md}; justify-content: flex-end;">
@@ -240,7 +240,7 @@ class UpdateChecker {
    * Выполнить обновление
    */
   performUpdate() {
-    this.notifications.info('Обновление начато. Tampermonkey загрузит новую версию...');
+    this.notifications.info('Открываем файл обновления на GitHub...');
 
     setTimeout(() => {
       window.location.href = this.updateURL;
