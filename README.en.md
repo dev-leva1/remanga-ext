@@ -6,7 +6,7 @@
     <a href="https://github.com/dev-leva1/remanga-ext/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/dev-leva1/remanga-ext?style=flat-square&color=2563eb"></a>
     <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/github/license/dev-leva1/remanga-ext?style=flat-square"></a>
   </p>
-  <p><a href="https://ext.nexee.ru/remanga-extension.user.js"><strong>Install userscript</strong></a> · <a href="https://ext.nexee.ru/">Website</a> · <a href="https://github.com/dev-leva1/remanga-ext/releases">Releases</a> · <a href="README.md">Русский</a></p>
+  <p><a href="https://raw.githubusercontent.com/dev-leva1/remanga-ext/main/dist/remanga-extension.user.js"><strong>Install userscript</strong></a> · <a href="https://github.com/dev-leva1/remanga-ext/releases">Releases</a> · <a href="README.md">Русский</a></p>
 </div>
 
 ## Features
@@ -20,10 +20,10 @@
 ## Installation
 
 1. Install [Tampermonkey](https://www.tampermonkey.net/) for Chrome, Edge or Firefox, or [Stay](https://apps.apple.com/us/app/stay-for-safari/id1591620171) for Safari.
-2. Open the [userscript installer](https://ext.nexee.ru/remanga-extension.user.js) and confirm installation.
+2. Open the [userscript installer](https://raw.githubusercontent.com/dev-leva1/remanga-ext/main/dist/remanga-extension.user.js) and confirm installation.
 3. Sign in to [ReManga](https://remanga.org/) and use the extension settings button in the site header.
 
-The userscript interface, website and detailed documentation are primarily in Russian. Update checks and userscript installation use ext.nexee.ru; GitHub Releases are versioned source snapshots.
+The userscript interface and detailed documentation are primarily in Russian. Installation and update checks use the same built userscript from the `main` branch via GitHub Raw. GitHub Releases preserve versioned snapshots. Users upgrading from versions before v1.8.1 should open the new installer once and confirm an update of their existing script. Do not uninstall the old script first; check that the manager recognizes the existing installation.
 
 ## Development
 

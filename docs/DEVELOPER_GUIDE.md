@@ -17,9 +17,8 @@ node --check dist/remanga-extension.user.js
 
 | Команда | Назначение |
 | --- | --- |
-| `npm run build` | Сборка userscript и синхронизация лендинга |
-| `npm run build:userscript` | Только userscript |
-| `npm run sync:landing` | Только версия и changelog лендинга |
+| `npm run build` | Сборка userscript |
+| `npm run build:userscript` | Альтернативная команда сборки userscript |
 | `npm run lint` | ESLint для src |
 | `npm run lint:fix` | Автоисправление ESLint; проверяйте diff |
 
@@ -35,7 +34,7 @@ node --check dist/remanga-extension.user.js
 | `src/ui/` | Настройки, уведомления, обратная связь, стили |
 | `src/utils/` | Валидация, DOM, логирование, changelog |
 | `feedback-bot/` | Отдельный Telegram-сервис |
-| `dist/` | Userscript и лендинг |
+| `dist/` | Собранный userscript и логотип |
 | `docs/` | Документация |
 
 ## Проверки
@@ -69,4 +68,4 @@ localStorage.setItem('remanga_ext_debug', 'true');
 
 ## Выпуск
 
-Порядок изменения версии, сборки, публикации GitHub Release и деплоя описан в [RELEASE.md](RELEASE.md). Для изменений бота используйте [его руководство](../feedback-bot/README.md).
+Порядок изменения версии, сборки, публикации GitHub Release описан в [RELEASE.md](RELEASE.md). Для изменений бота используйте [его руководство](../feedback-bot/README.md).
